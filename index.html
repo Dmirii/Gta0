@@ -5,21 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GTA 0 Online</title>
 <style>
-body { margin: 0; background: #0a100a; overflow: hidden; font-family: system-ui, sans-serif; color: #e7f3e2; }
+body { margin: 0; background: #0c140c; overflow: hidden; font-family: system-ui, sans-serif; }
 #game { display: block; width: 100vw; height: 100vh; }
-#hud { position: fixed; top: 10px; left: 10px; background: rgba(6,12,6,0.7); padding: 8px 12px; border-radius: 8px; }
-#hud span { margin-right: 14px; }
-#menu { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 14px; align-items: center; justify-content: center; background: rgba(6,10,6,0.92); color: #fff; font-size: 20px; display: none; }
-#menu input { font-size: 18px; padding: 10px; border-radius: 6px; border: 1px solid #4a7a46; background: #102118; color: #e7f3e2; }
-#hint { position: fixed; bottom: 10px; left: 10px; color: #9abd96; font-size: 13px; }
 </style>
 </head>
 <body>
-<canvas id="game"></canvas>
-<div id="hud"></div>
-<div id="menu">Добро пожаловать в GTA 0 Online<br>
-<input id="nick" type="text" autocomplete="off" placeholder="Введите ник (Enter)"></div>
-<div id="hint">Управление: WASD — единич, Пробел / ПКМ — стрелять, Enter — выздесть</div>
+<div id="game"></div>
+<script src="vendor/phaser.min.js"></script>
 <script src="js/game.js"></script>
 </body>
 </html>
