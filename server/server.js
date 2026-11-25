@@ -14,7 +14,7 @@ const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const PORT = Number(process.env.PORT || 3000);
-const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+const PUBLIC_DIR = path.join(__dirname, '..'); // клиент на корне репозитория (index.html, js/)
 
 // ---------------- мир ----------------
 const TILE = 64;

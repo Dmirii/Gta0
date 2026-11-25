@@ -42,6 +42,10 @@ function setFire(on) { fireOn = on; document.body.style.cursor = on ? 'none' : '
 
 // ---------- сеть ----------
 function wsUrl() {
+  // ?ws=wss://host/ws — абсолютный адрес сервера (полезно на GitHub Pages,
+  // где статику нельзя хостить сам WS-сервер)
+  const override = new URLSearchParams(location.search).get('ws');
+  if (override) return override;
   const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
   return proto + location.host + '/ws';
 }
