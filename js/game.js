@@ -59,7 +59,8 @@ function wsUrl() {
   const override = new URLSearchParams(location.search).get('ws');
   if (override) return override;
   const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
-  return proto + location.host + '/ws';
+  const path = location.pathname.replace(/\/+$/, ''); // сайт может быть в подпапке (/Gta0/)
+  return proto + location.host + path + '/ws';
 }
 const socket = new WebSocket(wsUrl());
 
