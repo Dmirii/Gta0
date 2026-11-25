@@ -162,15 +162,14 @@ function onRoad(x, y) {
 }
 
 function drawRoads(cx, cy) {
+  // Фон уже закрашен в loop(); порядок: фон -> дороги -> здания
   for (let i = 0; i <= GRID_W; i++) {
-    ctx.fillStyle = '#2a3b2a';
+    ctx.fillStyle = '#3a4f3a';
     ctx.fillRect(i * TILE - ROAD / 2 - cx, -cy, ROAD, WORLD_H);
   }
   for (let j = 0; j <= GRID_H; j++) {
     ctx.fillRect(-cx, j * TILE - ROAD / 2 - cy, WORLD_W, ROAD);
   }
-  ctx.fillStyle = '#0c120c';
-  ctx.fillRect(-cx, -cy, WORLD_W, WORLD_H);
 }
 
 function drawBuildings(cx, cy) {
