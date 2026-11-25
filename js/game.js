@@ -99,7 +99,7 @@ class GameScene extends Phaser.Scene {
 
     this.keys = this.input.keyboard.addKeys({ w: 'KeyW', a: 'KeyA', s: 'KeyS', d: 'KeyD', space: 'Space' });
     this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER).on('down', () => this.onEnterKey());
-    const c = this.canvas;
+    const c = (this.sys && this.sys.canvas) || this.game.canvas || this.canvas;
     c.addEventListener('mousemove', (e) => {
       const r = c.getBoundingClientRect();
       this.aimX = e.clientX - r.left - VIEW_W / 2;
