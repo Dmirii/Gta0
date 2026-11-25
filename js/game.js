@@ -67,18 +67,21 @@ class GameScene extends Phaser.Scene {
 
   create() {
     this.meId = null;
-    this.players = new Map(); // id -> снимок сервера
+    this.online = false;
+    this.players = new Map(); // id -> снимок сервера (или локальный в соло)
     this.loot = new Map();    // id -> снимок
     this.bullets = new Map(); // id -> рект
     this.carRects = new Map();
     this.lootRects = new Map();
     this.mission = null;
+    this.ai = []; // два ИИ-водителя (только в соло)
     this.fireOn = false;
     this.aimX = 0; this.aimY = 0;
     this.lastShoot = 0; this.lastDepotSend = 0;
 
     this.cameras.main.setBounds(0, 0, GAME_W, GAME_H);
 
+    if (SOLO) this.setupLocalWorld();
     this.drawMap();
 
     this.hudText = this.add.text(12, 6, '', { fontSize: '13px', fill: '#e7f3e2', stroke: '#000', strokeThickness: 3 });
@@ -95,6 +98,7 @@ class GameScene extends Phaser.Scene {
     this.socket.onmessage = (ev) => { try { this.onMessage(JSON.parse(ev.data)); } catch { /* ignore */ } };
 
     this.keys = this.input.keyboard.addKeys({ w: 'KeyW', a: 'KeyA', s: 'KeyS', d: 'KeyD', space: 'Space' });
+    this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER).on('down', () => this.onEnterKey());
     const c = this.canvas;
     c.addEventListener('mousemove', (e) => {
       const r = c.getBoundingClientRect();
@@ -180,6 +184,12 @@ class GameScene extends Phaser.Scene {
   update() {
     const me = this.players.get(this.meId);
 
+    if (!this.online) {
+      if (me) this.updateLocalPlayer();
+      this.updateAI();
+      if (me) this.cameras.main.startFollow(me, true);
+    }
+
     // стрельба
     if (this.fireOn && me) {
       const now = this.time.now;
@@ -191,13 +201,20 @@ class GameScene extends Phaser.Scene {
         if (dist(l, me) < 60) {
           this.send({ t: 'loot', id });
           this.loot.delete(id);
+          me.collected++;
+          if (this.mission) this.mission.count++;
           this.log('Подобрал: ' + (STYLE.LOOT_NAMES[l.type] || l.type));
+          if (!this.online) this.applyLoot(me, l.type);
         }
       }
       const now = this.time.now;
-      if (this.mission && dist(me, { x: DEPOT_X, y: DEPOT_Y }) < 80 && now - this.lastDepotSend > 600) {
-        this.lastDepotSend = now;
-        this.send({ t: 'enterDepot' });
+      if (this.online) {
+        if (this.mission && dist(me, { x: DEPOT_X, y: DEPOT_Y }) < 80 && now - this.lastDepotSend > 600) {
+          this.lastDepotSend = now;
+          this.send({ t: 'enterDepot' });
+        }
+      } else {
+        this.checkDepot(me);
       }
     }
 
@@ -230,10 +247,97 @@ class GameScene extends Phaser.Scene {
         ' · HP ' + me.hp + '/3   Патроны ' + me.gunMun + '   Собрано ' + me.collected + missionSummary(this.mission));
     }
     lines.push('WASD — единич, Пробел / ПКМ — стрелять, Enter — выздесть');
-    lines.push(this.online ? 'Онлайн — ' + this.players.size + ' игрок(ов)' : 'Офлайн (сервер недоступен)');
+    lines.push(this.online ? 'Онлайн — ' + this.players.size + ' игрок(ов)' : 'Соло (WASD — единич)');
     this.hudText.setText(lines.join('\n'));
   }
+
+  // ---- соло: локальный игрок, ИИ, миссии, выживание ----
+
+  pickSpawn() {
+    for (let t = 0; t < 100; t++) {
+      const x = Math.random() * GAME_W, y = Math.random() * GAME_H;
+      if (onRoad(x, y) && x > 12 && x < GAME_W - 12 && y > 12 && y < GAME_H - 12) return { x, y };
+    }
+    return { x: GAME_W / 2, y: GAME_H / 2 };
+  }
+
+  setupLocalWorld() {
+    const sp = this.pickSpawn();
+    const me = { id: 0, nick: 'Вы', x: sp.x, y: sp.y, ang: Math.random() * Math.PI * 2, vx: 0, vy: 0,
+      hp: 3, gunLevel: 0, gunMun: 40, collected: 0, speedUp: 0, carId: 0 };
+    this.players.set(0, me);
+    this.ai = [1, 2].map((i) => {
+      const p = this.pickSpawn();
+      return { id: -i, x: p.x, y: p.y, ang: Math.random() * Math.PI * 2 };
+    });
+    const types = ['ammo', 'ammo', 'ammo', 'food', 'food', 'medkit', 'gun', 'speed', 'car'];
+    for (let i = 0; i < 10; i++) {
+      const p = this.pickSpawn();
+      this.loot.set(i + 100, { id: i + 100, x: p.x, y: p.y, type: types[i % types.length] });
+    }
+  }
+
+  updateLocalPlayer() {
+    const me = this.players.get(0);
+    if (!me) return;
+    const k = this.keys;
+    const speed = 4.5 + (STYLE.car[me.carId] ? 2 : 0) + me.speedUp * 1.5;
+    me.ang += (k.d.isDown ? 1 : 0) * 0.07 - (k.a.isDown ? 1 : 0) * 0.07;
+    me.vx = Math.sin(me.ang) * speed;
+    me.vy = -Math.cos(me.ang) * speed;
+    me.x += me.vx; me.y += me.vy;
+  }
+
+  updateAI() {
+    const speed = 3.2 + Math.random() * 1.5;
+    for (const ai of this.ai) {
+      ai.ang += (Math.random() - 0.5) * 0.2;
+      ai.x += Math.sin(ai.ang) * speed * 0.05;
+      ai.y -= Math.cos(ai.ang) * speed * 0.05;
+      this.getCar(ai).setPosition(ai.x, ai.y).setAngle(Phaser.Math.RadToDeg(ai.ang));
+    }
+  }
+
+  applyLoot(me, type) {
+    if (type === 'ammo') me.gunMun += 20;
+    if (type === 'food') me.hp = Math.min(3, me.hp + 1);
+    if (type === 'medkit') me.hp = Math.min(3, me.hp + 2);
+    if (type === 'gun' && me.gunLevel < 3) me.gunLevel++;
+    if (type === 'speed' && me.speedUp < 3) me.speedUp++;
+    if (type === 'car' && me.carId < 2) me.carId++;
+    if (me.collected >= 2 && !this.mission) {
+      this.mission = { id: 1, type: 'deliver', goal: 3, count: 0 };
+      this.log('Миссия: доставить 3 предмета в Депо');
+    }
+  }
+
+  checkDepot(me) {
+    const now = Date.now();
+    if (!this.mission || this.mission.type !== 'deliver') return;
+    if (dist(me, { x: DEPOT_X, y: DEPOT_Y }) > 60) return;
+    if (this.mission.count < this.mission.goal) return;
+    const done = this.mission;
+    this.mission = null;
+    const st = STYLE.car[me.carId] || STYLE.car[0];
+    me.gunLevel = Math.min(3, me.gunLevel + 1);
+    me.speedUp = Math.min(3, me.speedUp + 1);
+    me.collected = 0;
+    this.log('Миссия выполнена! Апгрейд: ' + st.name);
+  }
+
+  onEnterKey() {
+    if (this.online) { this.send({ t: 'hi', nick: getNick() }); return; }
+    const me = this.players.get(0);
+    if (me && me.hp <= 0) {
+      const sp = this.pickSpawn();
+      Object.assign(me, { hp: 3, collected: 0, gunMun: 40, gunLevel: 0, speedUp: 0, carId: 0, x: sp.x, y: sp.y, ang: 0, vx: 0, vy: 0 });
+      if (this.deathText) { this.deathText.destroy(); this.deathText = null; }
+      this.log('Выздесть.');
+    }
+  }
 }
+
+const SOLO = true; // соло режим: локальный игрок + мир + ИИ
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
