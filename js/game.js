@@ -10,7 +10,19 @@ const WORLD_W = GRID_W * TILE, WORLD_H = GRID_H * TILE;
 const DEPOT = { x: WORLD_W / 2, y: WORLD_H / 2 };
 const VIEW_W = 1280, VIEW_H = 720;
 const CAR_L = 30, CAR_W = 16;
-const LOOT_COLORS = { ammo: '#ff4d4d', food: '#6ad46a', gun: '#ffcf33', upgrade: '#00e5ff' };
+const CARS = ['Light Auto', 'Medium Auto', 'Heavy Auto'];
+const COLORS = {
+  road: '#5a6f50',
+  building: ['#162516', '#1d2e1d', '#273a26', '#2f4630', '#233a2c', '#2a3a2f'],
+  car: [
+    { fill: '#3fc1cf', accent: '#f7ffa0' },
+    { fill: '#7fd0a0', accent: '#fff59c' },
+    { fill: '#c2786a', accent: '#ffd8a0' }
+  ],
+  loot: { ammo: '#ff5a5a', food: '#6fd06f', medkit: '#ffa066', gun: '#ffcf33', speed: '#00e5ff', car: '#b0ff9e' },
+  hud: 'rgba(12,32,12,0.72)'
+};
+const LOOT_NAMES = { ammo: 'патроны', food: 'еда', medkit: 'аптечка', gun: 'оружие', speed: 'скорость', car: 'автомобиль' };
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -72,13 +84,27 @@ socket.onmessage = (ev) => {
       setTimeout(() => bullets.delete(b.id), 1600);
     }
   } else if (msg.t === 'mission') {
-    mission = { id: msg.mission.id, goal: msg.mission.goal, count: 0 };
-    log('Миссия: доставить ' + msg.mission.goal + ' предметов в Депо');
+    mission = { id: msg.mission.id, type: msg.mission.type || 'deliver', goal: msg.mission.goal, count: 0, startedAt: Date.now() };
+    log('Миссия: ' + missionText(mission));
   } else if (msg.t === 'missionDone') {
     mission = null;
     log('Миссия выполнена! Апгрейд авто получен.');
   }
 };
+
+function missionText(m) {
+  if (!m) return '';
+  if (m.type === 'survive') {
+    const s = Math.max(0, Math.floor((Date.now() - (m.startedAt || Date.now())) / 1000));
+    return 'выжить ' + m.goal + 'с (' + s + 'с)';
+  }
+  return 'доставить ' + m.count + '/' + m.goal + ' в Депо';
+}
+
+function missionSummary() {
+  if (!mission) return '';
+  return mission.type === 'survive' ? '' : (' · Миссия ' + mission.count + '/' + mission.goal);
+}
 
 // ---------- ввод ----------
 nickInput.addEventListener('keydown', (e) => {
@@ -137,6 +163,7 @@ setInterval(() => {
       loot.delete(id);
       m.collected++;
       if (mission) mission.count++;
+      log('Подобрал: ' + (LOOT_NAMES[l.type] || l.type));
     }
   }
   const now = Date.now();
@@ -164,7 +191,7 @@ function onRoad(x, y) {
 function drawRoads(cx, cy) {
   // Фон уже закрашен в loop(); порядок: фон -> дороги -> здания
   for (let i = 0; i <= GRID_W; i++) {
-    ctx.fillStyle = '#3a4f3a';
+    ctx.fillStyle = COLORS.road;
     ctx.fillRect(i * TILE - ROAD / 2 - cx, -cy, ROAD, WORLD_H);
   }
   for (let j = 0; j <= GRID_H; j++) {
@@ -172,29 +199,41 @@ function drawRoads(cx, cy) {
   }
 }
 
+function hashNum(x, y) {
+  let h = (x * 73856093) ^ (y * 19349663);
+  return (h & 0x7fffffff) % COLORS.building.length;
+}
+
 function drawBuildings(cx, cy) {
-  ctx.fillStyle = '#122312';
   for (let tx = 0; tx < GRID_W; tx++) {
     for (let ty = 0; ty < GRID_H; ty++) {
       const x = (tx + 0.5) * TILE - cx, y = (ty + 0.5) * TILE - cy;
-      if (!onRoad(x + cx, y + cy)) ctx.fillRect(x, y, TILE, TILE);
+      if (!onRoad(x + cx, y + cy)) {
+        ctx.fillStyle = COLORS.building[hashNum(x + cx, y + cy)];
+        ctx.fillRect(x, y, TILE, TILE);
+      }
     }
   }
+}
+
+function carStyle(p) {
+  return (COLORS.car[p.carId] || COLORS.car[0]);
 }
 
 function drawCars(cx, cy) {
   for (const p of players.values()) {
     const isMe = p.id === meId;
+    const st = carStyle(p);
     ctx.save();
     ctx.translate(p.x - cx, p.y - cy);
     ctx.rotate(p.ang);
-    ctx.fillStyle = isMe ? '#4ecdc4' : '#9bd58a';
+    ctx.fillStyle = st.fill;
     ctx.fillRect(-CAR_L / 2, -CAR_W / 2, CAR_L, CAR_W);
-    ctx.fillStyle = isMe ? '#f7ffa0' : '#b9df9e';
+    ctx.fillStyle = st.accent;
     ctx.fillRect(-CAR_L * 0.4, -1.5, CAR_L * 0.35, 3);
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.fillRect(-CAR_L * 0.48, CAR_W / 2 - 3, CAR_L * 0.3, 3);
-    ctx.fillStyle = isMe ? '#9b9bd6' : '#6f6f8a';
+    ctx.fillStyle = st.accent;
     ctx.fillRect(-CAR_L / 2, -CAR_W / 2 - 5, CAR_L, 2);
     ctx.restore();
     const x = p.x - cx, y = p.y - cy;
@@ -215,7 +254,7 @@ function drawCars(cx, cy) {
 
 function drawLoot(cx, cy) {
   for (const l of loot.values()) {
-    ctx.fillStyle = LOOT_COLORS[l.type] || '#888';
+    ctx.fillStyle = COLORS.loot[l.type] || '#888';
     ctx.beginPath();
     ctx.arc(l.x - cx, l.y - cy, 6, 0, Math.PI * 2);
     ctx.fill();
@@ -231,20 +270,30 @@ function drawBullets(cx, cy) {
   }
 }
 
+function drawCenteredText(text) {
+  ctx.font = 'bold 22px system-ui, sans-serif';
+  ctx.fillStyle = '#ff4444';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, VIEW_W / 2, VIEW_H / 2);
+  ctx.textAlign = 'left';
+}
+
 function drawHud() {
   const m = players.get(meId);
-  ctx.fillStyle = 'rgba(6,12,6,0.7)';
-  ctx.fillRect(10, 10, 520, 74);
+  ctx.fillStyle = COLORS.hud;
+  ctx.fillRect(10, 10, 560, 80);
   ctx.fillStyle = '#e7f3e2';
   const lines = [];
   if (m) {
-    lines.push('HP ' + m.hp + '/3   Патроны ' + m.gunMun + '   Собрано ' + m.collected +
-      (mission ? '   Миссия ' + mission.count + '/' + mission.goal : ''));
+    lines.push((CARS[m.carId] || '') + ' · HP ' + m.hp + '/3   Патроны ' + m.gunMun +
+      '   Собрано ' + m.collected + missionSummary());
   }
   lines.push('WASD — единич, Пробел / ПКМ — стрелять, Enter — выздесть');
   let y = 30;
   for (const line of lines) { ctx.fillText(line, 18, y); y += 20; }
   for (let i = 0; i < logLines.length; i++) ctx.fillText(logLines[i], 18, 50 + i * 20);
+  if (m && m.hp <= 0) drawCenteredText('ПОГИБЛИ — Enter, чтобы выздесть');
 }
 
 function loop() {

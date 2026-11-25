@@ -25,7 +25,12 @@ const WORLD_W = GRID_W * TILE; // 1920
 const WORLD_H = GRID_H * TILE; // 1280
 const DEPOT = { x: WORLD_W / 2, y: WORLD_H / 2 };
 
-const CAR = { maxSpeed: 150, maxAccel: 80, turn: 3.6, friction: 0.45, gunRate: 140 };
+const CARS = [
+  { id: 'light', name: 'Light Auto', speed: 0.95, accel: 0.9, turn: 5.0 },
+  { id: 'medium', name: 'Medium Auto', speed: 1.15, accel: 0.7, turn: 4.3 },
+  { id: 'heavy', name: 'Heavy Auto', speed: 0.85, accel: 0.55, turn: 3.5 },
+];
+const CAR = { gunRate: 140, friction: 0.45 };
 const WORLD_STATE = { depot: DEPOT, worldW: WORLD_W, worldH: WORLD_H };
 
 function onRoad(x, y) {
@@ -61,9 +66,9 @@ function newLoot(type) {
   return { id: nextId++, x: p.x, y: p.y, type };
 }
 
+const LOOT_SPAWN_TYPES = ['ammo', 'ammo', 'food', 'food', 'food', 'medkit', 'gun', 'speed', 'car'];
 function spawnInitialLoot() {
-  for (let i = 0; i < 9; i++) loot.push(newLoot(i < 6 ? 'ammo' : 'food'));
-  for (let i = 0; i < 2; i++) loot.push(newLoot('upgrade'));
+  for (let i = 0; i < 10; i++) loot.push(newLoot(LOOT_SPAWN_TYPES[i % LOOT_SPAWN_TYPES.length]));
 }
 
 function makePlayer(id) {
@@ -71,7 +76,8 @@ function makePlayer(id) {
   return {
     id, nick: 'Игрок ' + id, x: sp.x, y: sp.y, ang: Math.random() * 6.28,
     vx: 0, vy: 0, inputs: { steer: 0, throttle: 0, brake: 0 },
-    hp: 3, gunLevel: 0, gunMun: 30, collected: 0, speedUp: 0, lastShoot: 0
+    hp: 3, gunLevel: 0, gunMun: 30, collected: 0, speedUp: 0,
+    carId: 0, spawnTime: Date.now(), lastMissionStart: 0, deadTime: 0, lastShoot: 0
   };
 }
 
@@ -80,7 +86,8 @@ function playerSnapshot(p) {
   return {
     id: p.id, nick: p.nick, x: p.x, y: p.y, ang: p.ang, hp: p.hp,
     gunLevel: p.gunLevel, gunMun: p.gunMun, collected: p.collected, speedUp: p.speedUp,
-    missionId: m ? m.id : null, missionCount: m ? m.count : 0
+    carId: p.carId,
+    missionId: m ? m.id : null, missionType: m ? m.type : null, missionCount: m ? m.count : 0
   };
 }
 
@@ -88,12 +95,13 @@ function playerSnapshot(p) {
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
 
 function updatePlayerPhysics(p, dt) {
-  p.ang += p.inputs.steer * CAR.turn * dt;
+  const car = CARS[p.carId] || CARS[0];
+  p.ang += p.inputs.steer * car.turn * dt;
   const th = p.inputs.throttle - p.inputs.brake;
-  p.vx += Math.sin(p.ang) * th * CAR.maxAccel * dt;
-  p.vy += -Math.cos(p.ang) * th * CAR.maxAccel * dt;
+  p.vx += Math.sin(p.ang) * th * car.accel * dt;
+  p.vy += -Math.cos(p.ang) * th * car.accel * dt;
   const sp = Math.hypot(p.vx, p.vy);
-  const max = CAR.maxSpeed * (1 + 0.35 * p.speedUp);
+  const max = car.speed * (1 + 0.25 * p.speedUp);
   if (sp > max) { p.vx = (p.vx / sp) * max; p.vy = (p.vy / sp) * max; }
   p.vx *= 1 - CAR.friction * dt;
   p.vy *= 1 - CAR.friction * dt;
@@ -119,25 +127,44 @@ function onLoot(p, id) {
   p.collected++;
   if (missions.active) missions.active.count++;
   if (item.type === 'ammo') p.gunMun += 20;
-  if (item.type === 'upgrade' && p.speedUp < 3) p.speedUp++;
+  if (item.type === 'food') p.hp = Math.min(3, p.hp + 1);
+  if (item.type === 'medkit') p.hp = Math.min(3, p.hp + 2);
+  if (item.type === 'gun' && p.gunLevel < 3) p.gunLevel++;
+  if (item.type === 'speed' && p.speedUp < 3) p.speedUp++;
+  if (item.type === 'car' && p.carId < CARS.length - 1) p.carId++;
   maybeStartMission(p);
 }
 
 function maybeStartMission(p) {
   if (missions.active || p.collected < 2) return;
-  missions.active = { id: nextId++, goal: 3, count: 0 };
-  broadcast({ t: 'mission', mission: { id: missions.active.id, goal: 3 } });
+  missions.active = { id: nextId++, type: 'deliver', goal: 3, count: 0 };
+  p.lastMissionStart = Date.now();
+  broadcast({ t: 'mission', mission: { id: missions.active.id, type: 'deliver', goal: 3 } });
 }
 
 function checkDepot(p) {
-  if (!missions.active || dist(p, DEPOT) > 60) return;
+  if (!missions.active || missions.active.type !== 'deliver') return;
+  if (dist(p, DEPOT) > 60) return;
   if (missions.active.count < missions.active.goal) return;
   const done = missions.active;
   missions.active = null;
-  p.gunLevel = Math.min(3, p.gunLevel + 1);
-  p.speedUp = Math.min(3, p.speedUp + 1);
   p.collected = 0;
-  broadcast({ t: 'missionDone', missionId: done.id, reward: { gunLevel: p.gunLevel, speedUp: p.speedUp } });
+  p.lastMissionStart = Date.now(); // следующий задачи после этого будут с таймаутом
+  broadcast({ t: 'missionDone', missionId: done.id, type: done.type });
+}
+
+// миссия выживания: запускается после того, как доставка завершилась
+function maybeStartSurvival() {
+  if (missions.active) return;
+  if (players.size === 0) return;
+  const now = Date.now();
+  for (const p of players.values()) {
+    if (now - p.lastMissionStart > 40000 && now - p.spawnTime > 15000) {
+      missions.active = { id: nextId++, type: 'survive', goal: 20, startedAt: now };
+      broadcast({ t: 'mission', mission: { id: missions.active.id, type: 'survive', goal: 20 } });
+      return;
+    }
+  }
 }
 
 // ---------------- серверный цикл ----------------
@@ -162,7 +189,21 @@ setInterval(() => {
     }
     if (b.x < -100 || b.x > WORLD_W + 100 || b.y < -100 || b.y > WORLD_H + 100) bullets.delete(id);
   }
-  for (const p of players.values()) checkDepot(p);
+  for (const p of players.values()) {
+    if (p.hp <= 0 && !p.deadTime) p.deadTime = Date.now();
+    checkDepot(p);
+  }
+  maybeStartSurvival();
+  const active = missions.active;
+  if (active && active.type === 'survive' && now - active.startedAt >= active.goal * 1000) {
+    const done = active;
+    missions.active = null;
+    for (const p of players.values()) {
+      p.gunLevel = Math.min(3, p.gunLevel + 1);
+      p.speedUp = Math.min(3, p.speedUp + 1);
+    }
+    broadcast({ t: 'missionDone', missionId: done.id, type: done.type });
+  }
   broadcast({ t: 'players', list: [...players.values()].map(playerSnapshot) });
   if (bullets.size) broadcast({ t: 'bullets', bs: [...bullets.values()].map((b) => ({ id: b.id, owner: b.owner, x: b.x, y: b.y, ang: b.ang })) });
 }, 40);
