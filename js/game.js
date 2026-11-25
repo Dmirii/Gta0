@@ -88,7 +88,10 @@ class GameScene extends Phaser.Scene {
     this.socket = new WebSocket(wsUrl());
     this.socket.onopen = () => this.send({ t: 'hi', nick: getNick() });
     this.socket.onerror = () => this.log('Нет соединения с сервером');
-    this.socket.onclose = () => this.log('Сервер недоступен');
+    this.socket.onclose = () => {
+      this.online = false;
+      if (!this.meId) this.log('Сервер недоступен — игра без мультиплеера');
+    };
     this.socket.onmessage = (ev) => { try { this.onMessage(JSON.parse(ev.data)); } catch { /* ignore */ } };
 
     this.keys = this.input.keyboard.addKeys({ w: 'KeyW', a: 'KeyA', s: 'KeyS', d: 'KeyD', space: 'Space' });
@@ -137,6 +140,7 @@ class GameScene extends Phaser.Scene {
   onMessage(msg) {
     if (msg.t === 'welcome') {
       this.meId = msg.id;
+      this.online = true;
     } else if (msg.t === 'world') {
       for (const p of msg.players) this.players.set(p.id, p);
       for (const it of msg.loot) this.loot.set(it.id, it);
@@ -226,6 +230,7 @@ class GameScene extends Phaser.Scene {
         ' · HP ' + me.hp + '/3   Патроны ' + me.gunMun + '   Собрано ' + me.collected + missionSummary(this.mission));
     }
     lines.push('WASD — единич, Пробел / ПКМ — стрелять, Enter — выздесть');
+    lines.push(this.online ? 'Онлайн — ' + this.players.size + ' игрок(ов)' : 'Офлайн (сервер недоступен)');
     this.hudText.setText(lines.join('\n'));
   }
 }
