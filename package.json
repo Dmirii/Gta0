@@ -1,0 +1,14 @@
+{
+  "name": "gta0",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Online retro GTA 0 — top-down 2D driving/loot/upgrade prototype",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js"
+  },
+  "dependencies": {
+    "ws": "^8.23.0"
+  }
+}
