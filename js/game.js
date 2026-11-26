@@ -283,7 +283,7 @@
   if (typeof Image !== 'undefined') {
     driverSheet = new Image();
     driverSheet.onload = () => { driverSheetReady = true; };
-    driverSheet.src = 'assets/driver-sheet.jpg?v=7';
+    driverSheet.src = 'assets/driver-sheet.jpg?v=8';
   }
 
   const DRIVER_QUOTES = {
@@ -345,10 +345,11 @@
       'Реальность трещит… я в потоке.',
       'Очки поймали сигнал Матрицы.'
     ],
-    neoBleed: [
-      'Снова этот зелёный код в линзах…',
-      'Показалось? Стены мерцают цифрами.',
-      'Система пытается пробиться сквозь шум.'
+    hack: [
+      'Взламываю узел… код пошёл в линзы.',
+      'Подключился к терминалу. Держим точку.',
+      'Взлом узла Системы. Очки ловят поток.',
+      'Расшифровка идёт — не сходим с позиции.'
     ],
     pause: [
       'Перекур в кабине…',
@@ -391,8 +392,9 @@
     canteenTimer: 0,
     canteenDur: 2.9,
     neoTimer: 0,
-    subliminalNeoTimer: 0,
     codeFlashTimer: 0,
+    missionCodeGlow: 0,
+    wasHacking: false,
     glitchSliceTimer: 0,
     vaultAuraTimer: 0,
 
@@ -406,7 +408,6 @@
     glanceDur: 0,
 
     autoSipCooldown: 22,
-    autoCodeCooldown: 12,
     calmDriveTimer: 0,
     clickCycle: 0,
 
@@ -446,9 +447,10 @@
     driverCam.hurtTimer = 0;
     driverCam.canteenTimer = 0;
     driverCam.neoTimer = 0;
-    driverCam.subliminalNeoTimer = 0;
-    driverCam.codeFlashTimer = 0.7;
-    driverCam.glitchSliceTimer = 0.16;
+    driverCam.codeFlashTimer = 0;
+    driverCam.missionCodeGlow = 0;
+    driverCam.wasHacking = false;
+    driverCam.glitchSliceTimer = 0;
     driverCam.vaultAuraTimer = 0;
     driverCam.muzzleFlash = 0;
     driverCam.explosionFlash = 0;
@@ -458,7 +460,6 @@
     driverCam.steerSmooth = 0;
     driverCam.headYaw = 0;
     driverCam.autoSipCooldown = 20 + Math.random() * 12;
-    driverCam.autoCodeCooldown = 10 + Math.random() * 8;
     driverCam.calmDriveTimer = 0;
     driverCam.bpm = 78;
     driverCam.targetBpm = 78;
@@ -474,9 +475,6 @@
     driverCam.muzzleColor = isPlasma ? '#4cff9c' : '#ffb44c';
     driverCam.joltY = Math.min(2.2, driverCam.joltY + 0.9);
     driverCam.calmDriveTimer = 0;
-    if (isPlasma) {
-      driverCam.codeFlashTimer = Math.max(driverCam.codeFlashTimer, 0.35);
-    }
   }
 
   function driverOnExplosion(wx, wy, isAgent) {
@@ -501,9 +499,8 @@
     driverCam.joltX += (Math.random() - 0.5) * 9;
     driverCam.joltY += (Math.random() - 0.5) * 7;
     driverCam.calmDriveTimer = 0;
-    if (dmg >= 8) {
-      driverCam.glitchSliceTimer = Math.max(driverCam.glitchSliceTimer, 0.2);
-      driverCam.codeFlashTimer = Math.max(driverCam.codeFlashTimer, 0.45);
+    if (dmg >= 10) {
+      driverCam.glitchSliceTimer = Math.max(driverCam.glitchSliceTimer, 0.16);
     }
     if (driverCam.quoteTimer <= 1.2) {
       driverSetQuote(pickQuote(isCrash ? DRIVER_QUOTES.crash : DRIVER_QUOTES.hurt), 3.2);
@@ -594,7 +591,6 @@
     if (driverCam.hurtTimer > 0) driverCam.hurtTimer = Math.max(0, driverCam.hurtTimer - dt);
     if (driverCam.canteenTimer > 0) driverCam.canteenTimer = Math.max(0, driverCam.canteenTimer - dt);
     if (driverCam.neoTimer > 0) driverCam.neoTimer = Math.max(0, driverCam.neoTimer - dt);
-    if (driverCam.subliminalNeoTimer > 0) driverCam.subliminalNeoTimer = Math.max(0, driverCam.subliminalNeoTimer - dt);
     if (driverCam.codeFlashTimer > 0) driverCam.codeFlashTimer = Math.max(0, driverCam.codeFlashTimer - dt);
     if (driverCam.glitchSliceTimer > 0) driverCam.glitchSliceTimer = Math.max(0, driverCam.glitchSliceTimer - dt);
     if (driverCam.vaultAuraTimer > 0) driverCam.vaultAuraTimer = Math.max(0, driverCam.vaultAuraTimer - dt);
@@ -630,28 +626,34 @@
     }
     driverCam.steerSmooth += (rawSteer - driverCam.steerSmooth) * Math.min(1, 10 * dt);
 
-    // Проверка на взлом терминала Матрицы или близость Агента
-    const isHacking = isPlaying && mission && mission.type === 'hack' && mission.target && dist(player, mission.target) <= mission.target.radius;
+    // Матрица на очках — только при реальном действии в миссии (взлом узла / уход от Следа с Агентом) или в Фокусе Матрицы!
+    const hackDist = (isPlaying && mission && mission.type === 'hack' && mission.target)
+      ? dist(player, mission.target)
+      : Infinity;
+    const isHacking = isPlaying && mission && mission.type === 'hack' && mission.target && hackDist <= mission.target.radius;
     const radHigh = isPlaying && (player.rad >= 45 || world.getRadIntensity(player.x, player.y) > 0.12);
 
-    // Спонтанные «проблески цифр в очках» и короткий проблеск Нео
-    if (!isDead) {
-      driverCam.autoCodeCooldown -= dt;
-      if (driverCam.autoCodeCooldown <= 0) {
-        driverCam.autoCodeCooldown = 11 + Math.random() * 11;
-        driverCam.codeFlashTimer = Math.max(driverCam.codeFlashTimer, 0.9 + Math.random() * 0.7);
-        if (isPlaying && (matrixBreach > 0.22 || Math.random() < 0.32)) {
-          driverCam.subliminalNeoTimer = 0.42;
-          driverCam.glitchSliceTimer = Math.max(driverCam.glitchSliceTimer, 0.16);
-          if (driverCam.quoteTimer <= 0.5 && Math.random() < 0.55) {
-            driverSetQuote(pickQuote(DRIVER_QUOTES.neoBleed), 3.4);
-          }
+    let targetMissionGlow = 0;
+    if (isHacking) {
+      targetMissionGlow = 1.0;
+      if (!driverCam.wasHacking) {
+        driverCam.glitchSliceTimer = Math.max(driverCam.glitchSliceTimer, 0.22);
+        driverSetQuote(pickQuote(DRIVER_QUOTES.hack), 4.2);
+      }
+    } else if (isPlaying && mission && mission.type === 'hack' && hackDist < 185) {
+      // На подъезде к целевому узлу взлома очки начинают ловить цифровой сигнал
+      targetMissionGlow = clamp((1 - hackDist / 185) * 0.85, 0, 0.78);
+    } else if (isPlaying && mission && mission.type === 'survive') {
+      // Во время миссии «Уход от Следа Матрицы» при сближении Агента на очках пробегает сигнал Системы
+      for (const e of enemies) {
+        if (e.kind === 'agent') {
+          const ad = dist(player, e);
+          if (ad < 260) targetMissionGlow = Math.max(targetMissionGlow, (1 - ad / 260) * 0.88);
         }
       }
-      if (matrixBreach > 0.35) {
-        driverCam.codeFlashTimer = Math.max(driverCam.codeFlashTimer, 0.35);
-      }
     }
+    driverCam.wasHacking = isHacking;
+    driverCam.missionCodeGlow += (targetMissionGlow - driverCam.missionCodeGlow) * Math.min(1, 7 * dt);
 
     // Спонтанное питьё из фляжки Убежища на спокойной дороге (или изредка в паузе)
     if (!isDead) {
@@ -727,7 +729,7 @@
     let nextMood = isPlaying ? 'ДОРОГА' : (gameState === 'paused' ? 'ПАУЗА' : 'ОЖИДАНИЕ');
     let hardCut = false;
 
-    const neoAwake = !isDead && (matrixActive || isHacking || driverCam.neoTimer > 0 || driverCam.subliminalNeoTimer > 0);
+    const neoAwake = !isDead && (matrixActive || isHacking || driverCam.neoTimer > 0);
 
     if (isDead) {
       nextPersona = 'dead';
@@ -736,7 +738,7 @@
     } else if (neoAwake) {
       nextFrame = DRV.NEO;
       nextPersona = 'neo';
-      nextMood = matrixActive ? 'МАТРИЦА' : (isHacking ? 'ВЗЛОМ' : 'СИГНАЛ');
+      nextMood = isHacking ? 'ВЗЛОМ УЗЛА' : (matrixActive ? 'МАТРИЦА' : 'СИГНАЛ');
       hardCut = driverCam.curFrame !== DRV.NEO;
     } else if (driverCam.hurtTimer > 0) {
       nextFrame = DRV.HURT;
@@ -1015,13 +1017,13 @@
       driverCtx.fillRect(0, 0, w, h);
     }
 
-    // 1) Живые цифры Матрицы в стёклах очков на лбу (работают и при пробуждении Нео, и при проблесках кода!)
+    // 1) Живые цифры Матрицы в стёклах очков — только при действии в миссии (взлом узла / След с Агентом) или в Фокусе Матрицы!
     const isNeoFrame = driverCam.curFrame === DRV.NEO;
     const goggleCodeIntensity = isNeoFrame
       ? 1.0
       : Math.max(
-          driverCam.codeFlashTimer > 0 ? clamp(driverCam.codeFlashTimer, 0, 0.95) : 0,
-          matrixBreach > 0.25 ? (matrixBreach - 0.25) * 0.95 : 0
+          driverCam.missionCodeGlow,
+          driverCam.codeFlashTimer > 0 ? clamp(driverCam.codeFlashTimer, 0, 0.95) : 0
         );
     const headShiftX = driverCam.curFrame === DRV.LEFT
       ? -0.065
@@ -1559,13 +1561,15 @@
       card.className = 'upg-card';
       const canBuy = !u.maxed && player.caps >= u.cost;
       card.innerHTML = `
-        <div class="upg-head">
-          <span class="upg-name">${escapeHtml(u.name)}</span>
-          <span class="upg-lvl">${escapeHtml(u.lvl)}</span>
+        <div class="upg-main">
+          <div class="upg-head">
+            <span class="upg-name">${escapeHtml(u.name)}</span>
+            <span class="upg-lvl">${escapeHtml(u.lvl)}</span>
+          </div>
+          <div class="upg-desc">${escapeHtml(u.desc)}</div>
         </div>
-        <div class="upg-desc">${escapeHtml(u.desc)}</div>
-        <button class="btn-small" type="button" ${canBuy ? '' : 'disabled'}>
-          ${u.maxed ? 'МАКСИМУМ' : `УСТАНОВИТЬ · ${u.cost} ₵`}
+        <button class="btn-small upg-buy-btn" type="button" ${canBuy ? '' : 'disabled'}>
+          ${u.maxed ? 'MAX' : `${u.cost} ₵`}
         </button>
       `;
       const btn = card.querySelector('button');
@@ -3319,11 +3323,11 @@
     const emergencyFree = player.caps < 15 && player.hp < player.maxHp * 0.45;
     el.btnDepotService.disabled = !player.inDepot || (!emergencyFree && player.caps < 15);
     el.btnDepotService.textContent = emergencyFree
-      ? 'АВАРИЙНЫЙ РЕМОНТ (БЕСПЛАТНО)'
-      : 'РЕМОНТ + АНТИРАД (15 ₵)';
+      ? 'АВАРИЙНО (0 ₵)'
+      : 'СЕРВИС (15 ₵)';
     el.uiDepotHint.textContent = player.inDepot
-      ? 'Вы в зоне Депо! Нажмите [E] или кнопку ниже для ремонта.'
-      : 'Заедьте в центр карты (Бункер-Депо) для ремонта и снятия RAD.';
+      ? 'В зоне Депо! Нажмите [E] или кнопку выше для ремонта.'
+      : 'Заедьте в Бункер-Депо для ремонта и снятия RAD.';
 
     // Миссия
     if (mission) {

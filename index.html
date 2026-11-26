@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#060b07">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>VAULT RUNNER // Wasteland Matrix</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=7">
-  <link rel="stylesheet" href="css/style.css?v=7">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=8">
+  <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body class="crt-on">
   <div id="app">
@@ -81,7 +81,7 @@
           <div class="terminal-modal">
             <div class="modal-tag">ROBCO INDUSTRIES // VAULT-OS 2077 · MATRIX LINK</div>
             <div id="modal-logo-wrap" class="modal-logo-wrap">
-              <img id="modal-logo" src="assets/logo.png?v=7" alt="VAULT RUNNER">
+              <img id="modal-logo" src="assets/logo.png?v=8" alt="VAULT RUNNER">
             </div>
             <h1 id="modal-title" class="hidden">VAULT RUNNER</h1>
             <p id="modal-subtitle">
@@ -241,9 +241,11 @@
           </div>
 
           <div class="depot-banner" id="ui-depot-banner">
-            <div class="depot-title">БУНКЕР-ДЕПО (ЦЕНТР)</div>
+            <div class="depot-top">
+              <div class="depot-title">БУНКЕР-ДЕПО</div>
+              <button id="btn-depot-service" class="btn-small" type="button" disabled>СЕРВИС (15 ₵)</button>
+            </div>
             <div class="depot-hint" id="ui-depot-hint">Заедьте в зону Депо для ремонта и снятия радиации</div>
-            <button id="btn-depot-service" class="btn-small" type="button" disabled>РЕМОНТ + АНТИРАД (15 ₵)</button>
           </div>
 
           <div class="log-box">
@@ -277,13 +279,15 @@
             </div>
           </div>
 
-          <div class="mission-stats-row">
-            <span>ВЫПОЛНЕНО КОНТРАКТОВ:</span>
-            <strong id="ui-missions-done">0</strong>
-          </div>
-          <div class="mission-stats-row">
-            <span>РЕКОРД СЧЁТА:</span>
-            <strong id="ui-best-score">0</strong>
+          <div class="mission-stats-grid">
+            <div class="mission-stats-row">
+              <span>КОНТРАКТЫ</span>
+              <strong id="ui-missions-done">0</strong>
+            </div>
+            <div class="mission-stats-row">
+              <span>РЕКОРД</span>
+              <strong id="ui-best-score">0</strong>
+            </div>
           </div>
 
           <div class="mini-guide">
@@ -352,8 +356,8 @@
     </aside>
   </div>
 
-  <script defer src="js/audio.js?v=7"></script>
-  <script defer src="js/world.js?v=7"></script>
-  <script defer src="js/game.js?v=7"></script>
+  <script defer src="js/audio.js?v=8"></script>
+  <script defer src="js/world.js?v=8"></script>
+  <script defer src="js/game.js?v=8"></script>
 </body>
 </html>
