@@ -61,6 +61,8 @@
 
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
+  const lightCanvas = document.createElement('canvas');
+  const lightCtx = lightCanvas.getContext('2d');
   const stageWrap = document.getElementById('stage-wrap');
   const minimapCanvas = document.getElementById('minimap');
   const minimapCtx = minimapCanvas.getContext('2d');
@@ -98,6 +100,8 @@
   let skidmarks = [];
   let ghosts = [];
   let floatTexts = [];
+  let lightFlashes = [];
+  let weatherDrops = [];
   let rainCols = [];
   let mission = null;
   let logs = [];
@@ -165,6 +169,7 @@
 
     optSound: document.getElementById('opt-sound'),
     optCrt: document.getElementById('opt-crt'),
+    optNoir: document.getElementById('opt-noir'),
     optRain: document.getElementById('opt-rain'),
     optSidebarLeft: document.getElementById('opt-sidebar-left'),
     optZoom: document.getElementById('opt-zoom'),
@@ -193,12 +198,13 @@
       return {
         sound: saved.sound !== false,
         crt: saved.crt !== false,
+        noir: saved.noir !== false,
         rain: saved.rain !== false,
         sidebarLeft: !!saved.sidebarLeft,
         zoom: clamp(Number(saved.zoom || 1), 0.7, 1.4)
       };
     } catch {
-      return { sound: true, crt: true, rain: true, sidebarLeft: false, zoom: 1.0 };
+      return { sound: true, crt: true, noir: true, rain: true, sidebarLeft: false, zoom: 1.0 };
     }
   }
 
@@ -272,6 +278,7 @@
     skidmarks = [];
     ghosts = [];
     floatTexts = [];
+    lightFlashes = [];
     logs = [];
     enemySpawnTimer = 1.5;
     traceDecayTimer = 0;
@@ -429,6 +436,11 @@
   }
 
   // ==================== СТРЕЛЬБА И ЭФФЕКТЫ ====================
+  function addLightFlash(x, y, radius, color, life) {
+    lightFlashes.push({ x, y, radius, color, life, maxLife: life });
+    if (lightFlashes.length > 24) lightFlashes.shift();
+  }
+
   function fireBullet(owner, x, y, ang, speed, dmg, color, radius) {
     bullets.push({
       owner,
@@ -440,6 +452,7 @@
       radius: radius || 3.5,
       life: 1.35
     });
+    addLightFlash(x, y, 125, color, 0.08);
   }
 
   function spawnBurst(x, y, color, count, speedMax) {
@@ -461,6 +474,7 @@
   function explodeVehicle(x, y, isAgent) {
     AudioFX.explode();
     shakeAmt = Math.min(14, shakeAmt + 8);
+    addLightFlash(x, y, 280, isAgent ? '#39ff88' : '#ff9436', 0.42);
     spawnBurst(x, y, '#ffb84d', 18, 220);
     spawnBurst(x, y, isAgent ? '#39ff88' : '#ff4d5a', 14, 170);
     spawnBurst(x, y, '#8aa090', 8, 90);
@@ -1113,78 +1127,137 @@
       f.life -= dt;
       if (f.life <= 0) floatTexts.splice(i, 1);
     }
+    for (let i = lightFlashes.length - 1; i >= 0; i--) {
+      lightFlashes[i].life -= dt;
+      if (lightFlashes[i].life <= 0) lightFlashes.splice(i, 1);
+    }
+    // Редкие искры, поднимающиеся из ближайших горящих бочек
+    if (player && Math.random() < 0.25) {
+      for (const f of world.fires) {
+        if (Math.abs(f.x - cam.x) < viewW && Math.abs(f.y - cam.y) < viewH && Math.random() < 0.14) {
+          particles.push({
+            x: f.x + (Math.random() - 0.5) * 8,
+            y: f.y + (Math.random() - 0.5) * 8,
+            vx: -14 + Math.random() * 28,
+            vy: -24 - Math.random() * 24,
+            size: 1.8 + Math.random() * 2,
+            color: Math.random() < 0.5 ? '#ffb84d' : '#ff6828',
+            life: 0.45 + Math.random() * 0.35,
+            maxLife: 0.8
+          });
+        }
+      }
+    }
   }
 
-  // ==================== ЦИФРОВОЙ ДОЖДЬ МАТРИЦЫ ====================
+  // ==================== ПОГОДА И ЦИФРОВОЙ ДОЖДЬ МАТРИЦЫ ====================
   function initDigitalRain() {
-    const colCount = Math.max(12, Math.floor(viewW / 44));
+    const colCount = Math.max(10, Math.floor(viewW / 54));
     rainCols = [];
     for (let i = 0; i < colCount; i++) {
       rainCols.push({
         x: (i + 0.5) * (viewW / colCount),
         y: Math.random() * viewH,
         speed: 55 + Math.random() * 95,
-        len: 4 + Math.floor(Math.random() * 6),
+        len: 4 + Math.floor(Math.random() * 5),
         chIdx: Math.floor(Math.random() * MATRIX_CHARS.length)
+      });
+    }
+    // Ночной косой дождь + тлеющий пепел пустоши
+    const dropCount = Math.min(85, Math.max(28, Math.floor((viewW * viewH) / 14000)));
+    weatherDrops = [];
+    for (let i = 0; i < dropCount; i++) {
+      const isEmber = i % 5 === 0;
+      weatherDrops.push({
+        x: Math.random() * viewW,
+        y: Math.random() * viewH,
+        isEmber,
+        speed: isEmber ? (24 + Math.random() * 32) : (320 + Math.random() * 240),
+        len: isEmber ? (2 + Math.random() * 2) : (10 + Math.random() * 14),
+        alpha: isEmber ? (0.35 + Math.random() * 0.4) : (0.09 + Math.random() * 0.14)
       });
     }
   }
 
   function updateDigitalRain(dt) {
     if (!prefs.rain) return;
-    const mult = matrixActive ? 2.4 : 0.7;
+    const mult = matrixActive ? 2.1 : 0.7;
     for (const c of rainCols) {
       c.y += c.speed * mult * dt;
       if (Math.random() < 0.14) c.chIdx = (c.chIdx + 1) % MATRIX_CHARS.length;
-      if (c.y - c.len * 18 > viewH) {
-        c.y = -20 - Math.random() * 140;
+      if (c.y - c.len * 18 > viewH) c.y = -20 - Math.random() * 140;
+    }
+    const wMult = matrixActive ? 0.25 : 1.0;
+    for (const d of weatherDrops) {
+      if (d.isEmber) {
+        d.x += (18 + Math.sin(elapsed * 2 + d.y * 0.02) * 14) * dt * wMult;
+        d.y -= d.speed * dt * wMult;
+        if (d.y < -10) { d.y = viewH + 10; d.x = Math.random() * viewW; }
+        if (d.x > viewW + 10) d.x = -10;
+      } else {
+        d.x -= d.speed * 0.22 * dt * wMult;
+        d.y += d.speed * dt * wMult;
+        if (d.y > viewH + 20) { d.y = -20; d.x = Math.random() * (viewW + 120); }
+        if (d.x < -20) d.x = viewW + 20;
       }
     }
   }
 
-  // ==================== РЕНДЕР ИГРОВОГО ПОЛЯ ====================
+  // ==================== РЕНДЕР ИГРОВОГО ПОЛЯ (2.5D + КИБЕР-НУАР СВЕТ) ====================
   function render() {
     ctx.save();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#060c08';
+    ctx.fillStyle = '#070a0d';
     ctx.fillRect(0, 0, viewW, viewH);
 
     const z = effectiveZoom();
     const sx = shakeAmt > 0 ? (Math.random() - 0.5) * shakeAmt : 0;
     const sy = shakeAmt > 0 ? (Math.random() - 0.5) * shakeAmt : 0;
 
-    // Мировые координаты
+    // Видимые мировые границы (для отсечения невидимых объектов)
+    const halfW = (viewW / 2) / z + 260;
+    const halfH = (viewH / 2) / z + 260;
+    const visMinX = cam.x - halfW;
+    const visMaxX = cam.x + halfW;
+    const visMinY = cam.y - halfH;
+    const visMaxY = cam.y + halfH;
+
+    // --- СЛОЙ 1: УЛИЧНЫЙ УРОВЕНЬ (до освещения) ---
     ctx.save();
     ctx.translate(viewW / 2 + sx, viewH / 2 + sy);
     ctx.scale(z, z);
     ctx.translate(-cam.x, -cam.y);
 
-    // 1. Запечённый город (1 drawImage на кадр!)
+    // 1. Запечённый текстурный асфальт, тротуары, Депо, кратеры и остовы авто
     ctx.drawImage(world.mapCanvas, 0, 0);
 
-    // 2. Анимация Матричных терминалов и цели взлома
+    // 2. Мокрые лужи с отражением неона и кругами дождя
+    drawPuddles(visMinX, visMaxX, visMinY, visMaxY);
+
+    // 3. Разломы кода Матрицы на асфальте + терминалы
+    drawMatrixRifts(visMinX, visMaxX, visMinY, visMaxY);
     drawTerminals();
 
-    // 3. Следы шин
+    // 4. Следы шин
     for (const sk of skidmarks) {
       ctx.save();
       ctx.translate(sk.x, sk.y);
       ctx.rotate(sk.ang);
-      ctx.fillStyle = `rgba(10, 14, 11, ${Math.min(0.45, sk.life * 0.12)})`;
+      ctx.fillStyle = `rgba(6, 8, 10, ${Math.min(0.55, sk.life * 0.14)})`;
       ctx.fillRect(-5, -6, 10, 3);
       ctx.fillRect(-5, 3, 10, 3);
       ctx.restore();
     }
 
-    // 4. Лут
-    for (const it of loot) drawLootItem(it);
-
-    // 5. Цифровые фантомы машины в режиме Матрицы
+    // 5. Лут, цифровые фантомы, враги и машина игрока
+    for (const it of loot) {
+      if (it.x > visMinX && it.x < visMaxX && it.y > visMinY && it.y < visMaxY) drawLootItem(it);
+    }
     for (const g of ghosts) {
       ctx.save();
       ctx.translate(g.x, g.y);
       ctx.rotate(g.ang);
-      const a = (g.life / g.maxLife) * 0.4;
+      const a = (g.life / g.maxLife) * 0.42;
       ctx.strokeStyle = `rgba(57, 255, 136, ${a})`;
       ctx.fillStyle = `rgba(57, 255, 136, ${a * 0.35})`;
       ctx.lineWidth = 1.5;
@@ -1192,14 +1265,38 @@
       ctx.strokeRect(-g.len / 2, -g.wid / 2, g.len, g.wid);
       ctx.restore();
     }
+    for (const e of enemies) {
+      if (e.x > visMinX && e.x < visMaxX && e.y > visMinY && e.y < visMaxY) drawEnemyCar(e);
+    }
+    if (player && player.hp > 0) drawPlayerCar();
 
-    // 6. Враги
-    for (const e of enemies) drawEnemyCar(e);
+    ctx.restore(); // выход из мировых координат для наложения карты света
 
-    // 7. Автонаводка (маркер цели на мобильном)
+    // --- СЛОЙ 2: ДИНАМИЧЕСКАЯ КАРТА НОЧНОГО ОСВЕЩЕНИЯ (multiply) ---
+    if (prefs.noir) {
+      renderNoirLightmap(z, sx, sy, visMinX, visMaxX, visMinY, visMaxY);
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.drawImage(lightCanvas, 0, 0, viewW, viewH);
+      ctx.restore();
+    }
+
+    // --- СЛОЙ 3: 2.5D ПЕРСПЕКТИВНЫЕ ЗДАНИЯ + СВЕТЯЩИЕСЯ ЭФФЕКТЫ (поверх тьмы!) ---
+    ctx.save();
+    ctx.translate(viewW / 2 + sx, viewH / 2 + sy);
+    ctx.scale(z, z);
+    ctx.translate(-cam.x, -cam.y);
+
+    // 2.5D здания GTA 2 (фасады со светящимися окнами, крыши, неоновые вывески и маячки)
+    drawBuildings25D(visMinX, visMaxX, visMinY, visMaxY);
+
+    // Пламя в бочках, светящиеся плафоны фонарей и светофоры
+    drawStreetEmissives(visMinX, visMaxX, visMinY, visMaxY);
+
+    // Автонаводка (маркер цели на мобильном)
     if (lastAutoTarget) {
       ctx.save();
-      ctx.strokeStyle = 'rgba(255, 77, 90, 0.85)';
+      ctx.strokeStyle = 'rgba(255, 77, 90, 0.9)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(lastAutoTarget.x, lastAutoTarget.y, 26 + Math.sin(elapsed * 10) * 3, 0, Math.PI * 2);
@@ -1207,17 +1304,14 @@
       ctx.restore();
     }
 
-    // 8. Машина игрока
-    if (player && player.hp > 0) drawPlayerCar();
-
-    // 9. Пули и трассеры
+    // Пули и трассеры (светятся в темноте!)
     for (const b of bullets) {
       ctx.save();
       ctx.strokeStyle = b.color;
-      ctx.lineWidth = b.radius * 0.85;
+      ctx.lineWidth = b.radius * 0.95;
       ctx.beginPath();
       ctx.moveTo(b.x, b.y);
-      ctx.lineTo(b.x - b.vx * 0.025, b.y - b.vy * 0.025);
+      ctx.lineTo(b.x - b.vx * 0.03, b.y - b.vy * 0.03);
       ctx.stroke();
 
       ctx.fillStyle = '#ffffff';
@@ -1227,7 +1321,7 @@
       ctx.restore();
     }
 
-    // 10. Частицы
+    // Огонь, искры и частицы взрывов
     for (const p of particles) {
       ctx.globalAlpha = clamp(p.life / p.maxLife, 0, 1);
       ctx.fillStyle = p.color;
@@ -1235,7 +1329,7 @@
     }
     ctx.globalAlpha = 1;
 
-    // 11. Всплывающий текст
+    // Всплывающий текст
     ctx.font = 'bold 12px monospace';
     ctx.textAlign = 'center';
     for (const f of floatTexts) {
@@ -1249,19 +1343,548 @@
 
     ctx.restore(); // выход из мировых координат
 
-    // 12. Экранный слой: цифровой дождь Матрицы
-    if (prefs.rain) drawDigitalRain();
-
-    // 13. Компас-стрелка к цели миссии (если цель за экраном)
+    // --- СЛОЙ 4: ПОГОДА, ЦИФРОВОЙ ДОЖДЬ МАТРИЦЫ И КОМПАС ---
+    if (prefs.rain) drawWeatherAndMatrixRain();
     if (player && gameState === 'playing') drawMissionCompass();
 
     ctx.restore();
 
-    // 14. Тактический радар (десктоп + мобильный)
+    // Тактический радар
     renderMinimap(minimapCtx, minimapCanvas.width, minimapCanvas.height);
     if (!el.mobileRadarFloat.classList.contains('hidden')) {
       renderMinimap(mobileMinimapCtx, mobileMinimapCanvas.width, mobileMinimapCanvas.height);
     }
+  }
+
+  // ==================== КАРТА ДИНАМИЧЕСКОГО СВЕТА (CYBER-NOIR) ====================
+  function addRadialLight(wx, wy, r, rCol, gCol, bCol, alpha) {
+    const g = lightCtx.createRadialGradient(wx, wy, 2, wx, wy, r);
+    g.addColorStop(0, `rgba(${rCol},${gCol},${bCol},${alpha})`);
+    g.addColorStop(0.45, `rgba(${rCol},${gCol},${bCol},${alpha * 0.42})`);
+    g.addColorStop(1, `rgba(${rCol},${gCol},${bCol},0)`);
+    lightCtx.fillStyle = g;
+    lightCtx.beginPath();
+    lightCtx.arc(wx, wy, r, 0, Math.PI * 2);
+    lightCtx.fill();
+  }
+
+  function addHeadlightCone(wx, wy, ang, len, spread, rgbStr, alpha) {
+    lightCtx.save();
+    lightCtx.translate(wx, wy);
+    lightCtx.rotate(ang);
+    const g = lightCtx.createRadialGradient(12, 0, 8, len * 0.48, 0, len);
+    g.addColorStop(0, `rgba(${rgbStr},${alpha})`);
+    g.addColorStop(0.55, `rgba(${rgbStr},${alpha * 0.45})`);
+    g.addColorStop(1, `rgba(${rgbStr},0)`);
+    lightCtx.fillStyle = g;
+    lightCtx.beginPath();
+    lightCtx.moveTo(10, -8);
+    lightCtx.lineTo(len, -spread);
+    lightCtx.lineTo(len, spread);
+    lightCtx.lineTo(10, 8);
+    lightCtx.closePath();
+    lightCtx.fill();
+    lightCtx.restore();
+  }
+
+  function renderNoirLightmap(z, sx, sy, minX, maxX, minY, maxY) {
+    const lw = lightCanvas.width;
+    const lh = lightCanvas.height;
+    const scale = lw / Math.max(1, viewW);
+
+    lightCtx.save();
+    lightCtx.setTransform(1, 0, 0, 1, 0, 0);
+    lightCtx.globalCompositeOperation = 'source-over';
+    // Глубокий ночной нуар-эмбиент (в режиме Матрицы — фосфорно-зелёный)
+    lightCtx.fillStyle = matrixActive ? '#224433' : '#26303d';
+    lightCtx.fillRect(0, 0, lw, lh);
+
+    lightCtx.translate((viewW / 2 + sx) * scale, (viewH / 2 + sy) * scale);
+    lightCtx.scale(z * scale, z * scale);
+    lightCtx.translate(-cam.x, -cam.y);
+    lightCtx.globalCompositeOperation = 'lighter';
+
+    // Прожекторы Бункера-Депо
+    if (world.depot.x > minX - 240 && world.depot.x < maxX + 240 && world.depot.y > minY - 240 && world.depot.y < maxY + 240) {
+      addRadialLight(world.depot.x, world.depot.y, 260, 255, 196, 110, 0.85);
+    }
+
+    // Уличные фонари (тёплый натрий и холодный кибер-циан, с лёгким мерцанием)
+    for (const sl of world.streetlights) {
+      if (sl.x < minX - 180 || sl.x > maxX + 180 || sl.y < minY - 180 || sl.y > maxY + 180) continue;
+      let mult = 1;
+      if (sl.flicker) {
+        const wave = Math.sin(elapsed * 19 + sl.phase) * Math.sin(elapsed * 7.3 + sl.phase * 2);
+        if (wave > 0.72) mult = 0.22;
+      }
+      if (sl.color === '#38e8ff' || sl.color === '#48e8ff') {
+        addRadialLight(sl.x, sl.y, sl.radius, 64, 224, 255, 0.65 * mult);
+      } else {
+        addRadialLight(sl.x, sl.y, sl.radius, 255, 175, 76, 0.74 * mult);
+      }
+    }
+
+    // Горящие бочки — живой танцующий оранжевый свет
+    for (const f of world.fires) {
+      if (f.x < minX - 160 || f.x > maxX + 160 || f.y < minY - 160 || f.y > maxY + 160) continue;
+      const flick = 0.82 + Math.sin(elapsed * 15 + f.phase) * 0.14 + Math.cos(elapsed * 27 + f.phase) * 0.08;
+      addRadialLight(f.x, f.y, 130 * flick, 255, 118, 36, 0.82);
+    }
+
+    // Свечение радиационных кратеров
+    for (const rz of world.radZones) {
+      if (rz.x < minX - 140 || rz.x > maxX + 140 || rz.y < minY - 140 || rz.y > maxY + 140) continue;
+      const p = 0.75 + 0.25 * Math.sin(elapsed * 2.8 + rz.x * 0.01);
+      addRadialLight(rz.x, rz.y, rz.radius * 1.35, 155, 255, 58, 0.58 * p);
+    }
+
+    // Терминалы и разломы Матрицы
+    for (const term of world.terminals) {
+      if (term.x < minX - 140 || term.x > maxX + 140 || term.y < minY - 140 || term.y > maxY + 140) continue;
+      addRadialLight(term.x, term.y, 125, 57, 255, 136, 0.72);
+    }
+    for (const rf of world.rifts) {
+      if (rf.x < minX - 100 || rf.x > maxX + 100 || rf.y < minY - 100 || rf.y > maxY + 100) continue;
+      addRadialLight(rf.x, rf.y, 82, 48, 255, 132, 0.52);
+    }
+
+    // Слабое свечение лута (виден в ночных переулках)
+    for (const it of loot) {
+      if (it.x < minX || it.x > maxX || it.y < minY || it.y > maxY) continue;
+      addRadialLight(it.x, it.y, 44, 180, 235, 255, 0.36);
+    }
+
+    // Фары врагов (рейдеры — оранжевый свет, Агенты Матрицы — пугающий изумрудный!)
+    for (const e of enemies) {
+      if (e.x < minX - 180 || e.x > maxX + 180 || e.y < minY - 180 || e.y > maxY + 180) continue;
+      if (e.kind === 'agent') {
+        addHeadlightCone(e.x, e.y, e.ang, 220, 68, '57,255,136', 0.82);
+        addRadialLight(e.x, e.y, 52, 57, 255, 136, 0.45);
+      } else {
+        addHeadlightCone(e.x, e.y, e.ang, 175, 54, '255,135,72', 0.68);
+      }
+    }
+
+    // Фары, ореол и стоп-сигналы игрока
+    if (player && player.hp > 0) {
+      const headRgb = matrixActive ? '90,255,175' : '255,244,205';
+      addHeadlightCone(player.x, player.y, player.ang, 320, 108, headRgb, 0.98);
+      addRadialLight(player.x, player.y, 120, 225, 240, 230, 0.58);
+      const bx = player.x - Math.cos(player.ang) * 20;
+      const by = player.y - Math.sin(player.ang) * 20;
+      addRadialLight(bx, by, 44, 255, 52, 68, 0.52);
+    }
+
+    // Вспышки от выстрелов и взрывов
+    for (const fl of lightFlashes) {
+      const k = clamp(fl.life / fl.maxLife, 0, 1);
+      if (fl.color === '#39ff88') addRadialLight(fl.x, fl.y, fl.radius * (0.7 + 0.3 * k), 72, 255, 150, 0.95 * k);
+      else addRadialLight(fl.x, fl.y, fl.radius * (0.7 + 0.3 * k), 255, 185, 92, 0.95 * k);
+    }
+
+    lightCtx.restore();
+  }
+
+  // ==================== 2.5D ПЕРСПЕКТИВНЫЕ ЗДАНИЯ (GTA 2 STYLE) ====================
+  function drawWallWithWindows(b, bx1, by1, bx2, by2, rx1, ry1, rx2, ry2, shadeColor, faceIdx) {
+    // 1. Основной полигон стены
+    ctx.fillStyle = shadeColor;
+    ctx.beginPath();
+    ctx.moveTo(bx1, by1);
+    ctx.lineTo(bx2, by2);
+    ctx.lineTo(rx2, ry2);
+    ctx.lineTo(rx1, ry1);
+    ctx.closePath();
+    ctx.fill();
+
+    // 2. Карнизы и светящиеся окна (билинейная интерполяция по грани)
+    const wallLen = Math.hypot(bx2 - bx1, by2 - by1);
+    const floors = b.style === 'tower' ? 5 : b.style === 'cyber' ? 4 : b.style === 'apt' ? 3 : 2;
+    const cols = Math.max(2, Math.floor(wallLen / 22));
+
+    for (let f = 0; f < floors; f++) {
+      const t0 = 0.14 + (f / floors) * 0.74;
+      const t1 = t0 + (0.44 / floors);
+
+      // Тонкая межэтажная линия
+      const lx1 = bx1 + (rx1 - bx1) * (t0 - 0.03);
+      const ly1 = by1 + (ry1 - by1) * (t0 - 0.03);
+      const lx2 = bx2 + (rx2 - bx2) * (t0 - 0.03);
+      const ly2 = by2 + (ry2 - by2) * (t0 - 0.03);
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.42)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(lx1, ly1);
+      ctx.lineTo(lx2, ly2);
+      ctx.stroke();
+
+      for (let c = 0; c < cols; c++) {
+        const u0 = (c + 0.22) / cols;
+        const u1 = (c + 0.78) / cols;
+
+        // Детерминированный хэш окна (часть светится, часть разбита/тёмная)
+        const wh = Math.abs(Math.sin((b.seed * 913 + faceIdx * 37 + f * 17 + c * 11.7) * 12.9898) * 43758.5453) % 1;
+        if (b.style === 'ruin' && wh > 0.24) continue;
+
+        let winColor = 'rgba(7, 10, 14, 0.78)'; // тёмное/выбитое окно
+        if (wh < 0.22) {
+          winColor = b.style === 'cyber' ? 'rgba(57, 255, 136, 0.82)' : 'rgba(255, 186, 86, 0.85)';
+        } else if (wh < 0.34 && (b.style === 'tower' || b.style === 'cyber')) {
+          winColor = 'rgba(66, 230, 255, 0.78)';
+        } else if (wh < 0.38) {
+          // Мерцающее окно
+          const flick = Math.sin(elapsed * 9 + c * 3 + f) > 0.2 ? 0.72 : 0.18;
+          winColor = `rgba(255, 206, 120, ${flick})`;
+        }
+
+        const p = (u, t) => {
+          const gx = bx1 + (bx2 - bx1) * u;
+          const gy = by1 + (by2 - by1) * u;
+          const tx = rx1 + (rx2 - rx1) * u;
+          const ty = ry1 + (ry2 - ry1) * u;
+          return [gx + (tx - gx) * t, gy + (ty - gy) * t];
+        };
+        const [x0, y0] = p(u0, t0);
+        const [x1, y1] = p(u1, t0);
+        const [x2, y2] = p(u1, t1);
+        const [x3, y3] = p(u0, t1);
+
+        ctx.fillStyle = winColor;
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.lineTo(x3, y3);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    // Неоновая полоса под карнизом на башнях и кибер-зданиях
+    if (b.style === 'tower' || b.style === 'cyber') {
+      ctx.strokeStyle = b.neonColor;
+      ctx.globalAlpha = 0.65;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(rx1, ry1);
+      ctx.lineTo(rx2, ry2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // Тёмный контур ребра стены
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(bx1, by1);
+    ctx.lineTo(rx1, ry1);
+    ctx.moveTo(bx2, by2);
+    ctx.lineTo(rx2, ry2);
+    ctx.stroke();
+  }
+
+  function drawBuildings25D(minX, maxX, minY, maxY) {
+    // 1. Отбираем видимые здания и сортируем от дальних к ближним (корректное перекрытие крыш)
+    const vis = [];
+    for (const b of world.buildings) {
+      if (b.x + b.w < minX || b.x > maxX || b.y + b.h < minY || b.y > maxY) continue;
+      const cx = b.x + b.w * 0.5;
+      const cy = b.y + b.h * 0.5;
+      const d2 = (cx - cam.x) * (cx - cam.x) + (cy - cam.y) * (cy - cam.y);
+      vis.push({ b, d2 });
+    }
+    vis.sort((a, c) => c.d2 - a.d2);
+
+    for (const item of vis) {
+      const b = item.b;
+      const k = b.height * 0.64; // перспектива вытягивания крыши вверх к камере
+      const scale = 1 + k;
+
+      const bx1 = b.x, by1 = b.y;
+      const bx2 = b.x + b.w, by2 = b.y + b.h;
+
+      const rx1 = cam.x + (bx1 - cam.x) * scale;
+      const ry1 = cam.y + (by1 - cam.y) * scale;
+      const rx2 = cam.x + (bx2 - cam.x) * scale;
+      const ry2 = cam.y + (by2 - cam.y) * scale;
+      const rw = rx2 - rx1;
+      const rh = ry2 - ry1;
+
+      // Рисуем только те грани (фасады), которые обращены к камере
+      const darkWall = b.style === 'ruin' ? '#1c1713' : b.style === 'cyber' ? '#0d1714' : '#12171e';
+      const litWall  = b.style === 'ruin' ? '#27201a' : b.style === 'cyber' ? '#14231e' : '#1a212b';
+
+      if (ry1 > by1) drawWallWithWindows(b, bx1, by1, bx2, by1, rx1, ry1, rx2, ry1, litWall, 0);   // Северная стена
+      if (ry2 < by2) drawWallWithWindows(b, bx1, by2, bx2, by2, rx1, ry2, rx2, ry2, darkWall, 1);  // Южная стена
+      if (rx1 > bx1) drawWallWithWindows(b, bx1, by1, bx1, by2, rx1, ry1, rx1, ry2, litWall, 2);   // Западная стена
+      if (rx2 < bx2) drawWallWithWindows(b, bx2, by1, bx2, by2, rx2, ry1, rx2, ry2, darkWall, 3);  // Восточная стена
+
+      // Крыша здания в 2.5D координатах
+      ctx.fillStyle = b.roofTone;
+      ctx.fillRect(rx1, ry1, rw, rh);
+
+      // Парапет крыши (фаска + тень)
+      ctx.strokeStyle = b.style === 'cyber' ? '#264437' : '#2e3640';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(rx1 + 1.5, ry1 + 1.5, rw - 3, rh - 3);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+      ctx.fillRect(rx1 + 9, ry1 + 9, rw - 18, rh - 18);
+
+      // Архитектурные детали на крыше
+      if (b.style === 'tower') {
+        // Вертолётная площадка (для крупных башен) или стеклянный купол
+        if (b.bw >= 2 && b.bh >= 2) {
+          const hx = rx1 + rw * 0.5;
+          const hy = ry1 + rh * 0.5;
+          const hr = Math.min(rw, rh) * 0.28;
+          ctx.strokeStyle = 'rgba(255, 184, 77, 0.45)';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(hx, hy, hr, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = 'rgba(255, 184, 77, 0.5)';
+          ctx.font = `bold ${Math.round(hr * 0.9)}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('H', hx, hy + 1);
+        } else {
+          // Вентиляция и технические блоки
+          ctx.fillStyle = '#202832';
+          ctx.fillRect(rx1 + 16, ry1 + 16, rw * 0.3, rh * 0.22);
+          ctx.strokeStyle = '#33404f';
+          ctx.lineWidth = 1.2;
+          ctx.strokeRect(rx1 + 16, ry1 + 16, rw * 0.3, rh * 0.22);
+        }
+        // Мигающие красные авиационные маячки по углам небоскрёба
+        if (b.beacon) {
+          const blink = Math.sin(elapsed * 4.2 + b.seed * 12) > 0.15;
+          if (blink) {
+            ctx.fillStyle = '#ff384c';
+            ctx.beginPath();
+            ctx.arc(rx1 + 6, ry1 + 6, 3.2, 0, Math.PI * 2);
+            ctx.arc(rx2 - 6, ry2 - 6, 3.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255, 56, 76, 0.28)';
+            ctx.beginPath();
+            ctx.arc(rx1 + 6, ry1 + 6, 10, 0, Math.PI * 2);
+            ctx.arc(rx2 - 6, ry2 - 6, 10, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      } else if (b.style === 'cyber') {
+        // Серверная решётка Матрицы на крыше
+        ctx.strokeStyle = 'rgba(57, 255, 136, 0.32)';
+        ctx.lineWidth = 1.4;
+        ctx.strokeRect(rx1 + 14, ry1 + 14, rw - 28, rh - 28);
+        ctx.fillStyle = 'rgba(57, 255, 136, 0.14)';
+        for (let i = 0; i < 3; i++) {
+          ctx.fillRect(rx1 + 20, ry1 + 22 + i * ((rh - 44) / 3), rw - 40, 6);
+        }
+      } else if (b.style === 'ruin') {
+        // Провал обрушенной крыши + ржавые балки Fallout
+        ctx.fillStyle = '#0a0b0c';
+        ctx.beginPath();
+        ctx.moveTo(rx1 + 18, ry1 + 20);
+        ctx.lineTo(rx2 - 22, ry1 + 16);
+        ctx.lineTo(rx2 - 16, ry2 - 24);
+        ctx.lineTo(rx1 + 26, ry2 - 18);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#5a4331';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(rx1 + 18, ry1 + 26); ctx.lineTo(rx2 - 18, ry2 - 30);
+        ctx.moveTo(rx2 - 26, ry1 + 18); ctx.lineTo(rx1 + 28, ry2 - 20);
+        ctx.stroke();
+      } else {
+        // Водонапорный бак + вентшахты на жилых крышах
+        ctx.fillStyle = '#362d26';
+        ctx.beginPath();
+        ctx.arc(rx1 + rw * 0.3, ry1 + rh * 0.32, Math.min(15, rw * 0.14), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#604e3b';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+        ctx.fillStyle = '#1e252c';
+        ctx.fillRect(rx1 + rw * 0.56, ry1 + rh * 0.54, rw * 0.25, rh * 0.22);
+      }
+
+      // Неоновая вывеска на крыше (с мягким свечением)
+      if (b.signText) {
+        const signFlick = b.seed > 0.78 && Math.sin(elapsed * 22 + b.seed * 40) > 0.85 ? 0.25 : 1;
+        ctx.save();
+        ctx.globalAlpha = 0.92 * signFlick;
+        const sx = rx1 + rw * 0.5;
+        const sy = ry1 + rh - 18;
+        ctx.fillStyle = 'rgba(5, 10, 12, 0.82)';
+        const bw = b.signText.length * 8 + 14;
+        ctx.fillRect(sx - bw / 2, sy - 9, bw, 17);
+        ctx.strokeStyle = b.neonColor;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(sx - bw / 2, sy - 9, bw, 17);
+        ctx.fillStyle = b.neonColor;
+        ctx.font = 'bold 11px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(b.signText, sx, sy);
+        ctx.restore();
+      }
+    }
+  }
+
+  // ==================== ЖИВЫЕ ДЕТАЛИ УЛИЦ ====================
+  function drawPuddles(minX, maxX, minY, maxY) {
+    for (const p of world.puddles) {
+      if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) continue;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      // Глянцевое зеркало лужи
+      ctx.fillStyle = 'rgba(8, 14, 20, 0.65)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.rx, p.ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Блик отражённого неона / фонаря
+      ctx.fillStyle = p.tint;
+      ctx.globalAlpha = 0.16 + 0.05 * Math.sin(elapsed * 3 + p.x);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.rx * 0.68, p.ry * 0.48, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Круги на воде от капель дождя
+      if (prefs.rain) {
+        const rip = ((elapsed * 1.4 + p.x * 0.03) % 1);
+        ctx.strokeStyle = p.tint;
+        ctx.globalAlpha = (1 - rip) * 0.35;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc((p.rot - 1.5) * 3, 0, rip * Math.min(p.rx, p.ry) * 0.85, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawMatrixRifts(minX, maxX, minY, maxY) {
+    for (const rf of world.rifts) {
+      if (rf.x < minX || rf.x > maxX || rf.y < minY || rf.y > maxY) continue;
+      ctx.save();
+      ctx.translate(rf.x, rf.y);
+      ctx.rotate(rf.ang);
+      const pulse = 0.65 + 0.35 * Math.sin(elapsed * 5 + rf.seed * 20);
+      ctx.strokeStyle = `rgba(57, 255, 136, ${0.75 * pulse})`;
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(-rf.len / 2, 0);
+      ctx.lineTo(-rf.len * 0.15, -5);
+      ctx.lineTo(rf.len * 0.18, 4);
+      ctx.lineTo(rf.len / 2, -2);
+      ctx.stroke();
+      // Светящиеся символы кода из разлома
+      ctx.fillStyle = `rgba(120, 255, 170, ${0.65 * pulse})`;
+      ctx.font = 'bold 9px monospace';
+      ctx.textAlign = 'center';
+      const idx = Math.floor(elapsed * 8 + rf.seed * 30) % MATRIX_CHARS.length;
+      ctx.fillText(MATRIX_CHARS[idx] + MATRIX_CHARS[(idx + 5) % MATRIX_CHARS.length], 0, -7);
+      ctx.restore();
+    }
+  }
+
+  function drawStreetEmissives(minX, maxX, minY, maxY) {
+    // Горящие бочки (огонь всегда яркий поверх ночной тьмы)
+    for (const f of world.fires) {
+      if (f.x < minX || f.x > maxX || f.y < minY || f.y > maxY) continue;
+      // Железная бочка
+      ctx.fillStyle = '#2c221d';
+      ctx.strokeStyle = '#5c4230';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Живое пламя
+      const s = 0.8 + 0.3 * Math.sin(elapsed * 18 + f.phase);
+      ctx.fillStyle = 'rgba(255, 102, 24, 0.85)';
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, 6.2 * s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffe27a';
+      ctx.beginPath();
+      ctx.arc(f.x + Math.sin(elapsed * 24 + f.phase) * 1.4, f.y - 1, 3.2 * s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Светящиеся лампы на столбах фонарей
+    for (const sl of world.streetlights) {
+      if (sl.x < minX || sl.x > maxX || sl.y < minY || sl.y > maxY) continue;
+      if (sl.flicker && Math.sin(elapsed * 19 + sl.phase) * Math.sin(elapsed * 7.3 + sl.phase * 2) > 0.72) continue;
+      ctx.fillStyle = sl.color;
+      ctx.globalAlpha = 0.22;
+      ctx.beginPath();
+      ctx.arc(sl.x, sl.y, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.95;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(sl.x, sl.y, 2.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Светофоры на перекрёстках
+    for (const tl of world.trafficLights) {
+      if (tl.x < minX || tl.x > maxX || tl.y < minY || tl.y > maxY) continue;
+      const cycle = (elapsed + tl.phase) % 8;
+      const col = cycle < 3.4 ? '#ff3c4c' : cycle < 4.2 ? '#ffb84d' : '#39ff88';
+      ctx.fillStyle = '#11161a';
+      ctx.fillRect(tl.x - 4, tl.y - 4, 8, 8);
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.arc(tl.x, tl.y, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.28;
+      ctx.beginPath();
+      ctx.arc(tl.x, tl.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawWeatherAndMatrixRain() {
+    ctx.save();
+    // 1. Ночной косой дождь + тлеющие угли/пепел пустоши
+    ctx.lineWidth = 1.1;
+    for (const d of weatherDrops) {
+      if (d.isEmber) {
+        ctx.fillStyle = `rgba(255, 168, 72, ${d.alpha})`;
+        ctx.fillRect(d.x, d.y, d.len, d.len);
+      } else {
+        ctx.strokeStyle = matrixActive
+          ? `rgba(110, 255, 175, ${d.alpha * 1.4})`
+          : `rgba(170, 205, 225, ${d.alpha})`;
+        ctx.beginPath();
+        ctx.moveTo(d.x, d.y);
+        ctx.lineTo(d.x - d.len * 0.24, d.y + d.len);
+        ctx.stroke();
+      }
+    }
+
+    // 2. Тонкий цифровой дождь Матрицы (усиливается в режиме Bullet-Time)
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'center';
+    const baseAlpha = matrixActive ? 0.28 : 0.055;
+    for (const c of rainCols) {
+      for (let k = 0; k < c.len; k++) {
+        const y = c.y - k * 15;
+        if (y < -15 || y > viewH + 15) continue;
+        const ch = MATRIX_CHARS[(c.chIdx + k * 3) % MATRIX_CHARS.length];
+        ctx.fillStyle = k === 0
+          ? `rgba(190, 255, 215, ${baseAlpha * 1.7})`
+          : `rgba(57, 255, 136, ${baseAlpha * (1 - k / c.len)})`;
+        ctx.fillText(ch, c.x, y);
+      }
+    }
+    ctx.restore();
   }
 
   function drawTerminals() {
@@ -1450,25 +2073,6 @@
       ctx.fillStyle = isAgent ? '#39ff88' : '#ff4d5a';
       ctx.fillRect(e.x - bw / 2, e.y - 24, bw * clamp(e.hp / e.maxHp, 0, 1), 4);
     }
-  }
-
-  function drawDigitalRain() {
-    ctx.save();
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'center';
-    const baseAlpha = matrixActive ? 0.26 : 0.08;
-    for (const c of rainCols) {
-      for (let k = 0; k < c.len; k++) {
-        const y = c.y - k * 15;
-        if (y < -15 || y > viewH + 15) continue;
-        const ch = MATRIX_CHARS[(c.chIdx + k * 3) % MATRIX_CHARS.length];
-        ctx.fillStyle = k === 0
-          ? `rgba(190, 255, 215, ${baseAlpha * 1.7})`
-          : `rgba(57, 255, 136, ${baseAlpha * (1 - k / c.len)})`;
-        ctx.fillText(ch, c.x, y);
-      }
-    }
-    ctx.restore();
   }
 
   function drawMissionCompass() {
@@ -1731,6 +2335,9 @@
     viewH = h;
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
+    // Полуразмерная карта освещения (мягкий свет + x4 меньше нагрузка на GPU)
+    lightCanvas.width = Math.max(1, Math.round(w * 0.5));
+    lightCanvas.height = Math.max(1, Math.round(h * 0.5));
     initDigitalRain();
   }
 
@@ -1930,6 +2537,7 @@
     el.app.classList.toggle('sidebar-left', prefs.sidebarLeft);
     el.optSound.checked = prefs.sound;
     el.optCrt.checked = prefs.crt;
+    el.optNoir.checked = prefs.noir;
     el.optRain.checked = prefs.rain;
     el.optSidebarLeft.checked = prefs.sidebarLeft;
     el.optZoom.value = String(prefs.zoom);
@@ -1938,6 +2546,7 @@
 
   el.optSound.addEventListener('change', () => { prefs.sound = el.optSound.checked; applyPrefs(); savePrefs(); });
   el.optCrt.addEventListener('change', () => { prefs.crt = el.optCrt.checked; applyPrefs(); savePrefs(); });
+  el.optNoir.addEventListener('change', () => { prefs.noir = el.optNoir.checked; applyPrefs(); savePrefs(); });
   el.optRain.addEventListener('change', () => { prefs.rain = el.optRain.checked; applyPrefs(); savePrefs(); });
   el.optSidebarLeft.addEventListener('change', () => { prefs.sidebarLeft = el.optSidebarLeft.checked; applyPrefs(); savePrefs(); });
   el.optZoom.addEventListener('input', () => { prefs.zoom = Number(el.optZoom.value); applyPrefs(); savePrefs(); });
