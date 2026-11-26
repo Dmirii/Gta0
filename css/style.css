@@ -708,9 +708,14 @@ body.crt-on .crt-scanlines {
   display: flex;
 }
 
-#panel-status.active {
+#panel-status.active,
+#panel-garage.active {
   height: 100%;
   min-height: 0;
+}
+
+#panel-garage.active {
+  overflow: hidden;
 }
 
 /* Сегментные шкалы статов (аналоговые диоды Fallout) */
@@ -910,39 +915,218 @@ body.crt-on .crt-scanlines {
 .log-entry.danger { border-left-color: var(--red); color: #ff8e97; }
 .log-entry.matrix { border-left-color: var(--cyan); color: var(--cyan); }
 
-/* Гараж (компактные строки с кнопкой цены справа) */
+/* Гараж: карточка авто + компактные иллюстрированные апгрейды */
 .garage-balance {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 9px;
+  padding: 5px 9px;
   background: rgba(255, 184, 77, 0.1);
   border: 1px solid rgba(255, 184, 77, 0.35);
   border-radius: 5px;
-  font-size: 10.5px;
+  font-size: 10px;
   flex-shrink: 0;
 }
 
 .garage-balance strong {
   color: var(--amber);
-  font-size: 13px;
+  font-size: 12.5px;
+  margin-left: 4px;
+}
+
+.save-badge {
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  color: var(--green);
+  background: rgba(57, 255, 136, 0.1);
+  border: 1px solid rgba(57, 255, 136, 0.32);
+  border-radius: 3px;
+  padding: 2px 5px;
+  transition: color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.save-badge.saved-pulse {
+  color: #e9fff1;
+  border-color: var(--green);
+  box-shadow: 0 0 10px rgba(57, 255, 136, 0.45);
+}
+
+.garage-car-card {
+  background: linear-gradient(180deg, #0b160f 0%, #07100a 100%);
+  border: 1px solid #264833;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 10px rgba(0, 0, 0, 0.45);
+}
+
+.garage-car-media {
+  position: relative;
+  width: 100%;
+  height: 112px;
+  background: #040906;
+  overflow: hidden;
+  border-bottom: 1px solid #1d3525;
+}
+
+.garage-car-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(4, 10, 6, 0.42) 0%, transparent 32%, rgba(4, 10, 6, 0.78) 100%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.14) 0px, rgba(0, 0, 0, 0.14) 1px, transparent 1px, transparent 3px);
+}
+
+#garage-car-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 54%;
+  display: block;
+  filter: contrast(1.06) saturate(1.08);
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+
+.garage-car-card:hover #garage-car-img {
+  transform: scale(1.03);
+}
+
+.garage-car-rank {
+  position: absolute;
+  top: 5px;
+  left: 6px;
+  z-index: 2;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: var(--amber);
+  background: rgba(6, 14, 9, 0.84);
+  border: 1px solid rgba(255, 184, 77, 0.48);
+  border-radius: 3px;
+  padding: 2px 5px;
+}
+
+.garage-car-name {
+  position: absolute;
+  left: 7px;
+  bottom: 5px;
+  z-index: 2;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #e9fff1;
+  text-shadow: 0 1px 6px #000, 0 0 10px rgba(57, 255, 136, 0.45);
+}
+
+.garage-car-foot {
+  padding: 5px 7px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.garage-car-stats {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--green-soft);
+  letter-spacing: 0.04em;
+}
+
+.garage-car-mods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.mod-pill {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--green);
+  background: rgba(57, 255, 136, 0.1);
+  border: 1px solid rgba(57, 255, 136, 0.32);
+  border-radius: 3px;
+  padding: 1.5px 4.5px;
+  white-space: nowrap;
+}
+
+.mod-pill.amber {
+  color: var(--amber);
+  background: rgba(255, 184, 77, 0.12);
+  border-color: rgba(255, 184, 77, 0.38);
+}
+
+.mod-pill.cyan {
+  color: var(--cyan);
+  background: rgba(56, 232, 255, 0.11);
+  border-color: rgba(56, 232, 255, 0.36);
+}
+
+.mod-pill.muted {
+  color: var(--muted);
+  background: rgba(126, 179, 143, 0.07);
+  border-color: rgba(126, 179, 143, 0.22);
 }
 
 .upgrade-list {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: #21402c transparent;
 }
 
 .upg-card {
-  background: var(--panel-2);
+  background: linear-gradient(180deg, #101f15 0%, #0b160f 100%);
   border: 1px solid var(--border);
   border-radius: 5px;
-  padding: 6px 8px;
+  padding: 5px 7px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 7px;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.upg-card.featured {
+  border-color: rgba(255, 184, 77, 0.45);
+  background: linear-gradient(180deg, #1a1b10 0%, #0e140c 100%);
+}
+
+.upg-card:hover {
+  border-color: #2f6544;
+}
+
+.upg-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 4px;
+  background: radial-gradient(circle at 35% 30%, #152b1d 0%, #060e09 100%);
+  border: 1px solid #264833;
+  box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.upg-card.featured .upg-icon {
+  border-color: rgba(255, 184, 77, 0.5);
+  background: radial-gradient(circle at 35% 30%, #2a2210 0%, #0d0c07 100%);
+}
+
+.upg-icon svg {
+  width: 28px;
+  height: 28px;
+  display: block;
 }
 
 .upg-main {
@@ -956,12 +1140,12 @@ body.crt-on .crt-scanlines {
 .upg-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  gap: 6px;
+  align-items: center;
+  gap: 5px;
 }
 
 .upg-name {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--text);
   white-space: nowrap;
@@ -970,22 +1154,50 @@ body.crt-on .crt-scanlines {
 }
 
 .upg-lvl {
-  font-size: 9px;
+  font-size: 8.5px;
   color: var(--green);
   flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.upg-pips {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 3px;
+  vertical-align: middle;
+}
+
+.upg-pip {
+  width: 6px;
+  height: 4px;
+  border-radius: 1px;
+  background: #172b1e;
+  border: 1px solid #254531;
+}
+
+.upg-pip.on {
+  background: var(--green);
+  border-color: #9cffc3;
+  box-shadow: 0 0 4px rgba(57, 255, 136, 0.55);
+}
+
+.upg-pip.on.amber {
+  background: var(--amber);
+  border-color: #ffe0a3;
+  box-shadow: 0 0 4px rgba(255, 184, 77, 0.55);
 }
 
 .upg-desc {
-  font-size: 9px;
+  font-size: 8.5px;
   color: var(--muted);
   line-height: 1.25;
 }
 
 .upg-buy-btn {
   flex-shrink: 0;
-  min-width: 64px;
-  padding: 6px 7px;
-  font-size: 9.5px;
+  min-width: 58px;
+  padding: 6px 6px;
+  font-size: 9px;
   text-align: center;
 }
 
@@ -1084,14 +1296,41 @@ body.crt-on .crt-scanlines {
 /* Настройки и кнопки */
 .menu-actions {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
 }
 
 .menu-actions .btn-primary,
-.menu-actions .btn-secondary {
-  padding: 7px 6px;
-  font-size: 10px;
+.menu-actions .btn-secondary,
+.menu-actions .btn-danger {
+  padding: 7px 4px;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.btn-danger {
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #3c1419 0%, #240c10 100%);
+  border: 1px solid rgba(255, 77, 90, 0.55);
+  color: #ffb8be;
+  font-weight: 700;
+  transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-danger:hover {
+  background: linear-gradient(180deg, #5c1c24 0%, #381016 100%);
+  border-color: var(--red);
+  color: #ffe2e5;
+}
+
+.btn-danger.confirming {
+  background: linear-gradient(180deg, #8b1e2c 0%, #5c101a 100%);
+  border-color: #ff8e97;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255, 77, 90, 0.45);
 }
 
 .settings-list {
@@ -1509,9 +1748,13 @@ kbd {
   .kpi-card { padding: 4px 3px; }
   .kpi-val { font-size: 12px; }
   .depot-banner { padding: 5px 7px; gap: 3px; }
-  .upg-card { padding: 5px 7px; }
-  .upg-desc { font-size: 8.5px; }
-  .upg-buy-btn { padding: 5px 6px; font-size: 9px; min-width: 58px; }
+  .garage-car-media { height: 96px; }
+  .garage-car-foot { padding: 4px 6px 5px; gap: 3px; }
+  .upg-icon { width: 30px; height: 30px; flex-basis: 30px; }
+  .upg-icon svg { width: 24px; height: 24px; }
+  .upg-card { padding: 4px 6px; gap: 6px; }
+  .upg-desc { font-size: 8px; }
+  .upg-buy-btn { padding: 5px 5px; font-size: 8.5px; min-width: 54px; }
   .setting-row { padding: 4px 7px; font-size: 9.5px; }
   .mini-guide { padding: 5px 7px; }
 }
@@ -1522,8 +1765,10 @@ kbd {
   .cabin-screen-frame { width: 68px; height: 68px; }
   #driver-ecg { height: 18px; }
   .driver-quote { min-height: 24px; font-size: 8.5px; }
+  .garage-car-media { height: 82px; }
+  .garage-car-mods { display: none; }
   .upg-desc { display: none; }
-  .upg-card { padding: 4px 7px; }
+  .upg-card { padding: 4px 6px; }
   .depot-hint { display: none; }
 }
 

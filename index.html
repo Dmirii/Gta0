@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#060b07">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>VAULT RUNNER // Wasteland Matrix</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=8">
-  <link rel="stylesheet" href="css/style.css?v=8">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=9">
+  <link rel="stylesheet" href="css/style.css?v=9">
 </head>
 <body class="crt-on">
   <div id="app">
@@ -81,7 +81,7 @@
           <div class="terminal-modal">
             <div class="modal-tag">ROBCO INDUSTRIES // VAULT-OS 2077 · MATRIX LINK</div>
             <div id="modal-logo-wrap" class="modal-logo-wrap">
-              <img id="modal-logo" src="assets/logo.png?v=8" alt="VAULT RUNNER">
+              <img id="modal-logo" src="assets/logo.png?v=9" alt="VAULT RUNNER">
             </div>
             <h1 id="modal-title" class="hidden">VAULT RUNNER</h1>
             <p id="modal-subtitle">
@@ -260,9 +260,22 @@
         <!-- ВКЛАДКА 2: ГАРАЖ / АПГРЕЙДЫ -->
         <section class="tab-panel" id="panel-garage">
           <div class="garage-balance">
-            <span>ДОСТУПНО КРЫШЕК:</span>
-            <strong id="ui-garage-caps">0 ₵</strong>
+            <span>КРЫШКИ: <strong id="ui-garage-caps">0 ₵</strong></span>
+            <span class="save-badge" id="ui-save-badge" title="Прогресс автосохраняется в браузере">● АВТОСОХР</span>
           </div>
+
+          <div class="garage-car-card" id="garage-car-card">
+            <div class="garage-car-media">
+              <img id="garage-car-img" src="assets/cars/car-0.jpg?v=9" alt="Машина в гараже">
+              <span class="garage-car-rank" id="garage-car-rank">КЛАСС I / V</span>
+              <span class="garage-car-name" id="garage-car-name">SCOUT BUGGY</span>
+            </div>
+            <div class="garage-car-foot">
+              <div class="garage-car-stats" id="garage-car-stats">HP 100 · СКР 290 · УРН 18</div>
+              <div class="garage-car-mods" id="garage-car-mods"></div>
+            </div>
+          </div>
+
           <div id="garage-list" class="upgrade-list"></div>
         </section>
 
@@ -307,7 +320,8 @@
         <section class="tab-panel" id="panel-menu">
           <div class="menu-actions">
             <button id="btn-pause-resume" class="btn-primary full" type="button">❚❚ ПАУЗА</button>
-            <button id="btn-restart" class="btn-secondary full" type="button">↻ НОВАЯ ИГРА</button>
+            <button id="btn-restart" class="btn-secondary full" type="button">↻ ЗАЕЗД</button>
+            <button id="btn-reset-save" class="btn-danger full" type="button" title="Удалить сохранённый прогресс гаража и крышек">✕ СБРОС</button>
           </div>
 
           <div class="settings-list">
@@ -356,8 +370,8 @@
     </aside>
   </div>
 
-  <script defer src="js/audio.js?v=8"></script>
-  <script defer src="js/world.js?v=8"></script>
-  <script defer src="js/game.js?v=8"></script>
+  <script defer src="js/audio.js?v=9"></script>
+  <script defer src="js/world.js?v=9"></script>
+  <script defer src="js/game.js?v=9"></script>
 </body>
 </html>

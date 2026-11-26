@@ -67,6 +67,11 @@ window.GTA0.Audio = (function () {
       tone(heavy ? 180 : 280, 62, 0.075, 'sawtooth', heavy ? 0.09 : 0.06);
       noise(0.045, 0.06, heavy ? 900 : 1600);
     },
+    missile() {
+      noise(0.22, 0.11, 2200);
+      tone(220, 680, 0.14, 'sawtooth', 0.06, 0);
+      tone(520, 180, 0.16, 'triangle', 0.05, 0.06);
+    },
     hit() {
       tone(150, 75, 0.06, 'triangle', 0.07);
     },

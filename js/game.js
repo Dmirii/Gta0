@@ -5,44 +5,154 @@
   const WorldMod = window.GTA0.World;
 
   // ==================== КОНСТАНТЫ ====================
+  const SAVE_KEY = 'vault_runner_save_v1';
+
   const CAR_CLASSES = [
     {
       name: 'SCOUT BUGGY',
       rank: 'КЛАСС I',
+      style: 'buggy',
       len: 34, wid: 19,
+      wheels: 4,
       maxHp: 100,
-      maxSpeed: 295,
-      accel: 460,
-      turn: 3.4,
-      fill: '#2ca9ba',
-      trim: '#e4ff7a',
+      maxSpeed: 290,
+      accel: 465,
+      turn: 3.45,
+      ramMult: 0.14,
+      ammoStart: 70,
+      fill: '#4c5c56',
+      trim: '#e4c94b',
+      stripe: '#2e6f9e',
+      accent: '#ffb84d',
+      img: 'assets/cars/car-0.jpg?v=9',
       cost: 0
     },
     {
-      name: 'INTERCEPTOR V8',
+      name: 'RUST INTERCEPTOR',
       rank: 'КЛАСС II',
-      len: 40, wid: 22,
+      style: 'muscle',
+      len: 40, wid: 21,
+      wheels: 4,
       maxHp: 145,
-      maxSpeed: 335,
-      accel: 520,
-      turn: 3.05,
-      fill: '#5ba868',
-      trim: '#ffb84d',
+      maxSpeed: 332,
+      accel: 525,
+      turn: 3.12,
+      ramMult: 0.21,
+      ammoStart: 95,
+      fill: '#465359',
+      trim: '#ffd05c',
+      stripe: '#26619c',
+      accent: '#ff9e42',
+      img: 'assets/cars/car-1.jpg?v=9',
       cost: 90
     },
     {
-      name: 'WAR RIG MK-III',
+      name: 'VAULT ENFORCER',
       rank: 'КЛАСС III',
-      len: 46, wid: 26,
-      maxHp: 210,
-      maxSpeed: 310,
+      style: 'enforcer',
+      len: 44, wid: 23,
+      wheels: 4,
+      maxHp: 205,
+      maxSpeed: 315,
+      accel: 495,
+      turn: 2.82,
+      ramMult: 0.29,
+      ammoStart: 120,
+      fill: '#2e5d84',
+      trim: '#f5c842',
+      stripe: '#1b3854',
+      accent: '#38e8ff',
+      img: 'assets/cars/car-2.jpg?v=9',
+      cost: 190
+    },
+    {
+      name: 'WAR RIG MK-IV',
+      rank: 'КЛАСС IV',
+      style: 'warrig',
+      len: 52, wid: 26,
+      wheels: 6,
+      maxHp: 285,
+      maxSpeed: 300,
       accel: 470,
-      turn: 2.65,
-      fill: '#b5634d',
-      trim: '#ffd27d',
-      cost: 170
+      turn: 2.48,
+      ramMult: 0.44,
+      ammoStart: 150,
+      fill: '#4d443d',
+      trim: '#ffb03b',
+      stripe: '#2f2924',
+      accent: '#ff7034',
+      img: 'assets/cars/car-3.jpg?v=9',
+      cost: 340
+    },
+    {
+      name: 'MATRIX PHANTOM',
+      rank: 'КЛАСС V',
+      style: 'phantom',
+      len: 44, wid: 22,
+      wheels: 4,
+      maxHp: 325,
+      maxSpeed: 368,
+      accel: 595,
+      turn: 3.35,
+      ramMult: 0.36,
+      ammoStart: 180,
+      fill: '#141f1c',
+      trim: '#39ff88',
+      stripe: '#0c3022',
+      accent: '#39ff88',
+      img: 'assets/cars/car-4.jpg?v=9',
+      cost: 540
     }
   ];
+
+  const UPGRADE_ICONS = {
+    car: `<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="13" width="24" height="8" rx="2" fill="#2c4438" stroke="#ffb84d" stroke-width="1.6"/>
+      <path d="M9 13L12 8H21L24 13H9Z" fill="#182a21" stroke="#39ff88" stroke-width="1.5"/>
+      <path d="M26 15H30L28 19H26V15Z" fill="#ffb84d"/>
+      <circle cx="9.5" cy="22" r="3.4" fill="#0b120e" stroke="#9ce6b8" stroke-width="1.6"/>
+      <circle cx="22.5" cy="22" r="3.4" fill="#0b120e" stroke="#9ce6b8" stroke-width="1.6"/>
+      <path d="M16 3L17.6 5.6H14.4L16 3Z" fill="#39ff88"/>
+    </svg>`,
+    weapon: `<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="10" width="11" height="12" rx="2" fill="#243a2e" stroke="#9ce6b8" stroke-width="1.5"/>
+      <rect x="15" y="11" width="13" height="3.6" rx="1" fill="#ffb84d" stroke="#18261d" stroke-width="0.9"/>
+      <rect x="15" y="17.4" width="13" height="3.6" rx="1" fill="#ffb84d" stroke="#18261d" stroke-width="0.9"/>
+      <path d="M28 12.8L31 11.2M28 19.2L31 20.8M28 16H31.5" stroke="#39ff88" stroke-width="1.6" stroke-linecap="round"/>
+      <circle cx="9.5" cy="16" r="2.4" fill="#39ff88"/>
+    </svg>`,
+    missile: `<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="24" cy="8" r="5" stroke="#ff4d5a" stroke-width="1.3" stroke-dasharray="2 1.5"/>
+      <path d="M24 5V11M21 8H27" stroke="#ff4d5a" stroke-width="1.2"/>
+      <path d="M8 21L19 10L23 9L22 13L11 24L8 21Z" fill="#d8e8dc" stroke="#ffb84d" stroke-width="1.4"/>
+      <path d="M18.5 10.5L23 9L21.5 13.5Z" fill="#ff4d5a"/>
+      <path d="M8 21L4 23L7 26L9 22Z" fill="#ff7a2f"/>
+      <path d="M5 27L8.5 23.5" stroke="#ffe169" stroke-width="2" stroke-linecap="round"/>
+    </svg>`,
+    armor: `<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M16 4L26 8V15.5C26 21.5 21.7 26.2 16 28C10.3 26.2 6 21.5 6 15.5V8L16 4Z" fill="#1e3848" stroke="#38e8ff" stroke-width="1.6"/>
+      <path d="M16 7.5L22.5 10.2V15.5C22.5 19.7 19.6 23 16 24.4C12.4 23 9.5 19.7 9.5 15.5V10.2L16 7.5Z" fill="#132632" stroke="#ffb84d" stroke-width="1.2"/>
+      <path d="M12 15.5H20M16 11.5V19.5" stroke="#39ff88" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>`,
+    engine: `<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="7" y="12" width="16" height="12" rx="2" fill="#2a3532" stroke="#9ce6b8" stroke-width="1.5"/>
+      <path d="M10 12V8H20V12" fill="#1c2724" stroke="#ffb84d" stroke-width="1.5"/>
+      <path d="M12 8V5M15 8V5M18 8V5" stroke="#ffb84d" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M23 15H27L29 18L27 21H23" fill="#ff7a2f" stroke="#ffe169" stroke-width="1.2"/>
+      <path d="M3 16H7M3 20H7" stroke="#38e8ff" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="15" cy="18" r="2.8" stroke="#39ff88" stroke-width="1.5"/>
+    </svg>`,
+    matrix: `<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="9" y="9" width="14" height="14" rx="2.5" fill="#0b2416" stroke="#39ff88" stroke-width="1.6"/>
+      <rect x="13" y="13" width="6" height="6" rx="1" fill="#39ff88"/>
+      <path d="M12 5V9M16 5V9M20 5V9M12 23V27M16 23V27M20 23V27M5 12H9M5 16H9M5 20H9M23 12H27M23 16H27M23 20H27" stroke="#38e8ff" stroke-width="1.4" stroke-linecap="round"/>
+    </svg>`,
+    kit: `<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="9" width="22" height="17" rx="3" fill="#26382c" stroke="#ffb84d" stroke-width="1.6"/>
+      <path d="M12 9V6.5C12 5.7 12.7 5 13.5 5H18.5C19.3 5 20 5.7 20 6.5V9" stroke="#ffb84d" stroke-width="1.6"/>
+      <path d="M16 12.5V22.5M11 17.5H21" stroke="#39ff88" stroke-width="2.8" stroke-linecap="round"/>
+    </svg>`
+  };
 
   const LOOT_DEFS = {
     ammo:   { color: '#ff5e5e', label: 'Патроны +28',  short: 'A' },
@@ -125,6 +235,7 @@
     btnRestartModal: document.getElementById('btn-restart-modal'),
     btnPauseResume: document.getElementById('btn-pause-resume'),
     btnRestart: document.getElementById('btn-restart'),
+    btnResetSave: document.getElementById('btn-reset-save'),
     btnMobileMenu: document.getElementById('btn-mobile-menu'),
     btnCloseMenu: document.getElementById('btn-close-menu'),
     btnMobileRadar: document.getElementById('btn-mobile-radar'),
@@ -163,6 +274,12 @@
     btnDepotService: document.getElementById('btn-depot-service'),
 
     uiGarageCaps: document.getElementById('ui-garage-caps'),
+    uiSaveBadge: document.getElementById('ui-save-badge'),
+    garageCarImg: document.getElementById('garage-car-img'),
+    garageCarRank: document.getElementById('garage-car-rank'),
+    garageCarName: document.getElementById('garage-car-name'),
+    garageCarStats: document.getElementById('garage-car-stats'),
+    garageCarMods: document.getElementById('garage-car-mods'),
     garageList: document.getElementById('garage-list'),
 
     uiMissionType: document.getElementById('ui-mission-type'),
@@ -229,6 +346,88 @@
     try { localStorage.setItem('gta0_prefs', JSON.stringify(prefs)); } catch { /* ignore */ }
   }
 
+  function defaultProgress() {
+    return {
+      version: 1,
+      caps: 25,
+      carClass: 0,
+      engineLvl: 1,
+      weaponLvl: 1,
+      missileLvl: 0,
+      armorLvl: 1,
+      matrixLvl: 1,
+      bestScore: Number(localStorage.getItem('gta0_best_score') || 0) || 0,
+      totalKills: 0,
+      totalMissions: 0
+    };
+  }
+
+  function loadSavedProgress() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return defaultProgress();
+      const s = JSON.parse(raw);
+      return {
+        version: 1,
+        caps: Math.max(0, Math.floor(Number(s.caps ?? 25))),
+        carClass: clamp(Math.floor(Number(s.carClass ?? 0)), 0, CAR_CLASSES.length - 1),
+        engineLvl: clamp(Math.floor(Number(s.engineLvl ?? 1)), 1, 4),
+        weaponLvl: clamp(Math.floor(Number(s.weaponLvl ?? 1)), 1, 4),
+        missileLvl: clamp(Math.floor(Number(s.missileLvl ?? 0)), 0, 3),
+        armorLvl: clamp(Math.floor(Number(s.armorLvl ?? 1)), 1, 4),
+        matrixLvl: clamp(Math.floor(Number(s.matrixLvl ?? 1)), 1, 4),
+        bestScore: Math.max(0, Math.floor(Number(s.bestScore ?? 0)), Number(localStorage.getItem('gta0_best_score') || 0) || 0),
+        totalKills: Math.max(0, Math.floor(Number(s.totalKills ?? 0))),
+        totalMissions: Math.max(0, Math.floor(Number(s.totalMissions ?? 0)))
+      };
+    } catch {
+      return defaultProgress();
+    }
+  }
+
+  let savePulseTimer = null;
+  function saveProgress() {
+    if (!player) return;
+    try {
+      const payload = {
+        version: 1,
+        caps: Math.max(0, Math.floor(player.caps)),
+        carClass: player.carClass,
+        engineLvl: player.engineLvl,
+        weaponLvl: player.weaponLvl,
+        missileLvl: player.missileLvl,
+        armorLvl: player.armorLvl,
+        matrixLvl: player.matrixLvl,
+        bestScore: Math.max(bestScore, Math.floor(player.score)),
+        totalKills: Math.max(0, Math.floor(player.totalKills || 0)),
+        totalMissions: Math.max(0, Math.floor(player.totalMissions || 0))
+      };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+      localStorage.setItem('gta0_best_score', String(payload.bestScore));
+      if (el.uiSaveBadge) {
+        el.uiSaveBadge.textContent = '● СОХРАНЕНО';
+        el.uiSaveBadge.classList.add('saved-pulse');
+        if (savePulseTimer) clearTimeout(savePulseTimer);
+        savePulseTimer = setTimeout(() => {
+          if (el.uiSaveBadge) {
+            el.uiSaveBadge.classList.remove('saved-pulse');
+            el.uiSaveBadge.textContent = '● АВТОСОХР';
+          }
+        }, 900);
+      }
+    } catch { /* ignore */ }
+  }
+
+  function resetSavedProgress() {
+    try {
+      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem('gta0_best_score');
+    } catch { /* ignore */ }
+    bestScore = 0;
+    resetRun(true);
+    addLog('Сохранённый прогресс сброшен до базового SCOUT BUGGY.', 'warn');
+  }
+
   function effectiveZoom() {
     // На узких экранах телефонов чуть отдаляем камеру для лучшего обзора улиц
     const minSide = Math.min(viewW, viewH);
@@ -283,7 +482,7 @@
   if (typeof Image !== 'undefined') {
     driverSheet = new Image();
     driverSheet.onload = () => { driverSheetReady = true; };
-    driverSheet.src = 'assets/driver-sheet.jpg?v=8';
+    driverSheet.src = 'assets/driver-sheet.jpg?v=9';
   }
 
   const DRIVER_QUOTES = {
@@ -1199,8 +1398,10 @@
   }
 
   // ==================== ИНИЦИАЛИЗАЦИЯ МИРА И ИГРОКА ====================
-  function resetRun() {
-    const cls = CAR_CLASSES[0];
+  function resetRun(forceFresh) {
+    const saved = forceFresh ? defaultProgress() : loadSavedProgress();
+    bestScore = Math.max(bestScore, saved.bestScore || 0);
+
     player = {
       x: world.depot.x,
       y: world.depot.y + 82,
@@ -1208,25 +1409,36 @@
       vy: 0,
       ang: -Math.PI / 2,
       turretAng: -Math.PI / 2,
-      hp: cls.maxHp,
-      maxHp: cls.maxHp,
+      hp: 100,
+      maxHp: 100,
       focus: 100,
       maxFocus: 100,
       rad: 0,
-      ammo: 65,
-      caps: 25,
+      ammo: 70,
+      caps: saved.caps,
       score: 0,
       kills: 0,
       missionsDone: 0,
+      totalKills: saved.totalKills || 0,
+      totalMissions: saved.totalMissions || 0,
       trace: 0, // 0..5
-      carClass: 0,
-      engineLvl: 1,
-      weaponLvl: 1,
-      armorLvl: 1,
-      matrixLvl: 1,
+      carClass: saved.carClass,
+      engineLvl: saved.engineLvl,
+      weaponLvl: saved.weaponLvl,
+      missileLvl: saved.missileLvl,
+      armorLvl: saved.armorLvl,
+      matrixLvl: saved.matrixLvl,
       shootCd: 0,
+      missileCd: 0,
       inDepot: true
     };
+
+    const spec = getCarSpec();
+    player.maxHp = spec.maxHp;
+    player.hp = spec.maxHp;
+    player.maxFocus = spec.maxFocus;
+    player.focus = spec.maxFocus;
+    player.ammo = spec.ammoStart;
 
     enemies = [];
     bullets = [];
@@ -1249,28 +1461,61 @@
     cam.y = player.y;
 
     for (let i = 0; i < 18; i++) spawnLoot();
-    for (let i = 0; i < 5; i++) spawnEnemy('raider');
+    const pwr = getPlayerPower();
+    for (let i = 0; i < 5; i++) {
+      if (i === 4 && pwr >= 4) spawnEnemy('heavy');
+      else if (i === 3 && pwr >= 7) spawnEnemy('agent');
+      else spawnEnemy('raider');
+    }
 
     pickNextMission(true);
     driverReset();
-    addLog('Терминал Vault-OS синхронизирован.', 'matrix');
+    const hasSavedUpgrades = saved.carClass > 0 || saved.engineLvl > 1 || saved.weaponLvl > 1 ||
+      saved.missileLvl > 0 || saved.armorLvl > 1 || saved.matrixLvl > 1 || saved.caps !== 25;
+    addLog(
+      hasSavedUpgrades && !forceFresh
+        ? `Профиль загружен: ${spec.name} (${spec.rank}) · ${player.caps} ₵.`
+        : 'Терминал Vault-OS синхронизирован.',
+      'matrix'
+    );
     addLog('VAULT RUNNER // Сектор активен. Собирай крышки и выживай.', '');
+    saveProgress();
     renderGarage();
     syncUI(true);
   }
 
+  function getPlayerPower() {
+    if (!player) return 0;
+    return (
+      player.carClass * 2.2 +
+      (player.engineLvl - 1) * 0.6 +
+      (player.weaponLvl - 1) * 1.1 +
+      (player.missileLvl || 0) * 1.25 +
+      (player.armorLvl - 1) * 0.9 +
+      (player.matrixLvl - 1) * 0.55
+    );
+  }
+
   function getCarSpec() {
-    const base = CAR_CLASSES[player.carClass];
+    const base = CAR_CLASSES[player.carClass] || CAR_CLASSES[0];
+    const mLvl = player.missileLvl || 0;
+    const armorBonusRam = player.armorLvl >= 3 ? 0.14 : (player.armorLvl >= 2 ? 0.05 : 0);
     return {
       ...base,
-      maxHp: base.maxHp + (player.armorLvl - 1) * 35,
-      maxSpeed: base.maxSpeed + (player.engineLvl - 1) * 36,
+      maxHp: base.maxHp + (player.armorLvl - 1) * 40,
+      maxSpeed: base.maxSpeed + (player.engineLvl - 1) * 32,
       accel: base.accel + (player.engineLvl - 1) * 65,
-      turn: base.turn + (player.engineLvl - 1) * 0.16,
-      fireDelay: Math.max(0.085, 0.21 - (player.weaponLvl - 1) * 0.032),
-      damage: 18 + (player.weaponLvl - 1) * 9,
-      maxFocus: 100 + (player.matrixLvl - 1) * 28,
-      focusDrain: Math.max(14, 28 - (player.matrixLvl - 1) * 4)
+      turn: base.turn + (player.engineLvl - 1) * 0.15,
+      fireDelay: Math.max(0.088, 0.22 - (player.weaponLvl - 1) * 0.036),
+      damage: 18 + (player.weaponLvl - 1) * 8 + player.carClass * 2,
+      missileCd: mLvl === 0 ? 99 : Math.max(1.55, 3.6 - mLvl * 0.7),
+      missileDmg: 56 + mLvl * 18 + player.carClass * 8,
+      missileSalvo: mLvl >= 3 ? 2 : (mLvl >= 1 ? 1 : 0),
+      ramMult: base.ramMult + armorBonusRam,
+      ramSelfMult: Math.max(0.018, 0.06 - player.carClass * 0.008 - (player.armorLvl - 1) * 0.008),
+      maxFocus: 100 + (player.matrixLvl - 1) * 30,
+      focusDrain: Math.max(13, 28 - (player.matrixLvl - 1) * 4),
+      focusRegen: 14 + (player.matrixLvl - 1) * 3.5
     };
   }
 
@@ -1279,6 +1524,7 @@
     const types = isFirst ? ['collect'] : ['collect', 'hunt', 'hack', 'survive'];
     const type = types[Math.floor(Math.random() * types.length)];
     const tier = 1 + Math.floor(player.missionsDone / 2);
+    const classBonus = player.carClass * 16;
 
     if (type === 'collect') {
       const goal = Math.min(5, 2 + tier);
@@ -1289,17 +1535,17 @@
         desc: `Соберите ${goal} контейнера лута и доставьте данные в Бункер-Депо.`,
         progress: 0,
         goal,
-        reward: 50 + tier * 20
+        reward: 50 + tier * 20 + classBonus
       };
     } else if (type === 'hunt') {
-      const goal = Math.min(5, 2 + Math.floor(tier / 2));
+      const goal = Math.min(6, 2 + Math.floor((tier + player.carClass) / 2));
       mission = {
         type: 'hunt',
         title: 'Зачистка сектора',
-        desc: `Уничтожьте ${goal} вражеских машин (рейдеров или Агентов).`,
+        desc: `Уничтожьте ${goal} вражеских машин (рейдеров, броневики или Агентов).`,
         progress: 0,
         goal,
-        reward: 65 + tier * 25
+        reward: 65 + tier * 25 + classBonus
       };
     } else if (type === 'hack') {
       const term = world.terminals[Math.floor(Math.random() * world.terminals.length)];
@@ -1310,7 +1556,7 @@
         target: { x: term.x, y: term.y, name: term.name, radius: 74 },
         progress: 0,
         goal: 5,
-        reward: 80 + tier * 25
+        reward: 80 + tier * 25 + classBonus
       };
     } else {
       const goal = 16 + tier * 3;
@@ -1320,7 +1566,7 @@
         desc: `Выживите под преследованием Системы в течение ${goal} сек.`,
         progress: 0,
         goal,
-        reward: 75 + tier * 25
+        reward: 75 + tier * 25 + classBonus
       };
       player.trace = Math.max(player.trace, 2);
       spawnEnemy('agent');
@@ -1335,7 +1581,8 @@
     player.caps += reward;
     player.score += reward * 4;
     player.missionsDone++;
-    player.hp = Math.min(player.maxHp, player.hp + 25);
+    player.totalMissions = (player.totalMissions || 0) + 1;
+    player.hp = Math.min(player.maxHp, player.hp + 30);
     player.focus = player.maxFocus;
     player.trace = Math.max(0, player.trace - 1);
     AudioFX.missionDone();
@@ -1345,8 +1592,9 @@
       driverDrinkCanteen(pickQuote(DRIVER_QUOTES.mission));
     }
     addFloatText(player.x, player.y - 26, `КОНТРАКТ +${reward} ₵`, '#ffb84d');
-    addLog(`Контракт выполнен! Получено +${reward} ₵ и +25 HP.`, 'matrix');
+    addLog(`Контракт выполнен! Получено +${reward} ₵ и +30 HP.`, 'matrix');
     updateBestScore();
+    saveProgress();
     renderGarage();
     pickNextMission(false);
   }
@@ -1379,26 +1627,142 @@
   }
 
   function spawnEnemy(kind) {
-    const p = world.pickRoadSpawn(player, 420);
-    const isAgent = kind === 'agent';
-    const hp = isAgent ? 80 + player.missionsDone * 10 : 48 + player.missionsDone * 6;
+    const p = world.pickRoadSpawn(player, 430);
+    const pwr = getPlayerPower();
+    const m = player.missionsDone;
+    const k = kind || 'raider';
+
+    let cfg;
+    if (k === 'boss') {
+      cfg = {
+        hp: Math.round(190 + pwr * 20 + m * 10),
+        len: 52, wid: 26,
+        speed: 175 + Math.min(35, pwr * 2),
+        dmg: Math.round(14 + pwr * 0.55),
+        fireCd: 1.35,
+        aggro: 740,
+        range: 420,
+        bounty: 75 + Math.round(pwr * 2),
+        score: 420
+      };
+    } else if (k === 'agent') {
+      cfg = {
+        hp: Math.round(84 + pwr * 11 + m * 7),
+        len: 39, wid: 20,
+        speed: 228 + Math.min(48, pwr * 2.5),
+        dmg: Math.round(12 + pwr * 0.45),
+        fireCd: Math.max(0.68, 0.98 - pwr * 0.015),
+        aggro: 780,
+        range: 395,
+        bounty: 35 + Math.round(pwr * 1.1),
+        score: 210
+      };
+    } else if (k === 'heavy') {
+      cfg = {
+        hp: Math.round(98 + pwr * 12 + m * 6),
+        len: 44, wid: 23,
+        speed: 158 + Math.min(28, pwr * 1.6),
+        dmg: Math.round(10 + pwr * 0.4),
+        fireCd: 1.32,
+        aggro: 540,
+        range: 345,
+        bounty: 30 + Math.round(pwr * 0.9),
+        score: 165
+      };
+    } else {
+      cfg = {
+        hp: Math.round(48 + pwr * 7 + m * 4),
+        len: 34, wid: 19,
+        speed: 176 + Math.min(36, pwr * 2),
+        dmg: Math.round(8.5 + pwr * 0.35),
+        fireCd: Math.max(1.05, 1.45 - pwr * 0.018),
+        aggro: 490,
+        range: 310,
+        bounty: 18 + Math.round(pwr * 0.5),
+        score: 105
+      };
+    }
+
     enemies.push({
       id: nextEntId++,
-      kind: isAgent ? 'agent' : 'raider',
+      kind: k,
       x: p.x,
       y: p.y,
       vx: 0,
       vy: 0,
       ang: Math.random() * Math.PI * 2,
-      hp,
-      maxHp: hp,
-      len: isAgent ? 38 : 34,
-      wid: isAgent ? 20 : 19,
-      speed: isAgent ? 225 : 175,
+      hp: cfg.hp,
+      maxHp: cfg.hp,
+      len: cfg.len,
+      wid: cfg.wid,
+      speed: cfg.speed,
+      dmg: cfg.dmg,
+      fireCd: cfg.fireCd,
+      aggro: cfg.aggro,
+      range: cfg.range,
+      bounty: cfg.bounty,
+      score: cfg.score,
       shootCd: 0.7 + Math.random() * 0.9,
       wanderAng: Math.random() * Math.PI * 2,
       wanderTimer: 1 + Math.random() * 2
     });
+  }
+
+  function findNearestEnemy(x, y, maxRange, preferAng) {
+    let best = null;
+    let bestScore = Infinity;
+    for (const e of enemies) {
+      const d = Math.hypot(e.x - x, e.y - y);
+      if (d > maxRange) continue;
+      let sc = d;
+      if (typeof preferAng === 'number') {
+        const angDiff = Math.abs(normAngle(Math.atan2(e.y - y, e.x - x) - preferAng));
+        sc *= (0.72 + angDiff * 0.55);
+      }
+      if (sc < bestScore) { bestScore = sc; best = e; }
+    }
+    return best;
+  }
+
+  function fireHomingMissile(x, y, ang, dmg, target) {
+    const speed = 380;
+    bullets.push({
+      owner: 'player',
+      homing: true,
+      targetId: target ? target.id : null,
+      x, y,
+      ang,
+      speed,
+      vx: Math.cos(ang) * speed,
+      vy: Math.sin(ang) * speed,
+      dmg,
+      splashRadius: 64,
+      color: '#ff7a2f',
+      radius: 5.0,
+      life: 2.55,
+      smokeCd: 0
+    });
+    addLightFlash(x, y, 165, '#ff8e3c', 0.14);
+  }
+
+  function detonateMissile(b) {
+    AudioFX.explode();
+    shakeAmt = Math.min(11, shakeAmt + 4.5);
+    addLightFlash(b.x, b.y, 210, '#ff8a36', 0.28);
+    spawnBurst(b.x, b.y, '#ffbe4f', 14, 190);
+    spawnBurst(b.x, b.y, '#ff4d36', 10, 145);
+    spawnBurst(b.x, b.y, '#8fa396', 6, 85);
+
+    const rad = b.splashRadius || 64;
+    for (let j = enemies.length - 1; j >= 0; j--) {
+      const e = enemies[j];
+      const d = Math.hypot(b.x - e.x, b.y - e.y);
+      if (d < rad + e.len * 0.45) {
+        const falloff = d < 28 ? 1 : clamp(1 - (d - 28) / (rad + 20), 0.35, 1);
+        e.hp -= b.dmg * falloff;
+        if (e.hp <= 0) destroyEnemy(j);
+      }
+    }
   }
 
   // ==================== СТРЕЛЬБА И ЭФФЕКТЫ ====================
@@ -1460,60 +1824,149 @@
       addLog('Недостаточно крышек (нужно 15 ₵).', 'warn');
       return;
     }
+    const spec = getCarSpec();
     player.caps -= cost;
     player.hp = player.maxHp;
     player.rad = 0;
-    player.ammo += 30;
+    player.ammo = Math.max(player.ammo + 35, spec.ammoStart);
     player.trace = Math.max(0, player.trace - 1);
     AudioFX.upgrade();
     driverDrinkCanteen(pickQuote(DRIVER_QUOTES.depot));
     addFloatText(player.x, player.y - 24, emergencyFree ? 'АВАРИЙНЫЙ РЕМОНТ!' : 'РЕМОНТ + АНТИРАД', '#39ff88');
-    addLog('Бункер-Депо: корпус восстановлен, радиация снята, +30 патр.', 'matrix');
+    addLog('Бункер-Депо: корпус восстановлен, радиация снята, боезапас пополнен.', 'matrix');
+    saveProgress();
     renderGarage();
     syncUI(true);
   }
 
+  function renderLevelPips(cur, max, amber) {
+    let html = '<span class="upg-pips">';
+    for (let i = 1; i <= max; i++) {
+      html += `<i class="upg-pip ${i <= cur ? (amber ? 'on amber' : 'on') : ''}"></i>`;
+    }
+    html += '</span>';
+    return html;
+  }
+
   function getUpgradesDef() {
+    const curClass = CAR_CLASSES[player.carClass];
     const nextClass = CAR_CLASSES[player.carClass + 1];
+    const mLvl = player.missileLvl || 0;
+
+    const weaponHints = [
+      'Ур.2: Сдвоенный тяжёлый пулемёт на крыше (2 ствола).',
+      'Ур.3: Сдвоенная плазменная автопушка (изумрудные залпы).',
+      'Ур.4: Три-плазменный комплекс — макс. урон и темп огня.',
+      'Установлен топовый три-плазменный комплекс.'
+    ];
+    const missileHints = [
+      'Монтирует ракетный блок на крышу: самонаводящиеся ракеты!',
+      'Ур.2: Двойные пусковые блоки по бокам, быстрая перезарядка.',
+      'Ур.3: Двойной залп — сразу 2 самонаводящиеся ракеты + сплеш!',
+      'Установлены двойные блоки самонаводящихся ракет.'
+    ];
+    const armorHints = [
+      'Ур.2: Бронеюбки по бортам (+40 HP, меньше урон тарана).',
+      'Ур.3: Шипастый таранный отвал спереди (+40 HP и мощный таран!).',
+      'Ур.4: Каркас стекла + реактивный контур (+40 HP, топ-защита).',
+      'Установлена полная пустошная броня и шипастый таран.'
+    ];
+    const engineHints = [
+      'Ур.2: Боковые выхлопные трубы (+32 км/ч и быстрый разгон).',
+      'Ур.3: Хромированный нагнетатель V8 на капоте (+32 км/ч).',
+      'Ур.4: Нитро-сопла с плазменным форсажем сзади (+32 км/ч).',
+      'Установлен максимальный турбо-нитро блок V8.'
+    ];
+    const matrixHints = [
+      'Ур.2: Изумрудные решётки охлаждения, больше Фокуса.',
+      'Ур.3: Светящийся реактор Матрицы + неон под днищем.',
+      'Ур.4: Полный нейроконтур — быстрая регенерация bullet-time.',
+      'Ядро Матрицы работает на пиковой синхронизации.'
+    ];
+
     return [
       {
-        id: 'engine',
-        name: 'Турбодвигатель',
-        lvl: `${player.engineLvl} / 4`,
-        maxed: player.engineLvl >= 4,
-        cost: 35 + (player.engineLvl - 1) * 35,
-        desc: '+36 макс. скорости, улучшенный разгон и управляемость.',
-        apply() { player.engineLvl++; }
+        id: 'car',
+        featured: true,
+        name: nextClass ? `Кузов: ${nextClass.name}` : `Топ: ${curClass.name}`,
+        cur: player.carClass + 1,
+        max: CAR_CLASSES.length,
+        amberPips: true,
+        lvl: `${player.carClass + 1}/${CAR_CLASSES.length}`,
+        maxed: !nextClass,
+        cost: nextClass ? nextClass.cost : 0,
+        desc: nextClass
+          ? `${nextClass.rank}: ${nextClass.maxHp} HP, ${nextClass.maxSpeed} скр., новый корпус и фото.`
+          : 'Открыт финальный класс V — MATRIX PHANTOM!',
+        apply() {
+          player.carClass++;
+          const sp = getCarSpec();
+          player.maxHp = sp.maxHp;
+          player.hp = sp.maxHp;
+          player.ammo = Math.max(player.ammo, sp.ammoStart);
+        }
       },
       {
         id: 'weapon',
-        name: 'Турель / Плазма',
-        lvl: `${player.weaponLvl} / 4`,
+        name: 'Вооружение турели',
+        cur: player.weaponLvl,
+        max: 4,
+        lvl: `${player.weaponLvl}/4`,
         maxed: player.weaponLvl >= 4,
-        cost: 40 + (player.weaponLvl - 1) * 40,
-        desc: '+9 урона, быстрее скорострельность. На 3+ ур. — двойной залп!',
+        cost: 45 + (player.weaponLvl - 1) * 55,
+        desc: weaponHints[Math.min(player.weaponLvl - 1, 3)],
         apply() { player.weaponLvl++; }
       },
       {
+        id: 'missile',
+        name: 'Ракеты самонавед.',
+        cur: mLvl,
+        max: 3,
+        amberPips: true,
+        lvl: mLvl === 0 ? '0/3' : `${mLvl}/3`,
+        maxed: mLvl >= 3,
+        cost: mLvl === 0 ? 75 : (mLvl === 1 ? 130 : 210),
+        desc: missileHints[Math.min(mLvl, 3)],
+        apply() {
+          player.missileLvl = (player.missileLvl || 0) + 1;
+          player.missileCd = 0;
+        }
+      },
+      {
         id: 'armor',
-        name: 'Бронелисты пустоши',
-        lvl: `${player.armorLvl} / 4`,
+        name: 'Броня и таран',
+        cur: player.armorLvl,
+        max: 4,
+        lvl: `${player.armorLvl}/4`,
         maxed: player.armorLvl >= 4,
-        cost: 35 + (player.armorLvl - 1) * 35,
-        desc: '+35 макс. HP и мгновенный ремонт +35 HP.',
+        cost: 40 + (player.armorLvl - 1) * 48,
+        desc: armorHints[Math.min(player.armorLvl - 1, 3)],
         apply() {
           player.armorLvl++;
           player.maxHp = getCarSpec().maxHp;
-          player.hp = Math.min(player.maxHp, player.hp + 35);
+          player.hp = Math.min(player.maxHp, player.hp + 40);
         }
+      },
+      {
+        id: 'engine',
+        name: 'Турбодвигатель',
+        cur: player.engineLvl,
+        max: 4,
+        lvl: `${player.engineLvl}/4`,
+        maxed: player.engineLvl >= 4,
+        cost: 38 + (player.engineLvl - 1) * 45,
+        desc: engineHints[Math.min(player.engineLvl - 1, 3)],
+        apply() { player.engineLvl++; }
       },
       {
         id: 'matrix',
         name: 'Ядро Матрицы',
-        lvl: `${player.matrixLvl} / 4`,
+        cur: player.matrixLvl,
+        max: 4,
+        lvl: `${player.matrixLvl}/4`,
         maxed: player.matrixLvl >= 4,
-        cost: 45 + (player.matrixLvl - 1) * 40,
-        desc: 'Увеличивает запас Фокуса и замедляет его расход в bullet-time.',
+        cost: 45 + (player.matrixLvl - 1) * 50,
+        desc: matrixHints[Math.min(player.matrixLvl - 1, 3)],
         apply() {
           player.matrixLvl++;
           player.maxFocus = getCarSpec().maxFocus;
@@ -1521,50 +1974,77 @@
         }
       },
       {
-        id: 'car',
-        name: nextClass ? `Новый класс: ${nextClass.name}` : 'Максимальный класс авто',
-        lvl: CAR_CLASSES[player.carClass].rank,
-        maxed: !nextClass,
-        cost: nextClass ? nextClass.cost : 0,
-        desc: nextClass
-          ? `Переход на ${nextClass.name} (${nextClass.rank}): больше брони и мощи.`
-          : 'Вы уже управляете топовым WAR RIG MK-III.',
-        apply() {
-          player.carClass++;
-          player.maxHp = getCarSpec().maxHp;
-          player.hp = player.maxHp;
-        }
-      },
-      {
         id: 'kit',
         name: 'Полевой ремкомплект',
-        lvl: 'РАСХОДНИК',
+        cur: 0,
+        max: 0,
+        lvl: 'РАСХОД',
         maxed: false,
         cost: 25,
-        desc: 'Мгновенно +45 HP, -45% радиации и +30 патронов в любой точке города.',
+        desc: 'Срочно: +50 HP, -50% радиации и +35 патронов в бою.',
         apply() {
-          player.hp = Math.min(player.maxHp, player.hp + 45);
-          player.rad = Math.max(0, player.rad - 45);
-          player.ammo += 30;
+          player.hp = Math.min(player.maxHp, player.hp + 50);
+          player.rad = Math.max(0, player.rad - 50);
+          player.ammo += 35;
         }
       }
     ];
   }
 
+  function updateGarageShowcase() {
+    if (!player) return;
+    const cls = CAR_CLASSES[player.carClass] || CAR_CLASSES[0];
+    const spec = getCarSpec();
+    if (el.garageCarImg && el.garageCarImg.getAttribute('src') !== cls.img) {
+      el.garageCarImg.setAttribute('src', cls.img);
+      el.garageCarImg.setAttribute('alt', `${cls.name} (${cls.rank})`);
+    }
+    if (el.garageCarRank) el.garageCarRank.textContent = `${cls.rank} / V`;
+    if (el.garageCarName) el.garageCarName.textContent = cls.name;
+    if (el.garageCarStats) {
+      const mText = player.missileLvl > 0 ? ` · РК ${spec.missileDmg}` : '';
+      el.garageCarStats.textContent = `HP ${spec.maxHp} · СКР ${spec.maxSpeed} · УРН ${spec.damage}${mText}`;
+    }
+    if (el.garageCarMods) {
+      const pills = [];
+      if (player.weaponLvl === 2) pills.push('<span class="mod-pill amber">2× ПУЛЕМЁТ</span>');
+      else if (player.weaponLvl === 3) pills.push('<span class="mod-pill">2× ПЛАЗМА</span>');
+      else if (player.weaponLvl >= 4) pills.push('<span class="mod-pill">3× ПЛАЗМА</span>');
+      if (player.missileLvl === 1) pills.push('<span class="mod-pill amber">РАКЕТЫ</span>');
+      else if (player.missileLvl === 2) pills.push('<span class="mod-pill amber">2× БЛОК РК</span>');
+      else if (player.missileLvl >= 3) pills.push('<span class="mod-pill amber">ЗАЛП 2× РК</span>');
+      if (player.armorLvl === 2) pills.push('<span class="mod-pill cyan">БРОНЕБОРТА</span>');
+      else if (player.armorLvl === 3) pills.push('<span class="mod-pill cyan">ТАРАН</span>');
+      else if (player.armorLvl >= 4) pills.push('<span class="mod-pill cyan">ТАРАН + ЩИТ</span>');
+      if (player.engineLvl === 2) pills.push('<span class="mod-pill">ВЫХЛОП</span>');
+      else if (player.engineLvl === 3) pills.push('<span class="mod-pill">V8 БЛОУЭР</span>');
+      else if (player.engineLvl >= 4) pills.push('<span class="mod-pill cyan">НИТРО V8</span>');
+      if (player.matrixLvl >= 3) pills.push('<span class="mod-pill">ЯДРО MTX</span>');
+      if (pills.length === 0) {
+        pills.push('<span class="mod-pill muted">БАЗОВАЯ КОМПЛЕКТАЦИЯ</span>');
+      }
+      el.garageCarMods.innerHTML = pills.join('');
+    }
+  }
+
   function renderGarage() {
     if (!player) return;
     el.uiGarageCaps.textContent = `${player.caps} ₵`;
+    updateGarageShowcase();
     const list = getUpgradesDef();
     el.garageList.innerHTML = '';
     for (const u of list) {
       const card = document.createElement('div');
-      card.className = 'upg-card';
+      card.className = `upg-card${u.featured ? ' featured' : ''}`;
       const canBuy = !u.maxed && player.caps >= u.cost;
+      const iconSvg = UPGRADE_ICONS[u.id] || '';
+      const pips = u.max > 0 ? renderLevelPips(u.cur, u.max, !!u.amberPips) : '';
       card.innerHTML = `
+        <div class="upg-icon" aria-hidden="true">${iconSvg}</div>
         <div class="upg-main">
           <div class="upg-head">
             <span class="upg-name">${escapeHtml(u.name)}</span>
-            <span class="upg-lvl">${escapeHtml(u.lvl)}</span>
+            <span class="upg-lvl">${escapeHtml(u.lvl)}${pips}</span>
           </div>
           <div class="upg-desc">${escapeHtml(u.desc)}</div>
         </div>
@@ -1579,13 +2059,14 @@
         player.caps -= u.cost;
         u.apply();
         AudioFX.upgrade();
-        if (u.id === 'matrix') {
+        if (u.id === 'matrix' || (u.id === 'car' && player.carClass === CAR_CLASSES.length - 1)) {
           driverAwakenNeo(2.2, pickQuote(DRIVER_QUOTES.neo));
         } else {
           driverDrinkCanteen(pickQuote(DRIVER_QUOTES.upgrade));
         }
         addLog(`Установлено: ${u.name}`, 'matrix');
         addFloatText(player.x, player.y - 24, `АПГРЕЙД: ${u.name}`, '#38e8ff');
+        saveProgress();
         renderGarage();
         syncUI(true);
       });
@@ -1632,7 +2113,7 @@
         matrixActive = false;
         AudioFX.matrix(false);
       }
-      player.focus = Math.min(player.maxFocus, player.focus + 14 * dt);
+      player.focus = Math.min(player.maxFocus, player.focus + spec.focusRegen * dt);
     }
 
     // «Скрытый код под ржавчиной»: Матрица прорывается в Фокусе, у терминалов/разломов, рядом с Агентами и при повреждениях
@@ -1649,9 +2130,9 @@
         if (rd < 150) targetBreach = Math.max(targetBreach, (1 - rd / 150) * 0.55);
       }
       for (const e of enemies) {
-        if (e.kind === 'agent') {
+        if (e.kind === 'agent' || e.kind === 'boss') {
           const ad = dist(player, e);
-          if (ad < 320) targetBreach = Math.max(targetBreach, (1 - ad / 320) * 0.72);
+          if (ad < 340) targetBreach = Math.max(targetBreach, (1 - ad / 340) * 0.72);
         }
       }
     }
@@ -1793,6 +2274,37 @@
       });
     }
 
+    // Выхлопные искры (двигатель ур. 2+) и нитро-форсаж (ур. 4)
+    const curSpd = Math.hypot(player.vx, player.vy);
+    if (player.engineLvl >= 4 && curSpd > 140 && Math.random() < 0.65) {
+      const bx = player.x - Math.cos(player.ang) * (spec.len * 0.56);
+      const by = player.y - Math.sin(player.ang) * (spec.len * 0.56);
+      const side = (Math.random() < 0.5 ? -1 : 1) * (spec.wid * 0.25);
+      const px = bx - Math.sin(player.ang) * side;
+      const py = by + Math.cos(player.ang) * side;
+      particles.push({
+        x: px, y: py,
+        vx: -Math.cos(player.ang) * (70 + Math.random() * 55) + (Math.random() - 0.5) * 18,
+        vy: -Math.sin(player.ang) * (70 + Math.random() * 55) + (Math.random() - 0.5) * 18,
+        size: 2.6 + Math.random() * 2.4,
+        color: Math.random() < 0.55 ? '#38e8ff' : '#39ff88',
+        life: 0.16,
+        maxLife: 0.16
+      });
+    } else if ((player.engineLvl >= 2 || player.carClass === 3) && curSpd > 160 && Math.random() < 0.28) {
+      const side = (Math.random() < 0.5 ? -1 : 1) * (spec.wid * 0.55);
+      particles.push({
+        x: player.x - Math.cos(player.ang) * (spec.len * 0.28) - Math.sin(player.ang) * side,
+        y: player.y - Math.sin(player.ang) * (spec.len * 0.28) + Math.cos(player.ang) * side,
+        vx: -Math.cos(player.ang) * 45 + (Math.random() - 0.5) * 22,
+        vy: -Math.sin(player.ang) * 45 + (Math.random() - 0.5) * 22,
+        size: 2.0 + Math.random() * 1.8,
+        color: '#ff9436',
+        life: 0.2,
+        maxLife: 0.2
+      });
+    }
+
     // Дым при сильном повреждении корпуса
     if (player.hp < player.maxHp * 0.4 && Math.random() < 0.32) {
       particles.push({
@@ -1858,33 +2370,67 @@
       player.turretAng = player.ang;
     }
 
-    // Стрельба
+    // Стрельба из турели + автозалп самонаводящихся ракет (missileLvl 1..3)
     if (player.shootCd > 0) player.shootCd -= dt;
+    if (player.missileCd > 0) player.missileCd -= dt;
     const wantFire = !!(mouse.down || keys.Space || touchFire);
+
     if (wantFire && player.shootCd <= 0) {
       if (player.ammo > 0) {
         player.shootCd = spec.fireDelay;
         player.ammo--;
         const a = player.turretAng;
         const muzzleDist = spec.len * 0.48;
-        const bulletCol = player.weaponLvl >= 3 ? '#39ff88' : '#ffd86b';
+        const perpX = -Math.sin(a) * 4.5;
+        const perpY = Math.cos(a) * 4.5;
+        const mx = player.x + Math.cos(a) * muzzleDist;
+        const my = player.y + Math.sin(a) * muzzleDist;
 
-        if (player.weaponLvl >= 3) {
-          // Двойной залп на 3+ уровне оружия
-          const perpX = -Math.sin(a) * 5;
-          const perpY = Math.cos(a) * 5;
-          fireBullet('player', player.x + Math.cos(a) * muzzleDist + perpX, player.y + Math.sin(a) * muzzleDist + perpY, a - 0.025, 760, spec.damage * 0.72, bulletCol, 3.6);
-          fireBullet('player', player.x + Math.cos(a) * muzzleDist - perpX, player.y + Math.sin(a) * muzzleDist - perpY, a + 0.025, 760, spec.damage * 0.72, bulletCol, 3.6);
+        if (player.weaponLvl >= 4) {
+          // Ур.4: Три-плазменный комплекс (2 тяжёлых луча + центр-овердрайв)
+          fireBullet('player', mx + perpX, my + perpY, a - 0.032, 790, spec.damage * 0.62, '#39ff88', 3.6);
+          fireBullet('player', mx - perpX, my - perpY, a + 0.032, 790, spec.damage * 0.62, '#39ff88', 3.6);
+          fireBullet('player', mx, my, a, 840, spec.damage * 0.72, '#38e8ff', 4.1);
+        } else if (player.weaponLvl === 3) {
+          // Ур.3: Сдвоенная плазменная автопушка
+          fireBullet('player', mx + perpX, my + perpY, a - 0.022, 770, spec.damage * 0.76, '#39ff88', 3.7);
+          fireBullet('player', mx - perpX, my - perpY, a + 0.022, 770, spec.damage * 0.76, '#39ff88', 3.7);
+        } else if (player.weaponLvl === 2) {
+          // Ур.2: Сдвоенный тяжёлый пулемёт (2 параллельных ствола)
+          fireBullet('player', mx + perpX * 0.85, my + perpY * 0.85, a - 0.018, 740, spec.damage * 0.70, '#ffd86b', 3.4);
+          fireBullet('player', mx - perpX * 0.85, my - perpY * 0.85, a + 0.018, 740, spec.damage * 0.70, '#ffd86b', 3.4);
         } else {
-          fireBullet('player', player.x + Math.cos(a) * muzzleDist, player.y + Math.sin(a) * muzzleDist, a, 720, spec.damage, bulletCol, 3.5);
+          // Ур.1: Одиночный крупнокалиберный пулемёт
+          fireBullet('player', mx, my, a, 720, spec.damage, '#ffd86b', 3.4);
         }
-        AudioFX.shoot(player.weaponLvl >= 3);
+        const flashCol = player.weaponLvl >= 3 ? '#39ff88' : '#ffd86b';
+        AudioFX.shoot(player.weaponLvl >= 2);
         driverOnGunfire(player.weaponLvl >= 3, a);
-        spawnBurst(player.x + Math.cos(a) * muzzleDist, player.y + Math.sin(a) * muzzleDist, bulletCol, 3, 95);
+        spawnBurst(mx, my, flashCol, 3, 95);
       } else {
         player.shootCd = 0.45;
         addLog('Нет патронов! Подберите красные ящики или заедьте в Депо.', 'warn');
       }
+    }
+
+    // Запуск самонаводящихся ракет при стрельбе (бонусный залп, не тратит патроны!)
+    if (wantFire && (player.missileLvl || 0) > 0 && player.missileCd <= 0) {
+      const lock = findNearestEnemy(player.x, player.y, 680, player.turretAng);
+      player.missileCd = spec.missileCd;
+      const a = player.turretAng;
+      const salvo = spec.missileSalvo;
+      if (salvo >= 2) {
+        const px = -Math.sin(a) * 9;
+        const py = Math.cos(a) * 9;
+        fireHomingMissile(player.x + px, player.y + py, a - 0.24, spec.missileDmg, lock);
+        fireHomingMissile(player.x - px, player.y - py, a + 0.24, spec.missileDmg, lock);
+      } else {
+        const px = -Math.sin(a) * 8;
+        const py = Math.cos(a) * 8;
+        fireHomingMissile(player.x + px, player.y + py, a - 0.14, spec.missileDmg, lock);
+      }
+      if (AudioFX.missile) AudioFX.missile();
+      driverOnGunfire(true, a);
     }
   }
 
@@ -1901,57 +2447,90 @@
       player.hp = 0;
       explodeVehicle(player.x, player.y, false);
       updateBestScore();
+      saveProgress();
       setOverlayState('dead');
       syncUI(true);
     }
   }
 
   function updateEnemies(dt) {
-    const targetCount = Math.min(11, 5 + player.trace + Math.floor(player.missionsDone / 2));
+    const pwr = getPlayerPower();
+    const targetCount = Math.min(12, 5 + player.trace + Math.floor((player.missionsDone + player.carClass) / 2));
     enemySpawnTimer -= dt;
     if (enemySpawnTimer <= 0 && enemies.length < targetCount) {
-      enemySpawnTimer = 3.2;
-      const spawnAgent = player.trace >= 2 && Math.random() < (0.25 + player.trace * 0.12);
-      spawnEnemy(spawnAgent ? 'agent' : 'raider');
+      enemySpawnTimer = Math.max(2.1, 3.2 - pwr * 0.05);
+      const bossCount = enemies.filter((e) => e.kind === 'boss').length;
+      const maxBosses = pwr >= 11 ? 2 : 1;
+      const roll = Math.random();
+
+      let kind = 'raider';
+      if ((pwr >= 7 || player.carClass >= 2 || player.trace >= 4) && bossCount < maxBosses && roll < (0.10 + player.carClass * 0.03)) {
+        kind = 'boss';
+      } else if ((player.trace >= 2 || pwr >= 4.5) && roll < (0.30 + player.trace * 0.08 + pwr * 0.012)) {
+        kind = 'agent';
+      } else if ((pwr >= 2.2 || player.carClass >= 1 || player.trace >= 2) && roll < (0.58 + pwr * 0.018)) {
+        kind = 'heavy';
+      }
+      spawnEnemy(kind);
     }
 
+    const spec = getCarSpec();
     for (let i = enemies.length - 1; i >= 0; i--) {
       const e = enemies[i];
       const d = dist(e, player);
       const isAgent = e.kind === 'agent';
-      const aggroDist = isAgent ? 780 : 480;
+      const isBoss = e.kind === 'boss';
+      const isHeavy = e.kind === 'heavy';
+      const aggroDist = e.aggro || (isAgent ? 780 : 480);
 
       if (d < aggroDist && !player.inDepot) {
         // Преследование игрока с объездом зданий
         const desiredAng = Math.atan2(player.y - e.y, player.x - e.x);
         const diff = normAngle(desiredAng - e.ang);
-        e.ang = normAngle(e.ang + clamp(diff, -2.9 * dt, 2.9 * dt));
-        const desiredSpeed = d > 135 ? e.speed : e.speed * 0.35;
+        const turnRate = isBoss ? 2.1 : (isHeavy ? 2.4 : 2.95);
+        e.ang = normAngle(e.ang + clamp(diff, -turnRate * dt, turnRate * dt));
+        const holdDist = isBoss ? 175 : 135;
+        const desiredSpeed = d > holdDist ? e.speed : e.speed * 0.35;
         e.vx += (Math.cos(e.ang) * desiredSpeed - e.vx) * Math.min(1, 3.8 * dt);
         e.vy += (Math.sin(e.ang) * desiredSpeed - e.vy) * Math.min(1, 3.8 * dt);
 
-        // Стрельба по игроку
+        // Стрельба по игроку (зависит от архетипа врага)
         e.shootCd -= dt;
-        if (e.shootCd <= 0 && d < (isAgent ? 390 : 300)) {
-          e.shootCd = isAgent ? 0.95 : 1.45;
-          const aim = Math.atan2(player.y - e.y, player.x - e.x) + (Math.random() - 0.5) * (isAgent ? 0.1 : 0.22);
-          fireBullet(
-            'enemy',
-            e.x + Math.cos(aim) * 20,
-            e.y + Math.sin(aim) * 20,
-            aim,
-            isAgent ? 470 : 390,
-            isAgent ? 13 : 9,
-            isAgent ? '#39ff88' : '#ff6b57',
-            3.4
-          );
+        const shootRange = e.range || (isAgent ? 390 : 300);
+        if (e.shootCd <= 0 && d < shootRange) {
+          e.shootCd = e.fireCd || (isAgent ? 0.95 : 1.45);
+          const aim = Math.atan2(player.y - e.y, player.x - e.x) + (Math.random() - 0.5) * (isAgent ? 0.09 : 0.2);
+          const mx = e.x + Math.cos(aim) * (e.len * 0.52);
+          const my = e.y + Math.sin(aim) * (e.len * 0.52);
+
+          if (isBoss) {
+            // Каратель Системы: 3-ствольный веерный залп!
+            fireBullet('enemy', mx, my, aim - 0.14, 465, e.dmg * 0.78, '#ff4d5a', 4.0);
+            fireBullet('enemy', mx, my, aim, 490, e.dmg, '#39ff88', 4.3);
+            fireBullet('enemy', mx, my, aim + 0.14, 465, e.dmg * 0.78, '#ff4d5a', 4.0);
+          } else if (isHeavy) {
+            // Броневик: сдвоенный залп
+            const px = -Math.sin(aim) * 4.2;
+            const py = Math.cos(aim) * 4.2;
+            fireBullet('enemy', mx + px, my + py, aim - 0.04, 415, e.dmg * 0.72, '#ff8e47', 3.5);
+            fireBullet('enemy', mx - px, my - py, aim + 0.04, 415, e.dmg * 0.72, '#ff8e47', 3.5);
+          } else {
+            fireBullet(
+              'enemy',
+              mx, my,
+              aim,
+              isAgent ? 475 : 395,
+              e.dmg || (isAgent ? 13 : 9),
+              isAgent ? '#39ff88' : '#ff6b57',
+              3.4
+            );
+          }
         }
       } else {
         // Патрулирование улиц
         e.wanderTimer -= dt;
         if (e.wanderTimer <= 0) {
           e.wanderTimer = 1.6 + Math.random() * 2.2;
-          // Выбираем одно из 4 кардинальных направлений вдоль сетки дорог
           e.wanderAng = Math.floor(Math.random() * 4) * (Math.PI / 2);
         }
         const diff = normAngle(e.wanderAng - e.ang);
@@ -1969,8 +2548,8 @@
         e.wanderTimer = 1.0;
       }
 
-      // Столкновение машина-в-машину с игроком
-      const minSep = 24;
+      // Столкновение машина-в-машину с игроком (учёт класса кузова и шипастого тарана!)
+      const minSep = (spec.wid + e.wid) * 0.58;
       const pd = dist(e, player);
       if (pd < minSep && pd > 0.01) {
         const nx = (player.x - e.x) / pd;
@@ -1981,12 +2560,11 @@
         e.x -= nx * push;
         e.y -= ny * push;
         const relSp = Math.hypot(player.vx - e.vx, player.vy - e.vy);
-        if (relSp > 120) {
-          // Таран: WAR RIG наносит сильный урон при таране
-          const ramMult = player.carClass === 2 ? 0.34 : 0.16;
-          e.hp -= relSp * ramMult;
-          damagePlayer(relSp * (player.carClass === 2 ? 0.03 : 0.06), false);
-          spawnBurst((player.x + e.x) / 2, (player.y + e.y) / 2, '#ffb84d', 6, 130);
+        if (relSp > 115) {
+          e.hp -= relSp * spec.ramMult;
+          const bossFactor = isBoss ? 1.55 : (isHeavy ? 1.2 : 1.0);
+          damagePlayer(relSp * spec.ramSelfMult * bossFactor, false);
+          spawnBurst((player.x + e.x) / 2, (player.y + e.y) / 2, '#ffb84d', 7, 145);
           if (e.hp <= 0) destroyEnemy(i);
         }
       }
@@ -1997,24 +2575,38 @@
     const e = enemies[index];
     if (!e) return;
     const isAgent = e.kind === 'agent';
-    explodeVehicle(e.x, e.y, isAgent);
+    const isBoss = e.kind === 'boss';
+    const isHeavy = e.kind === 'heavy';
+    explodeVehicle(e.x, e.y, isAgent || isBoss);
     enemies.splice(index, 1);
 
-    const capsGain = isAgent ? 30 : 18;
-    const scoreGain = isAgent ? 180 : 100;
+    const capsGain = e.bounty || (isBoss ? 75 : isAgent ? 35 : isHeavy ? 30 : 18);
+    const scoreGain = e.score || (isBoss ? 420 : isAgent ? 200 : isHeavy ? 160 : 100);
     player.caps += capsGain;
     player.score += scoreGain;
     player.kills++;
-    player.focus = Math.min(player.maxFocus, player.focus + 22);
-    player.trace = Math.min(5, player.trace + (isAgent ? 1 : (player.kills % 2 === 0 ? 1 : 0)));
+    player.totalKills = (player.totalKills || 0) + 1;
+    player.focus = Math.min(player.maxFocus, player.focus + (isBoss ? 45 : 22));
+    player.trace = Math.min(5, player.trace + (isAgent || isBoss ? 1 : (player.kills % 2 === 0 ? 1 : 0)));
     traceDecayTimer = 0;
 
-    addFloatText(e.x, e.y - 16, `+${capsGain} ₵`, '#ffb84d');
-    addLog(isAgent ? `Агент Матрицы нейтрализован! +${capsGain} ₵` : `Рейдер уничтожен! +${capsGain} ₵`, isAgent ? 'matrix' : '');
-    driverOnKill(isAgent);
+    const label = isBoss
+      ? `КАРАТЕЛЬ УНИЧТОЖЕН! +${capsGain} ₵`
+      : isAgent
+        ? `Агент Матрицы нейтрализован! +${capsGain} ₵`
+        : isHeavy
+          ? `Броневик рейдеров подорван! +${capsGain} ₵`
+          : `Рейдер уничтожен! +${capsGain} ₵`;
 
-    // Дроп лута на месте взрыва
-    if (Math.random() < 0.72) {
+    addFloatText(e.x, e.y - 16, `+${capsGain} ₵`, isBoss ? '#39ff88' : '#ffb84d');
+    addLog(label, (isAgent || isBoss) ? 'matrix' : '');
+    driverOnKill(isAgent || isBoss);
+
+    // Дроп лута на месте взрыва (Каратель всегда роняет ценный модуль + ядро!)
+    if (isBoss) {
+      spawnLoot({ x: e.x - 10, y: e.y }, 'module');
+      spawnLoot({ x: e.x + 10, y: e.y }, 'focus');
+    } else if (Math.random() < (isHeavy ? 0.85 : 0.72)) {
       spawnLoot({ x: e.x, y: e.y }, isAgent ? 'focus' : (Math.random() < 0.5 ? 'ammo' : 'medkit'));
     }
 
@@ -2023,18 +2615,53 @@
       if (mission.progress >= mission.goal) completeMission();
     }
     updateBestScore();
+    saveProgress();
     renderGarage();
   }
 
   function updateBullets(dt) {
     for (let i = bullets.length - 1; i >= 0; i--) {
       const b = bullets[i];
+
+      // Самонаводящаяся ракета: доворот к цели + шлейф дыма
+      if (b.homing) {
+        let target = enemies.find((e) => e.id === b.targetId);
+        if (!target) {
+          target = findNearestEnemy(b.x, b.y, 460, b.ang);
+          b.targetId = target ? target.id : null;
+        }
+        if (target) {
+          const desiredAng = Math.atan2(target.y - b.y, target.x - b.x);
+          const diff = normAngle(desiredAng - b.ang);
+          b.ang = normAngle(b.ang + clamp(diff, -5.6 * dt, 5.6 * dt));
+        }
+        b.speed = Math.min(590, b.speed + 260 * dt);
+        b.vx = Math.cos(b.ang) * b.speed;
+        b.vy = Math.sin(b.ang) * b.speed;
+
+        b.smokeCd = (b.smokeCd || 0) - dt;
+        if (b.smokeCd <= 0) {
+          b.smokeCd = 0.028;
+          particles.push({
+            x: b.x - Math.cos(b.ang) * 7,
+            y: b.y - Math.sin(b.ang) * 7,
+            vx: -Math.cos(b.ang) * 28 + (Math.random() - 0.5) * 24,
+            vy: -Math.sin(b.ang) * 28 + (Math.random() - 0.5) * 24,
+            size: 2.5 + Math.random() * 2.5,
+            color: Math.random() < 0.45 ? '#ffb84d' : '#8ea095',
+            life: 0.28,
+            maxLife: 0.28
+          });
+        }
+      }
+
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       b.life -= dt;
 
       if (b.life <= 0 || world.isPointInBuilding(b.x, b.y)) {
-        spawnBurst(b.x, b.y, b.color, 3, 75);
+        if (b.homing) detonateMissile(b);
+        else spawnBurst(b.x, b.y, b.color, 3, 75);
         bullets.splice(i, 1);
         continue;
       }
@@ -2043,11 +2670,15 @@
         let hit = false;
         for (let j = enemies.length - 1; j >= 0; j--) {
           const e = enemies[j];
-          if (Math.hypot(b.x - e.x, b.y - e.y) < e.len * 0.52) {
-            e.hp -= b.dmg;
-            AudioFX.hit();
-            spawnBurst(b.x, b.y, b.color, 5, 110);
-            if (e.hp <= 0) destroyEnemy(j);
+          if (Math.hypot(b.x - e.x, b.y - e.y) < e.len * 0.52 + (b.homing ? 6 : 0)) {
+            if (b.homing) {
+              detonateMissile(b);
+            } else {
+              e.hp -= b.dmg;
+              AudioFX.hit();
+              spawnBurst(b.x, b.y, b.color, 5, 110);
+              if (e.hp <= 0) destroyEnemy(j);
+            }
             hit = true;
             break;
           }
@@ -2069,24 +2700,33 @@
       it.pulse += dt * 3.5;
       if (dist(player, it) < 34) {
         const def = LOOT_DEFS[it.type];
-        if (it.type === 'ammo') player.ammo += 28;
+        let capsChanged = false;
+        if (it.type === 'ammo') player.ammo += 30;
         else if (it.type === 'medkit') {
-          player.hp = Math.min(player.maxHp, player.hp + 35);
+          player.hp = Math.min(player.maxHp, player.hp + 38);
           driverDrinkCanteen(pickQuote(DRIVER_QUOTES.canteen));
-        } else if (it.type === 'caps') player.caps += 25;
-        else if (it.type === 'focus') {
+        } else if (it.type === 'caps') {
+          player.caps += 25;
+          capsChanged = true;
+        } else if (it.type === 'focus') {
           player.focus = Math.min(player.maxFocus, player.focus + 55);
           driverAwakenNeo(1.8, pickQuote(DRIVER_QUOTES.neo));
         } else if (it.type === 'radaway') {
           player.rad = Math.max(0, player.rad - 55);
           driverDrinkCanteen('Антирадин пошёл. Фляжка снова выручает.');
-        } else if (it.type === 'module') { player.caps += 35; player.score += 60; }
+        } else if (it.type === 'module') {
+          player.caps += 35;
+          player.score += 60;
+          capsChanged = true;
+        }
 
         player.score += 25;
         AudioFX.pickup();
         addFloatText(it.x, it.y - 12, def.label, def.color);
         addLog(`Подобрано: ${def.label}`);
         loot.splice(i, 1);
+
+        if (capsChanged) saveProgress();
 
         if (mission && mission.type === 'collect' && mission.stage === 'gather') {
           mission.progress++;
@@ -2319,8 +2959,55 @@
       ctx.restore();
     }
 
-    // Пули и трассеры (светятся в темноте!)
+    // Пули, трассеры и самонаводящиеся ракеты (светятся в темноте!)
     for (const b of bullets) {
+      if (b.homing) {
+        // Красный маркер захвата на цели ракеты
+        if (b.targetId) {
+          const tgt = enemies.find((e) => e.id === b.targetId);
+          if (tgt) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 92, 66, 0.78)';
+            ctx.lineWidth = 1.6;
+            const r = tgt.len * 0.56 + Math.sin(elapsed * 16) * 2.5;
+            ctx.beginPath();
+            ctx.arc(tgt.x, tgt.y, r, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+        // Корпус ракеты + оперение + яркое реактивное пламя
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(b.ang);
+        ctx.fillStyle = 'rgba(255, 130, 38, 0.45)';
+        ctx.beginPath();
+        ctx.ellipse(-9, 0, 7 + Math.random() * 3, 3.6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fff0a6';
+        ctx.beginPath();
+        ctx.moveTo(-5, -1.8);
+        ctx.lineTo(-12 - Math.random() * 4, 0);
+        ctx.lineTo(-5, 1.8);
+        ctx.closePath();
+        ctx.fill();
+        // Стабилизаторы
+        ctx.fillStyle = '#ffb84d';
+        ctx.fillRect(-5.5, -4, 3, 8);
+        // Корпус и красная боеголовка
+        ctx.fillStyle = '#e8f0ec';
+        ctx.fillRect(-5, -2.1, 9, 4.2);
+        ctx.fillStyle = '#ff384c';
+        ctx.beginPath();
+        ctx.moveTo(4, -2.2);
+        ctx.lineTo(8.5, 0);
+        ctx.lineTo(4, 2.2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        continue;
+      }
+
       ctx.save();
       ctx.strokeStyle = b.color;
       ctx.lineWidth = b.radius * 0.95;
@@ -2470,22 +3157,31 @@
       addRadialLight(it.x, it.y, 44, 180, 235, 255, 0.36);
     }
 
-    // Фары врагов (рейдеры — оранжевый свет, Агенты Матрицы — пугающий изумрудный!)
+    // Фары врагов (рейдеры — оранжевый, броневики — янтарный, Агенты — изумруд, Каратель — алый + изумруд!)
     for (const e of enemies) {
       if (e.x < minX - 180 || e.x > maxX + 180 || e.y < minY - 180 || e.y > maxY + 180) continue;
-      if (e.kind === 'agent') {
+      if (e.kind === 'boss') {
+        addHeadlightCone(e.x, e.y, e.ang, 250, 86, '255,68,88', 0.9);
+        addRadialLight(e.x, e.y, 72, 255, 62, 82, 0.52);
+      } else if (e.kind === 'agent') {
         addHeadlightCone(e.x, e.y, e.ang, 220, 68, '57,255,136', 0.82);
         addRadialLight(e.x, e.y, 52, 57, 255, 136, 0.45);
+      } else if (e.kind === 'heavy') {
+        addHeadlightCone(e.x, e.y, e.ang, 195, 66, '255,168,72', 0.76);
       } else {
         addHeadlightCone(e.x, e.y, e.ang, 175, 54, '255,135,72', 0.68);
       }
     }
 
-    // Фары, ореол и стоп-сигналы игрока
+    // Фары, ореол, неон Ядра Матрицы и стоп-сигналы игрока
     if (player && player.hp > 0) {
-      const headRgb = matrixActive ? '90,255,175' : '255,244,205';
-      addHeadlightCone(player.x, player.y, player.ang, 320, 108, headRgb, 0.98);
-      addRadialLight(player.x, player.y, 120, 225, 240, 230, 0.58);
+      const isPhantom = player.carClass === 4;
+      const headRgb = (matrixActive || isPhantom) ? '90,255,175' : '255,244,205';
+      addHeadlightCone(player.x, player.y, player.ang, 330, 112, headRgb, 0.98);
+      if (player.matrixLvl >= 3 || isPhantom) {
+        addRadialLight(player.x, player.y, 82, 57, 255, 136, isPhantom ? 0.56 : 0.42);
+      }
+      addRadialLight(player.x, player.y, 122, 225, 240, 230, 0.58);
       const bx = player.x - Math.cos(player.ang) * 20;
       const by = player.y - Math.sin(player.ang) * 20;
       addRadialLight(bx, by, 44, 255, 52, 68, 0.52);
@@ -2993,84 +3689,387 @@
     const spec = getCarSpec();
     const hl = spec.len / 2;
     const hw = spec.wid / 2;
+    const spd = Math.hypot(player.vx, player.vy);
+    const pulse = 0.65 + 0.35 * Math.sin(elapsed * 7);
 
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.rotate(player.ang);
 
+    // Неоновая подсветка днища при Ядре Матрицы ур.3+ или на MATRIX PHANTOM
+    if (player.matrixLvl >= 3 || spec.style === 'phantom' || matrixActive) {
+      const aura = ctx.createRadialGradient(0, 0, hw * 0.4, 0, 0, hl * 1.45);
+      aura.addColorStop(0, `rgba(57, 255, 136, ${spec.style === 'phantom' ? 0.34 : 0.24})`);
+      aura.addColorStop(1, 'rgba(57, 255, 136, 0)');
+      ctx.fillStyle = aura;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, hl * 1.38, hw * 1.65, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // Конусы фар (вперёд по +X)
-    const beam = ctx.createLinearGradient(hl, 0, hl + 95, 0);
-    beam.addColorStop(0, matrixActive ? 'rgba(57, 255, 136, 0.34)' : 'rgba(255, 244, 190, 0.28)');
+    const beamLen = spec.style === 'warrig' ? 112 : 98;
+    const beam = ctx.createLinearGradient(hl, 0, hl + beamLen, 0);
+    beam.addColorStop(0, (matrixActive || spec.style === 'phantom')
+      ? 'rgba(57, 255, 136, 0.36)'
+      : 'rgba(255, 244, 190, 0.29)');
     beam.addColorStop(1, 'rgba(255, 244, 190, 0)');
     ctx.fillStyle = beam;
     ctx.beginPath();
     ctx.moveTo(hl, -hw + 2);
-    ctx.lineTo(hl + 95, -hw - 26);
-    ctx.lineTo(hl + 95, hw + 26);
+    ctx.lineTo(hl + beamLen, -hw - 28);
+    ctx.lineTo(hl + beamLen, hw + 28);
     ctx.lineTo(hl, hw - 2);
     ctx.closePath();
     ctx.fill();
 
     // Тень под машиной
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-    ctx.fillRect(-hl + 3, -hw + 4, spec.len, spec.wid);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.48)';
+    ctx.fillRect(-hl + 3, -hw + 4, spec.len + (player.armorLvl >= 3 ? 5 : 0), spec.wid);
 
-    // Колёса
-    ctx.fillStyle = '#0c100e';
-    ctx.fillRect(hl - 11, -hw - 2, 9, 4);
-    ctx.fillRect(hl - 11, hw - 2, 9, 4);
-    ctx.fillRect(-hl + 3, -hw - 2, 9, 4);
-    ctx.fillRect(-hl + 3, hw - 2, 9, 4);
+    // Колёса (4 или 6 колёс на WAR RIG MK-IV!)
+    const wheelOut = spec.style === 'buggy' ? 3.5 : 2.4;
+    ctx.fillStyle = '#0a0f0c';
+    ctx.strokeStyle = '#2a352f';
+    ctx.lineWidth = 1;
+    const wheelPositions = spec.wheels === 6
+      ? [hl - 10, -4, -hl + 7]
+      : [hl - 9.5, -hl + 7.5];
+    for (const wx of wheelPositions) {
+      const ww = spec.wheels === 6 ? 9.5 : (spec.style === 'buggy' ? 9.5 : 8.5);
+      const wh = spec.style === 'buggy' ? 4.8 : 4.2;
+      ctx.fillRect(wx - ww / 2, -hw - wheelOut, ww, wh);
+      ctx.fillRect(wx - ww / 2, hw + wheelOut - wh, ww, wh);
+      ctx.strokeRect(wx - ww / 2, -hw - wheelOut, ww, wh);
+      ctx.strokeRect(wx - ww / 2, hw + wheelOut - wh, ww, wh);
+    }
 
-    // Кузов
+    // ДВИГАТЕЛЬ ур.2+: боковые выхлопные трубы вдоль бортов
+    if (player.engineLvl >= 2) {
+      ctx.fillStyle = '#8b9992';
+      ctx.fillRect(-hl + 5, -hw - 2.3, spec.len * 0.48, 2.2);
+      ctx.fillRect(-hl + 5, hw + 0.1, spec.len * 0.48, 2.2);
+      ctx.fillStyle = '#ff8a36';
+      ctx.fillRect(-hl + 3, -hw - 2.2, 2.4, 2.0);
+      ctx.fillRect(-hl + 3, hw + 0.2, 2.4, 2.0);
+    }
+
+    // ДВИГАТЕЛЬ ур.4: задние нитро-сопла + живой форсаж на скорости
+    if (player.engineLvl >= 4) {
+      ctx.fillStyle = '#364a4f';
+      ctx.fillRect(-hl - 4, -hw * 0.55, 4.5, 4);
+      ctx.fillRect(-hl - 4, hw * 0.55 - 4, 4.5, 4);
+      if (spd > 95) {
+        const fl = 6 + clamp(spd / 45, 0, 9) + Math.random() * 4;
+        ctx.fillStyle = 'rgba(56, 232, 255, 0.85)';
+        ctx.beginPath();
+        ctx.moveTo(-hl - 4, -hw * 0.55);
+        ctx.lineTo(-hl - 4 - fl, -hw * 0.55 + 2);
+        ctx.lineTo(-hl - 4, -hw * 0.55 + 4);
+        ctx.moveTo(-hl - 4, hw * 0.55 - 4);
+        ctx.lineTo(-hl - 4 - fl, hw * 0.55 - 2);
+        ctx.lineTo(-hl - 4, hw * 0.55);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    // БРОНЯ ур.2+: навесные бронеюбки по бортам
+    if (player.armorLvl >= 2) {
+      ctx.fillStyle = '#2d3733';
+      ctx.strokeStyle = player.armorLvl >= 4 ? '#38e8ff' : '#73857b';
+      ctx.lineWidth = 1.1;
+      ctx.fillRect(-hl + 6, -hw - 2.8, spec.len - 12, 3.2);
+      ctx.strokeRect(-hl + 6, -hw - 2.8, spec.len - 12, 3.2);
+      ctx.fillRect(-hl + 6, hw - 0.4, spec.len - 12, 3.2);
+      ctx.strokeRect(-hl + 6, hw - 0.4, spec.len - 12, 3.2);
+    }
+
+    // ОСНОВНОЙ КУЗОВ (уникальная геометрия для каждого из 5 классов!)
     ctx.fillStyle = spec.fill;
-    ctx.strokeStyle = matrixActive ? '#39ff88' : '#0b140d';
-    ctx.lineWidth = 2;
-    ctx.fillRect(-hl, -hw, spec.len, spec.wid);
-    ctx.strokeRect(-hl, -hw, spec.len, spec.wid);
+    ctx.strokeStyle = matrixActive
+      ? '#39ff88'
+      : (player.armorLvl >= 4 ? '#5cebff' : (spec.style === 'phantom' ? '#39ff88' : '#0a120d'));
+    ctx.lineWidth = player.armorLvl >= 4 ? 2.2 : 1.9;
 
-    // Полоса и кабина
-    ctx.fillStyle = spec.trim;
-    ctx.fillRect(-hl + 3, -2, spec.len - 6, 4);
+    if (spec.style === 'buggy') {
+      // Класс I: сужающийся нос багги + открытая рама
+      ctx.beginPath();
+      ctx.moveTo(hl, -hw * 0.65);
+      ctx.lineTo(hl - 6, -hw);
+      ctx.lineTo(-hl, -hw);
+      ctx.lineTo(-hl, hw);
+      ctx.lineTo(hl - 6, hw);
+      ctx.lineTo(hl, hw * 0.65);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
 
-    // Лобовое стекло (спереди)
-    ctx.fillStyle = '#112529';
-    ctx.fillRect(hl - 13, -hw + 3, 7, spec.wid - 6);
+      // Полоса Vault по центру капота
+      ctx.fillStyle = spec.stripe;
+      ctx.fillRect(-hl + 3, -3.5, spec.len - 7, 7);
+      ctx.fillStyle = spec.trim;
+      ctx.fillRect(-hl + 3, -1.2, spec.len - 7, 2.4);
+
+      // Трубчатый каркас безопасности
+      ctx.strokeStyle = '#9aa8a0';
+      ctx.lineWidth = 1.6;
+      ctx.strokeRect(-hl + 6, -hw + 2.5, spec.len * 0.46, spec.wid - 5);
+    } else if (spec.style === 'muscle') {
+      // Класс II: широкий мускул-кар с фастбэк-решёткой сзади
+      ctx.fillRect(-hl, -hw, spec.len, spec.wid);
+      ctx.strokeRect(-hl, -hw, spec.len, spec.wid);
+      // Сине-жёлтая гоночная полоса Vault-0
+      ctx.fillStyle = spec.stripe;
+      ctx.fillRect(-hl + 2, -4.5, spec.len - 4, 9);
+      ctx.fillStyle = spec.trim;
+      ctx.fillRect(-hl + 2, -1.4, spec.len - 4, 2.8);
+      // Жалюзи на заднем стекле
+      ctx.fillStyle = '#182124';
+      ctx.fillRect(-hl + 3, -hw + 3.5, 8, spec.wid - 7);
+      ctx.strokeStyle = '#38464c';
+      ctx.lineWidth = 1;
+      for (let lx = -hl + 5; lx <= -hl + 9; lx += 2.2) {
+        ctx.beginPath();
+        ctx.moveTo(lx, -hw + 4);
+        ctx.lineTo(lx, hw - 4);
+        ctx.stroke();
+      }
+    } else if (spec.style === 'enforcer') {
+      // Класс III: тяжёлый бронированный пикап Vault-Blue с кузовом сзади
+      ctx.fillRect(-hl, -hw, spec.len, spec.wid);
+      ctx.strokeRect(-hl, -hw, spec.len, spec.wid);
+      // Утопленный кузов пикапа сзади
+      ctx.fillStyle = '#132433';
+      ctx.fillRect(-hl + 2.5, -hw + 3, spec.len * 0.34, spec.wid - 6);
+      ctx.strokeStyle = '#5c8cb5';
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(-hl + 2.5, -hw + 3, spec.len * 0.34, spec.wid - 6);
+      // Жёлтые предупредительные полосы по бортам
+      ctx.fillStyle = spec.trim;
+      ctx.fillRect(0, -hw + 1.5, hl - 4, 2.2);
+      ctx.fillRect(0, hw - 3.7, hl - 4, 2.2);
+    } else if (spec.style === 'warrig') {
+      // Класс IV: массивный 6-колёсный боевой грузовик Mad Max
+      ctx.fillRect(-hl, -hw, spec.len, spec.wid);
+      ctx.strokeRect(-hl, -hw, spec.len, spec.wid);
+      // Задняя грузовая бронеплатформа
+      ctx.fillStyle = '#2a241f';
+      ctx.fillRect(-hl + 2.5, -hw + 2.5, spec.len * 0.44, spec.wid - 5);
+      // Усиленная кабина и длинный капот
+      ctx.fillStyle = '#62564b';
+      ctx.fillRect(2, -hw + 2, hl - 4, spec.wid - 4);
+      // Жёлто-оранжевая полоса опасности по капоту
+      ctx.fillStyle = spec.trim;
+      ctx.fillRect(4, -2.5, hl - 7, 5);
+      // Вертикальные хромированные выхлопные трубы за кабиной
+      ctx.fillStyle = '#cfd8d3';
+      ctx.beginPath();
+      ctx.arc(-2, -hw + 2, 2.8, 0, Math.PI * 2);
+      ctx.arc(-2, hw - 2, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Класс V: MATRIX PHANTOM — стелс-обводы + светящиеся изумрудные контуры + спойлер
+      ctx.beginPath();
+      ctx.moveTo(hl + 2, -hw * 0.55);
+      ctx.lineTo(hl - 7, -hw);
+      ctx.lineTo(-hl, -hw);
+      ctx.lineTo(-hl - 2, -hw * 0.85);
+      ctx.lineTo(-hl - 2, hw * 0.85);
+      ctx.lineTo(-hl, hw);
+      ctx.lineTo(hl - 7, hw);
+      ctx.lineTo(hl + 2, hw * 0.55);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Светящиеся изумрудные линии кода по капоту и крыльям
+      ctx.strokeStyle = `rgba(57, 255, 136, ${0.65 + pulse * 0.35})`;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(hl - 4, -hw * 0.35);
+      ctx.lineTo(2, -hw * 0.55);
+      ctx.lineTo(-hl + 5, -hw * 0.55);
+      ctx.moveTo(hl - 4, hw * 0.35);
+      ctx.lineTo(2, hw * 0.55);
+      ctx.lineTo(-hl + 5, hw * 0.55);
+      ctx.stroke();
+
+      // Задний кибер-спойлер
+      ctx.fillStyle = '#09120e';
+      ctx.strokeStyle = '#39ff88';
+      ctx.lineWidth = 1.3;
+      ctx.fillRect(-hl - 2.5, -hw - 1.5, 4, spec.wid + 3);
+      ctx.strokeRect(-hl - 2.5, -hw - 1.5, 4, spec.wid + 3);
+    }
+
+    // Лобовое стекло (спереди кабины)
+    const wsX = spec.style === 'warrig' ? 4 : hl - 14;
+    ctx.fillStyle = spec.style === 'phantom' ? 'rgba(57, 255, 136, 0.35)' : '#102429';
+    ctx.fillRect(wsX, -hw + 3.2, 6.5, spec.wid - 6.4);
+
+    // БРОНЯ ур.4: бронерешётка на лобовом стекле + шипы сзади
+    if (player.armorLvl >= 4) {
+      ctx.strokeStyle = '#9db5ad';
+      ctx.lineWidth = 1.2;
+      for (let wy = -hw + 5; wy < hw - 4; wy += 3.5) {
+        ctx.beginPath();
+        ctx.moveTo(wsX, wy);
+        ctx.lineTo(wsX + 6.5, wy);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#cfd9d4';
+      ctx.fillRect(-hl - 2.5, -hw + 2, 2.5, 3);
+      ctx.fillRect(-hl - 2.5, hw - 5, 2.5, 3);
+    }
+
+    // ДВИГАТЕЛЬ ур.3+: хромированный V8 нагнетатель-блоуэр прямо на капоте!
+    if (player.engineLvl >= 3) {
+      const bx = hl - 8.5;
+      ctx.fillStyle = '#c8d6d0';
+      ctx.strokeStyle = '#1b2421';
+      ctx.lineWidth = 1;
+      ctx.fillRect(bx, -3.6, 6.5, 7.2);
+      ctx.strokeRect(bx, -3.6, 6.5, 7.2);
+      ctx.fillStyle = '#ff5938';
+      ctx.fillRect(bx + 4.4, -2.5, 1.8, 5);
+    }
+
+    // ЯДРО МАТРИЦЫ ур.2+: светящиеся изумрудные решётки / реактор сзади!
+    if (player.matrixLvl >= 2) {
+      ctx.fillStyle = `rgba(57, 255, 136, ${0.55 + pulse * 0.45})`;
+      ctx.fillRect(-hl + 4, -hw + 4.5, 3.2, spec.wid - 9);
+      if (player.matrixLvl >= 3) {
+        ctx.beginPath();
+        ctx.arc(-hl + 10.5, 0, 3.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#38e8ff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    // БРОНЯ ур.3+ (или WAR RIG): мощный шипастый таранный отвал Mad Max спереди!
+    if (player.armorLvl >= 3 || spec.style === 'warrig') {
+      ctx.fillStyle = '#4c5752';
+      ctx.strokeStyle = '#c2d1c9';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(hl - 1, -hw - 2.5);
+      ctx.lineTo(hl + 5.5, -hw + 1.5);
+      ctx.lineTo(hl + 7.5, 0);
+      ctx.lineTo(hl + 5.5, hw - 1.5);
+      ctx.lineTo(hl - 1, hw + 2.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      // Стальные шипы на отвале
+      ctx.fillStyle = '#e2ede7';
+      const spikes = [-hw * 0.72, -hw * 0.35, 0, hw * 0.35, hw * 0.72];
+      for (const sy of spikes) {
+        const tipX = Math.abs(sy) < 2 ? hl + 11 : hl + 8.8;
+        ctx.beginPath();
+        ctx.moveTo(hl + 4.5, sy - 1.4);
+        ctx.lineTo(tipX, sy);
+        ctx.lineTo(hl + 4.5, sy + 1.4);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
 
     // Фары и стоп-огни
-    ctx.fillStyle = '#fff9c4';
+    ctx.fillStyle = spec.style === 'phantom' ? '#9cffc3' : '#fff7be';
     ctx.fillRect(hl - 2, -hw + 2, 3, 4);
     ctx.fillRect(hl - 2, hw - 6, 3, 4);
-    ctx.fillStyle = '#ff4d5a';
-    ctx.fillRect(-hl - 1, -hw + 2, 2, 4);
-    ctx.fillRect(-hl - 1, hw - 6, 2, 4);
+    if (spec.style === 'muscle' || spec.style === 'warrig') {
+      ctx.fillRect(hl - 2, -hw + 7, 2.5, 2.8);
+      ctx.fillRect(hl - 2, hw - 9.8, 2.5, 2.8);
+    }
+    ctx.fillStyle = '#ff4252';
+    ctx.fillRect(-hl - 1, -hw + 2, 2.2, 4);
+    ctx.fillRect(-hl - 1, hw - 6, 2.2, 4);
 
     ctx.restore();
 
-    // Вращающаяся турель на крыше
+    // ВРАЩАЮЩАЯСЯ ТУРЕЛЬ НА КРЫШЕ + ПУСКОВЫЕ БЛОКИ САМОНАВОДЯЩИХСЯ РАКЕТ!
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.rotate(player.turretAng);
-    ctx.fillStyle = '#1a2b20';
-    ctx.strokeStyle = '#39ff88';
-    ctx.lineWidth = 1.5;
+
+    // Пусковые блоки самонаводящихся ракет (missileLvl 1..3)
+    const mLvl = player.missileLvl || 0;
+    if (mLvl > 0) {
+      const armed = player.missileCd <= 0.15;
+      const drawPod = (py) => {
+        ctx.fillStyle = '#2b3430';
+        ctx.strokeStyle = '#ffb84d';
+        ctx.lineWidth = 1.1;
+        ctx.fillRect(-7.5, py - 2.6, 11, 5.2);
+        ctx.strokeRect(-7.5, py - 2.6, 11, 5.2);
+        // Красные/янтарные боеголовки, когда ракеты готовы к пуску
+        ctx.fillStyle = armed ? '#ff4252' : '#525c56';
+        ctx.fillRect(3.2, py - 1.8, 2.4, 1.5);
+        ctx.fillRect(3.2, py + 0.3, 2.4, 1.5);
+      };
+      drawPod(-9.2);
+      if (mLvl >= 2) drawPod(9.2);
+    }
+
+    // Бронированная башня турели
+    ctx.fillStyle = '#17281e';
+    ctx.strokeStyle = player.weaponLvl >= 3 ? '#39ff88' : '#ffb84d';
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
-    ctx.arc(0, 0, 6.5, 0, Math.PI * 2);
+    ctx.arc(0, 0, player.weaponLvl >= 2 ? 7.2 : 6.2, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = player.weaponLvl >= 3 ? '#39ff88' : '#ffb84d';
-    if (player.weaponLvl >= 3) {
-      ctx.fillRect(4, -3.5, 13, 2.4);
-      ctx.fillRect(4, 1.1, 13, 2.4);
+    // Стволы (визуальная эволюция от 1 пулемёта -> сдвоенный -> 2× плазма -> 3× плазма!)
+    if (player.weaponLvl >= 4) {
+      // Ур.4: Три-плазменный комплекс
+      ctx.fillStyle = '#254a35';
+      ctx.fillRect(2, -5.2, 13.5, 10.4);
+      ctx.fillStyle = '#39ff88';
+      ctx.fillRect(4, -4.3, 14.5, 2.4);
+      ctx.fillRect(4, 1.9, 14.5, 2.4);
+      ctx.fillStyle = '#38e8ff';
+      ctx.fillRect(5, -1.2, 16.5, 2.4);
+    } else if (player.weaponLvl === 3) {
+      // Ур.3: Сдвоенная плазменная автопушка
+      ctx.fillStyle = '#1c3b2a';
+      ctx.fillRect(3, -4.5, 9, 9);
+      ctx.fillStyle = '#39ff88';
+      ctx.fillRect(4, -3.8, 14.5, 2.5);
+      ctx.fillRect(4, 1.3, 14.5, 2.5);
+      ctx.fillStyle = '#b6ffd3';
+      ctx.fillRect(15.5, -3.5, 3, 1.9);
+      ctx.fillRect(15.5, 1.6, 3, 1.9);
+    } else if (player.weaponLvl === 2) {
+      // Ур.2: Сдвоенный тяжёлый пулемёт + боковые барабаны патронов
+      ctx.fillStyle = '#4a3d28';
+      ctx.fillRect(-3.5, -7.2, 5.5, 2.2);
+      ctx.fillRect(-3.5, 5.0, 5.5, 2.2);
+      ctx.fillStyle = '#d4a652';
+      ctx.fillRect(4, -3.6, 13.8, 2.3);
+      ctx.fillRect(4, 1.3, 13.8, 2.3);
+      ctx.fillStyle = '#fff0b3';
+      ctx.fillRect(16, -3.5, 2, 2.1);
+      ctx.fillRect(16, 1.4, 2, 2.1);
     } else {
-      ctx.fillRect(4, -1.6, 13, 3.2);
+      // Ур.1: Одиночный крупнокалиберный пулемёт
+      ctx.fillStyle = '#ffb84d';
+      ctx.fillRect(4, -1.7, 13, 3.4);
+      ctx.fillStyle = '#6b5328';
+      ctx.fillRect(4, -1.7, 5, 3.4);
     }
+
     ctx.restore();
   }
 
   function drawEnemyCar(e) {
     const isAgent = e.kind === 'agent';
+    const isBoss = e.kind === 'boss';
+    const isHeavy = e.kind === 'heavy';
     const hl = e.len / 2;
     const hw = e.wid / 2;
 
@@ -3079,37 +4078,109 @@
     ctx.rotate(e.ang);
 
     // Фары врага
-    const beam = ctx.createLinearGradient(hl, 0, hl + 58, 0);
-    beam.addColorStop(0, isAgent ? 'rgba(57, 255, 136, 0.35)' : 'rgba(255, 110, 80, 0.24)');
+    const beamLen = isBoss ? 86 : (isAgent ? 70 : 58);
+    const beam = ctx.createLinearGradient(hl, 0, hl + beamLen, 0);
+    beam.addColorStop(0, isBoss
+      ? 'rgba(255, 62, 82, 0.38)'
+      : isAgent
+        ? 'rgba(57, 255, 136, 0.36)'
+        : isHeavy
+          ? 'rgba(255, 168, 72, 0.30)'
+          : 'rgba(255, 110, 80, 0.24)');
     beam.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = beam;
     ctx.beginPath();
     ctx.moveTo(hl, -hw + 2);
-    ctx.lineTo(hl + 58, -hw - 14);
-    ctx.lineTo(hl + 58, hw + 14);
+    ctx.lineTo(hl + beamLen, -hw - 16);
+    ctx.lineTo(hl + beamLen, hw + 16);
     ctx.lineTo(hl, hw - 2);
     ctx.closePath();
     ctx.fill();
 
+    // Колёса (6 колёс на Карателе!)
+    ctx.fillStyle = '#090c0b';
+    const wxs = isBoss ? [hl - 10, -2, -hl + 7] : [hl - 9, -hl + 7];
+    for (const wx of wxs) {
+      ctx.fillRect(wx - 4.5, -hw - 2.2, 9, 3.8);
+      ctx.fillRect(wx - 4.5, hw - 1.6, 9, 3.8);
+    }
+
     // Кузов
-    ctx.fillStyle = isAgent ? '#101914' : '#9c3a2b';
-    ctx.strokeStyle = isAgent ? '#39ff88' : '#ff8c52';
-    ctx.lineWidth = 1.8;
+    ctx.fillStyle = isBoss ? '#1c1014' : (isAgent ? '#0f1a14' : (isHeavy ? '#54463d' : '#9c3a2b'));
+    ctx.strokeStyle = isBoss ? '#ff3d52' : (isAgent ? '#39ff88' : (isHeavy ? '#ffb84d' : '#ff8c52'));
+    ctx.lineWidth = isBoss ? 2.4 : 1.8;
     ctx.fillRect(-hl, -hw, e.len, e.wid);
     ctx.strokeRect(-hl, -hw, e.len, e.wid);
 
+    // Отличительные детали класса врага
+    if (isBoss) {
+      // Каратель Системы: шипастый таран + багровая броня + реактор Матрицы
+      ctx.fillStyle = '#3d151d';
+      ctx.fillRect(-hl + 4, -hw + 3, e.len - 8, e.wid - 6);
+      ctx.fillStyle = '#39ff88';
+      ctx.fillRect(-hl + 5, -3, 6, 6);
+      ctx.fillStyle = '#ff4d5a';
+      ctx.beginPath();
+      ctx.moveTo(hl, -hw - 2);
+      ctx.lineTo(hl + 8, 0);
+      ctx.lineTo(hl, hw + 2);
+      ctx.closePath();
+      ctx.fill();
+    } else if (isHeavy) {
+      // Броневик рейдеров: передний кенгурятник + полоса брони + башня
+      ctx.fillStyle = '#302925';
+      ctx.fillRect(-hl + 3, -hw + 3, e.len * 0.4, e.wid - 6);
+      ctx.fillStyle = '#ffb84d';
+      ctx.fillRect(hl, -hw + 1, 4, e.wid - 2);
+    } else if (isAgent) {
+      ctx.fillStyle = '#39ff88';
+      ctx.fillRect(-hl + 3, -1.2, e.len - 6, 2.4);
+    } else {
+      ctx.fillStyle = '#ffbe76';
+      ctx.fillRect(hl, -hw + 2, 2.6, 3);
+      ctx.fillRect(hl, hw - 5, 2.6, 3);
+    }
+
     // Стекло
-    ctx.fillStyle = isAgent ? 'rgba(57, 255, 136, 0.35)' : '#251410';
-    ctx.fillRect(hl - 12, -hw + 3, 6, e.wid - 6);
+    ctx.fillStyle = isBoss
+      ? 'rgba(255, 65, 86, 0.5)'
+      : (isAgent ? 'rgba(57, 255, 136, 0.38)' : '#251410');
+    ctx.fillRect(hl - 13, -hw + 3, 6, e.wid - 6);
     ctx.restore();
 
-    // Полоска HP над врагом (если ранен)
-    if (e.hp < e.maxHp) {
-      const bw = 30;
-      ctx.fillStyle = 'rgba(0,0,0,0.65)';
-      ctx.fillRect(e.x - bw / 2, e.y - 24, bw, 4);
-      ctx.fillStyle = isAgent ? '#39ff88' : '#ff4d5a';
-      ctx.fillRect(e.x - bw / 2, e.y - 24, bw * clamp(e.hp / e.maxHp, 0, 1), 4);
+    // Турель на Броневике и Карателе (целится на игрока)
+    if (isHeavy || isBoss) {
+      const aimAng = player ? Math.atan2(player.y - e.y, player.x - e.x) : e.ang;
+      ctx.save();
+      ctx.translate(e.x, e.y);
+      ctx.rotate(aimAng);
+      ctx.fillStyle = isBoss ? '#2c0f15' : '#332c28';
+      ctx.strokeStyle = isBoss ? '#39ff88' : '#ffb84d';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(0, 0, isBoss ? 7.5 : 5.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = isBoss ? '#ff4d5a' : '#ffb84d';
+      ctx.fillRect(4, -3.2, isBoss ? 14 : 10, 2.2);
+      ctx.fillRect(4, 1.0, isBoss ? 14 : 10, 2.2);
+      ctx.restore();
+    }
+
+    // Полоска HP над врагом (всегда видна у Карателя, и при ранении у остальных)
+    if (isBoss || e.hp < e.maxHp) {
+      const bw = isBoss ? 48 : (isHeavy ? 36 : 30);
+      const by = e.y - (isBoss ? 30 : 24);
+      ctx.fillStyle = 'rgba(0,0,0,0.72)';
+      ctx.fillRect(e.x - bw / 2, by, bw, isBoss ? 5 : 4);
+      ctx.fillStyle = isBoss ? '#ff384c' : (isAgent ? '#39ff88' : (isHeavy ? '#ffb84d' : '#ff4d5a'));
+      ctx.fillRect(e.x - bw / 2, by, bw * clamp(e.hp / e.maxHp, 0, 1), isBoss ? 5 : 4);
+      if (isBoss) {
+        ctx.fillStyle = '#ffb84d';
+        ctx.font = 'bold 8px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('КАРАТЕЛЬ', e.x, by - 3);
+      }
     }
   }
 
@@ -3194,12 +4265,28 @@
       mCtx.fillRect(it.x * sx - 1.5, it.y * sy - 1.5, 3, 3);
     }
 
-    // Враги
+    // Враги (Каратель — крупный ромб, Броневик — янтарный, Агент — изумруд, Рейдер — красный)
     for (const e of enemies) {
-      mCtx.fillStyle = e.kind === 'agent' ? '#39ff88' : '#ff4d5a';
-      mCtx.beginPath();
-      mCtx.arc(e.x * sx, e.y * sy, 2.8, 0, Math.PI * 2);
-      mCtx.fill();
+      const ex = e.x * sx;
+      const ey = e.y * sy;
+      if (e.kind === 'boss') {
+        mCtx.fillStyle = '#ff384c';
+        mCtx.strokeStyle = '#ffb84d';
+        mCtx.lineWidth = 1.2;
+        mCtx.beginPath();
+        mCtx.moveTo(ex, ey - 4.4);
+        mCtx.lineTo(ex + 4.4, ey);
+        mCtx.lineTo(ex, ey + 4.4);
+        mCtx.lineTo(ex - 4.4, ey);
+        mCtx.closePath();
+        mCtx.fill();
+        mCtx.stroke();
+      } else {
+        mCtx.fillStyle = e.kind === 'agent' ? '#39ff88' : (e.kind === 'heavy' ? '#ffb84d' : '#ff4d5a');
+        mCtx.beginPath();
+        mCtx.arc(ex, ey, e.kind === 'heavy' ? 3.2 : 2.6, 0, Math.PI * 2);
+        mCtx.fill();
+      }
     }
 
     // Пульсирующий маркер миссии
@@ -3604,6 +4691,38 @@
     resetRun();
     closeMobileMenu();
     setOverlayState('playing');
+  });
+
+  if (el.btnResetSave) {
+    let resetConfirmTimer = null;
+    el.btnResetSave.addEventListener('click', () => {
+      AudioFX.unlock();
+      if (el.btnResetSave.dataset.confirm === '1') {
+        clearTimeout(resetConfirmTimer);
+        el.btnResetSave.dataset.confirm = '0';
+        el.btnResetSave.classList.remove('confirming');
+        el.btnResetSave.textContent = '✕ СБРОС';
+        resetSavedProgress();
+        closeMobileMenu();
+        setOverlayState('playing');
+      } else {
+        el.btnResetSave.dataset.confirm = '1';
+        el.btnResetSave.classList.add('confirming');
+        el.btnResetSave.textContent = 'ТОЧНО?';
+        addLog('Нажмите «ТОЧНО?» ещё раз за 3.5 сек, чтобы удалить сейв.', 'danger');
+        if (resetConfirmTimer) clearTimeout(resetConfirmTimer);
+        resetConfirmTimer = setTimeout(() => {
+          el.btnResetSave.dataset.confirm = '0';
+          el.btnResetSave.classList.remove('confirming');
+          el.btnResetSave.textContent = '✕ СБРОС';
+        }, 3500);
+      }
+    });
+  }
+
+  window.addEventListener('beforeunload', () => saveProgress());
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') saveProgress();
   });
 
   el.btnDepotService.addEventListener('click', () => {
