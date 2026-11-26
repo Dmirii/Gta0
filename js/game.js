@@ -63,7 +63,7 @@
   const ctx = canvas.getContext('2d');
   const lightCanvas = document.createElement('canvas');
   const lightCtx = lightCanvas.getContext('2d');
-  const stageWrap = document.getElementById('stage-wrap');
+  const stageScreen = document.getElementById('stage-screen');
   const minimapCanvas = document.getElementById('minimap');
   const minimapCtx = minimapCanvas.getContext('2d');
   const mobileMinimapCanvas = document.getElementById('mobile-minimap');
@@ -85,6 +85,8 @@
   let shakeAmt = 0;
   let matrixActive = false;
   let touchMatrixToggle = false;
+  let matrixBreach = 0; // 0..1 — насколько «прорывается» скрытый код Матрицы
+  let glitchTimer = 0;
 
   const cam = { x: world.depot.x, y: world.depot.y };
   const keys = Object.create(null);
@@ -138,6 +140,10 @@
     mCaps: document.getElementById('m-caps'),
 
     uiCarName: document.getElementById('ui-car-name'),
+    uiBrandTitle: document.getElementById('ui-brand-title'),
+    uiSignalBadge: document.getElementById('ui-signal-badge'),
+    ledRad: document.getElementById('led-rad'),
+    ledMatrix: document.getElementById('led-matrix'),
     uiCoords: document.getElementById('ui-coords'),
     uiHpVal: document.getElementById('ui-hp-val'),
     uiHpFill: document.getElementById('ui-hp-fill'),
@@ -284,6 +290,8 @@
     traceDecayTimer = 0;
     touchMatrixToggle = false;
     matrixActive = false;
+    matrixBreach = 0;
+    glitchTimer = 0;
     shakeAmt = 0;
 
     cam.x = player.x;
@@ -641,6 +649,7 @@
     if (wantMatrix && player.focus > (matrixActive ? 1 : 12)) {
       if (!matrixActive) {
         matrixActive = true;
+        glitchTimer = Math.max(glitchTimer, 0.22);
         AudioFX.matrix(true);
       }
       player.focus = Math.max(0, player.focus - spec.focusDrain * dt);
@@ -656,7 +665,30 @@
       }
       player.focus = Math.min(player.maxFocus, player.focus + 14 * dt);
     }
-    el.matrixVignette.classList.toggle('active', matrixActive);
+
+    // «Скрытый код под ржавчиной»: Матрица прорывается в Фокусе, у терминалов/разломов, рядом с Агентами и при повреждениях
+    if (glitchTimer > 0) glitchTimer = Math.max(0, glitchTimer - dt);
+    let targetBreach = matrixActive ? 1.0 : 0.0;
+    if (glitchTimer > 0) targetBreach = Math.max(targetBreach, 0.65);
+    if (targetBreach < 0.8) {
+      for (const term of world.terminals) {
+        const td = dist(player, term);
+        if (td < 210) targetBreach = Math.max(targetBreach, (1 - td / 210) * 0.65);
+      }
+      for (const rf of world.rifts) {
+        const rd = dist(player, rf);
+        if (rd < 150) targetBreach = Math.max(targetBreach, (1 - rd / 150) * 0.55);
+      }
+      for (const e of enemies) {
+        if (e.kind === 'agent') {
+          const ad = dist(player, e);
+          if (ad < 320) targetBreach = Math.max(targetBreach, (1 - ad / 320) * 0.72);
+        }
+      }
+    }
+    matrixBreach += (targetBreach - matrixBreach) * Math.min(1, 5.5 * dt);
+
+    el.matrixVignette.classList.toggle('active', matrixActive || matrixBreach > 0.58);
     el.btnTouchMatrix.classList.toggle('active', matrixActive);
 
     const worldDt = matrixActive ? dt * 0.30 : dt;
@@ -888,6 +920,7 @@
     if (!isRad) {
       AudioFX.hit();
       shakeAmt = Math.min(10, shakeAmt + 3.2);
+      if (dmg >= 6) glitchTimer = Math.max(glitchTimer, 0.2);
     }
     if (player.hp <= 0) {
       player.hp = 0;
@@ -1771,7 +1804,16 @@
       ctx.translate(rf.x, rf.y);
       ctx.rotate(rf.ang);
       const pulse = 0.65 + 0.35 * Math.sin(elapsed * 5 + rf.seed * 20);
-      ctx.strokeStyle = `rgba(57, 255, 136, ${0.75 * pulse})`;
+      // Проступающая сквозь трещину асфальта скрытая сетка кода Матрицы
+      ctx.strokeStyle = `rgba(57, 255, 136, ${0.22 * pulse})`;
+      ctx.lineWidth = 1;
+      for (let gx = -rf.len * 0.45; gx <= rf.len * 0.45; gx += 12) {
+        ctx.beginPath();
+        ctx.moveTo(gx, -8);
+        ctx.lineTo(gx, 8);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = `rgba(57, 255, 136, ${0.82 * pulse})`;
       ctx.lineWidth = 2.4;
       ctx.beginPath();
       ctx.moveTo(-rf.len / 2, 0);
@@ -1780,11 +1822,11 @@
       ctx.lineTo(rf.len / 2, -2);
       ctx.stroke();
       // Светящиеся символы кода из разлома
-      ctx.fillStyle = `rgba(120, 255, 170, ${0.65 * pulse})`;
+      ctx.fillStyle = `rgba(145, 255, 185, ${0.72 * pulse})`;
       ctx.font = 'bold 9px monospace';
       ctx.textAlign = 'center';
       const idx = Math.floor(elapsed * 8 + rf.seed * 30) % MATRIX_CHARS.length;
-      ctx.fillText(MATRIX_CHARS[idx] + MATRIX_CHARS[(idx + 5) % MATRIX_CHARS.length], 0, -7);
+      ctx.fillText(MATRIX_CHARS[idx] + MATRIX_CHARS[(idx + 5) % MATRIX_CHARS.length], 0, -9);
       ctx.restore();
     }
   }
@@ -1859,8 +1901,8 @@
         ctx.fillStyle = `rgba(255, 168, 72, ${d.alpha})`;
         ctx.fillRect(d.x, d.y, d.len, d.len);
       } else {
-        ctx.strokeStyle = matrixActive
-          ? `rgba(110, 255, 175, ${d.alpha * 1.4})`
+        ctx.strokeStyle = matrixBreach > 0.4
+          ? `rgba(110, 255, 175, ${d.alpha * (1 + matrixBreach * 0.5)})`
           : `rgba(170, 205, 225, ${d.alpha})`;
         ctx.beginPath();
         ctx.moveTo(d.x, d.y);
@@ -1869,19 +1911,32 @@
       }
     }
 
-    // 2. Тонкий цифровой дождь Матрицы (усиливается в режиме Bullet-Time)
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'center';
-    const baseAlpha = matrixActive ? 0.28 : 0.055;
-    for (const c of rainCols) {
-      for (let k = 0; k < c.len; k++) {
-        const y = c.y - k * 15;
-        if (y < -15 || y > viewH + 15) continue;
-        const ch = MATRIX_CHARS[(c.chIdx + k * 3) % MATRIX_CHARS.length];
-        ctx.fillStyle = k === 0
-          ? `rgba(190, 255, 215, ${baseAlpha * 1.7})`
-          : `rgba(57, 255, 136, ${baseAlpha * (1 - k / c.len)})`;
-        ctx.fillText(ch, c.x, y);
+    // 2. «Скрытый код под ржавчиной»: цифровой дождь Матрицы прорывается в ключевых зонах и в Фокусе
+    if (matrixBreach > 0.04) {
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      const baseAlpha = clamp(matrixBreach * 0.30, 0, 0.30);
+      for (const c of rainCols) {
+        for (let k = 0; k < c.len; k++) {
+          const y = c.y - k * 15;
+          if (y < -15 || y > viewH + 15) continue;
+          const ch = MATRIX_CHARS[(c.chIdx + k * 3) % MATRIX_CHARS.length];
+          ctx.fillStyle = k === 0
+            ? `rgba(195, 255, 218, ${baseAlpha * 1.65})`
+            : `rgba(57, 255, 136, ${baseAlpha * (1 - k / c.len)})`;
+          ctx.fillText(ch, c.x, y);
+        }
+      }
+    }
+
+    // 3. Короткий ЭЛТ-глитч при уроне или входе в Фокус Матрицы
+    if (glitchTimer > 0) {
+      const slices = 3;
+      for (let i = 0; i < slices; i++) {
+        const gy = Math.random() * viewH;
+        const gh = 2 + Math.random() * 6;
+        ctx.fillStyle = i % 2 === 0 ? 'rgba(57, 255, 136, 0.18)' : 'rgba(56, 232, 255, 0.14)';
+        ctx.fillRect(0, gy, viewW, gh);
       }
     }
     ctx.restore();
@@ -2178,10 +2233,31 @@
       }
     }
 
-    // Игрок
+    // Игрок + классическая Pip-Boy сетка и вращающийся луч радара
     if (player) {
+      const px = player.x * sx;
+      const py = player.y * sy;
+
+      // Тонкие кольца дальности и вращающийся луч сканера
       mCtx.save();
-      mCtx.translate(player.x * sx, player.y * sy);
+      mCtx.strokeStyle = 'rgba(57, 255, 136, 0.16)';
+      mCtx.lineWidth = 0.8;
+      mCtx.beginPath();
+      mCtx.arc(px, py, 22, 0, Math.PI * 2);
+      mCtx.arc(px, py, 44, 0, Math.PI * 2);
+      mCtx.stroke();
+
+      const sweepAng = elapsed * 2.1;
+      mCtx.beginPath();
+      mCtx.moveTo(px, py);
+      mCtx.arc(px, py, 44, sweepAng - 0.55, sweepAng);
+      mCtx.closePath();
+      mCtx.fillStyle = 'rgba(57, 255, 136, 0.14)';
+      mCtx.fill();
+      mCtx.restore();
+
+      mCtx.save();
+      mCtx.translate(px, py);
       mCtx.rotate(player.ang);
       mCtx.fillStyle = '#ffffff';
       mCtx.beginPath();
@@ -2205,6 +2281,28 @@
 
     el.uiCarName.textContent = `${cls.name} · ${cls.rank}`;
     el.uiCoords.textContent = `X:${String(Math.round(player.x)).padStart(4, '0')} Y:${String(Math.round(player.y)).padStart(4, '0')}`;
+
+    // Живые диоды на рамке корпуса монитора и статусный бейдж Pip-Terminal
+    const radDanger = radPct >= 18 || world.getRadIntensity(player.x, player.y) > 0.05;
+    const mtxAlert = matrixActive || matrixBreach > 0.32;
+    if (el.ledRad) el.ledRad.classList.toggle('on', radDanger);
+    if (el.ledMatrix) el.ledMatrix.classList.toggle('on', mtxAlert);
+    if (el.uiBrandTitle) el.uiBrandTitle.classList.toggle('glitch', glitchTimer > 0 || matrixBreach > 0.65);
+    if (el.uiSignalBadge) {
+      el.uiSignalBadge.classList.remove('warn', 'matrix');
+      if (matrixActive) {
+        el.uiSignalBadge.textContent = 'MATRIX SYNC';
+        el.uiSignalBadge.classList.add('matrix');
+      } else if (matrixBreach > 0.32) {
+        el.uiSignalBadge.textContent = 'SYS BREACH';
+        el.uiSignalBadge.classList.add('matrix');
+      } else if (radDanger) {
+        el.uiSignalBadge.textContent = 'RAD WARN';
+        el.uiSignalBadge.classList.add('warn');
+      } else {
+        el.uiSignalBadge.textContent = 'VAULT OK';
+      }
+    }
 
     el.uiHpVal.textContent = `${Math.ceil(player.hp)} / ${player.maxHp}`;
     el.uiHpFill.style.width = `${hpPct}%`;
@@ -2327,7 +2425,7 @@
 
   // ==================== РЕСАЙЗ КАНВАСА (МОНИТОР + ТЕЛЕФОН) ====================
   function resizeCanvas() {
-    const rect = stageWrap.getBoundingClientRect();
+    const rect = stageScreen.getBoundingClientRect();
     const w = Math.max(1, Math.floor(rect.width));
     const h = Math.max(1, Math.floor(rect.height));
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -2342,7 +2440,7 @@
   }
 
   if (typeof ResizeObserver !== 'undefined') {
-    new ResizeObserver(resizeCanvas).observe(stageWrap);
+    new ResizeObserver(resizeCanvas).observe(stageScreen);
   }
   window.addEventListener('resize', resizeCanvas);
   window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 120));

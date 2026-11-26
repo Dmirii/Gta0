@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#060b07">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>GTA 0 // Wasteland Matrix</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=3">
-  <link rel="stylesheet" href="css/style.css?v=3">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=4">
+  <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body class="crt-on">
   <div id="app">
@@ -31,86 +31,103 @@
       </div>
     </header>
 
-    <!-- ОСНОВНОЕ ИГРОВОЕ ПОЛЕ -->
+    <!-- ОСНОВНОЕ ИГРОВОЕ ПОЛЕ (в металлической рамке RobCo / Pip-Boy) -->
     <main id="stage-wrap">
-      <canvas id="game-canvas" aria-label="Игровое поле GTA 0"></canvas>
-      <div class="crt-scanlines" aria-hidden="true"></div>
-      <div id="matrix-vignette" aria-hidden="true"></div>
+      <div id="stage-screen">
+        <canvas id="game-canvas" aria-label="Игровое поле GTA 0"></canvas>
+        <div class="crt-scanlines" aria-hidden="true"></div>
+        <div class="crt-bezel-vignette" aria-hidden="true"></div>
+        <div id="matrix-vignette" aria-hidden="true"></div>
 
-      <!-- Верхний HUD поверх игрового поля -->
-      <div id="stage-hud-top">
-        <div class="hud-pill" id="hud-sector">СЕКТОР 01 · РУИНЫ</div>
-        <div class="hud-pill mission-pill" id="hud-mission">ЦЕЛЬ: ИССЛЕДУЙТЕ ГОРОД</div>
-        <div class="hud-pill trace-pill" id="hud-trace" title="Уровень следа Матрицы">СЛЕД: ☆☆☆☆☆</div>
-      </div>
-
-      <!-- Мобильный мини-радар поверх поля (переключаемый) -->
-      <div id="mobile-radar-float" class="hidden">
-        <canvas id="mobile-minimap" width="124" height="94"></canvas>
-      </div>
-
-      <!-- Мобильное сенсорное управление -->
-      <div id="touch-controls" aria-label="Сенсорное управление">
-        <div id="joy-zone">
-          <div id="joy-base">
-            <div id="joy-stick"></div>
-          </div>
-          <div class="joy-hint">РУЛЬ / ГАЗ</div>
+        <!-- Верхний HUD поверх игрового поля -->
+        <div id="stage-hud-top">
+          <div class="hud-pill" id="hud-sector">СЕКТОР 01 · РУИНЫ</div>
+          <div class="hud-pill mission-pill" id="hud-mission">ЦЕЛЬ: ИССЛЕДУЙТЕ ГОРОД</div>
+          <div class="hud-pill trace-pill" id="hud-trace" title="Уровень следа Матрицы">СЛЕД: ☆☆☆☆☆</div>
         </div>
 
-        <div id="touch-buttons">
-          <button id="btn-touch-depot" class="t-btn t-btn-amber hidden" type="button">
-            <span>ДЕПО</span>
-            <small>РЕМОНТ</small>
-          </button>
-          <button id="btn-touch-matrix" class="t-btn t-btn-matrix" type="button">
-            <span>⚡</span>
-            <small>МАТРИЦА</small>
-          </button>
-          <button id="btn-touch-fire" class="t-btn t-btn-fire" type="button">
-            <span>ОГОНЬ</span>
-            <small>АВТО</small>
-          </button>
+        <!-- Мобильный мини-радар поверх поля (переключаемый) -->
+        <div id="mobile-radar-float" class="hidden">
+          <canvas id="mobile-minimap" width="124" height="94"></canvas>
         </div>
-      </div>
 
-      <!-- Стартовый / пауза / экран гибели поверх поля -->
-      <div id="overlay-screen">
-        <div class="terminal-modal">
-          <div class="modal-tag">VAULT-OS v0.9 // MATRIX LINK READY</div>
-          <h1 id="modal-title">GTA 0: WASTELAND MATRIX</h1>
-          <p id="modal-subtitle">
-            Постапокалиптический мегаполис под контролем Системы. Гоняй по руинам, собирай крышки и лут,
-            улучшай машину в Бункере-Депо и взламывай время в режиме <strong>Матрицы</strong>.
-          </p>
-
-          <div class="modal-grid">
-            <div class="modal-box">
-              <div class="box-title">ПК / МОНИТОР</div>
-              <ul>
-                <li><kbd>W A S D</kbd> / стрелки — вождение</li>
-                <li><kbd>Мышь</kbd> + <kbd>ЛКМ</kbd> / <kbd>Пробел</kbd> — стрельба</li>
-                <li><kbd>Shift</kbd> / <kbd>ПКМ</kbd> — замедление (Матрица)</li>
-                <li><kbd>E</kbd> — ремонт в Депо · <kbd>Esc</kbd> — пауза</li>
-              </ul>
+        <!-- Мобильное сенсорное управление -->
+        <div id="touch-controls" aria-label="Сенсорное управление">
+          <div id="joy-zone">
+            <div id="joy-base">
+              <div id="joy-stick"></div>
             </div>
-            <div class="modal-box">
-              <div class="box-title">ТЕЛЕФОН</div>
-              <ul>
-                <li>Левый стик — руль и газ</li>
-                <li><strong>ОГОНЬ</strong> — стрельба с автонаводкой</li>
-                <li><strong>⚡ МАТРИЦА</strong> — bullet-time</li>
-                <li><strong>☰ МЕНЮ</strong> — гараж, карта и миссии</li>
-              </ul>
-            </div>
+            <div class="joy-hint">РУЛЬ / ГАЗ</div>
           </div>
 
-          <div class="modal-actions">
-            <button id="btn-play" class="btn-primary" type="button">▶ ВЪЕХАТЬ В ПУСТОШЬ</button>
-            <button id="btn-restart-modal" class="btn-secondary hidden" type="button">↻ НАЧАТЬ ЗАНОВО</button>
+          <div id="touch-buttons">
+            <button id="btn-touch-depot" class="t-btn t-btn-amber hidden" type="button">
+              <span>ДЕПО</span>
+              <small>РЕМОНТ</small>
+            </button>
+            <button id="btn-touch-matrix" class="t-btn t-btn-matrix" type="button">
+              <span>⚡</span>
+              <small>МАТРИЦА</small>
+            </button>
+            <button id="btn-touch-fire" class="t-btn t-btn-fire" type="button">
+              <span>ОГОНЬ</span>
+              <small>АВТО</small>
+            </button>
+          </div>
+        </div>
+
+        <!-- Стартовый / пауза / экран гибели поверх поля -->
+        <div id="overlay-screen">
+          <div class="terminal-modal">
+            <div class="modal-tag">ROBCO INDUSTRIES // VAULT-OS 2077 · MATRIX LINK</div>
+            <h1 id="modal-title">GTA 0: WASTELAND MATRIX</h1>
+            <p id="modal-subtitle">
+              Постапокалиптический мегаполис под скрытым кодом Системы. Гоняй по руинам, собирай крышки и лут,
+              улучшай машину в Бункере-Депо и прорывай время в режиме <strong>Матрицы</strong>.
+            </p>
+
+            <div class="modal-grid">
+              <div class="modal-box">
+                <div class="box-title">ПК / МОНИТОР</div>
+                <ul>
+                  <li><kbd>W A S D</kbd> / стрелки — вождение</li>
+                  <li><kbd>Мышь</kbd> + <kbd>ЛКМ</kbd> / <kbd>Пробел</kbd> — стрельба</li>
+                  <li><kbd>Shift</kbd> / <kbd>ПКМ</kbd> — замедление (Матрица)</li>
+                  <li><kbd>E</kbd> — ремонт в Депо · <kbd>Esc</kbd> — пауза</li>
+                </ul>
+              </div>
+              <div class="modal-box">
+                <div class="box-title">ТЕЛЕФОН</div>
+                <ul>
+                  <li>Левый стик — руль и газ</li>
+                  <li><strong>ОГОНЬ</strong> — стрельба с автонаводкой</li>
+                  <li><strong>⚡ МАТРИЦА</strong> — bullet-time</li>
+                  <li><strong>☰ МЕНЮ</strong> — гараж, карта и миссии</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button id="btn-play" class="btn-primary" type="button">▶ ВЪЕХАТЬ В ПУСТОШЬ</button>
+              <button id="btn-restart-modal" class="btn-secondary hidden" type="button">↻ НАЧАТЬ ЗАНОВО</button>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- Нижняя металлическая планка корпуса монитора (только на ПК) -->
+      <footer id="stage-bezel-bar" class="desktop-only" aria-hidden="true">
+        <div class="bezel-stamp">
+          <span class="rivet"></span>
+          <span>ROBCO MODEL 2077-M // VAULT-TEC OPTICS</span>
+        </div>
+        <div class="bezel-leds">
+          <span class="led-item"><i class="led led-pwr on"></i>PWR</span>
+          <span class="led-item"><i id="led-rad" class="led led-rad"></i>RAD</span>
+          <span class="led-item"><i id="led-matrix" class="led led-mtx"></i>MATRIX</span>
+          <span class="rivet"></span>
+        </div>
+      </footer>
     </main>
 
     <!-- Задник для выезжающего меню на мобильных -->
@@ -120,12 +137,13 @@
     <aside id="sidebar" aria-label="Меню и терминал игрока">
       <div class="sidebar-header">
         <div class="brand">
-          <span class="brand-dot"></span>
+          <span class="brand-dot" id="ui-brand-dot"></span>
           <div>
-            <div class="brand-title">PIP-TERMINAL // GTA 0</div>
+            <div class="brand-title" id="ui-brand-title">PIP-TERMINAL // 2077</div>
             <div class="brand-sub" id="ui-car-name">SCOUT BUGGY · КЛАСС I</div>
           </div>
         </div>
+        <span class="signal-badge desktop-only" id="ui-signal-badge">VAULT OK</span>
         <button id="btn-close-menu" class="icon-btn mobile-only" type="button" aria-label="Закрыть меню">✕</button>
       </div>
 
@@ -310,8 +328,8 @@
     </aside>
   </div>
 
-  <script defer src="js/audio.js?v=3"></script>
-  <script defer src="js/world.js?v=3"></script>
-  <script defer src="js/game.js?v=3"></script>
+  <script defer src="js/audio.js?v=4"></script>
+  <script defer src="js/world.js?v=4"></script>
+  <script defer src="js/game.js?v=4"></script>
 </body>
 </html>

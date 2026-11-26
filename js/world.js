@@ -595,7 +595,25 @@ window.GTA0.World = (function () {
         ctx.fill();
         ctx.stroke();
       }
+
+      // Выцветший трафарет опасности RAD на краю кратера
+      ctx.fillStyle = 'rgba(218, 255, 84, 0.28)';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('☢ RAD ZONE', z.x, z.y + z.radius * 0.62);
     }
+
+    // 3b. Выцветшие дорожные трафареты Fallout на подъездах к Депо
+    ctx.save();
+    ctx.fillStyle = 'rgba(222, 184, 102, 0.24)';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('VAULT-0 ▶', depot.x - 260, depot.y);
+    ctx.fillText('◀ VAULT-0', depot.x + 260, depot.y);
+    ctx.fillText('▲ DEPOT ▲', depot.x, depot.y + 245);
+    ctx.fillText('▼ DEPOT ▼', depot.x, depot.y - 245);
+    ctx.restore();
 
     // 4. Площадь Бункера-Депо (Fallout Vault-Tech)
     ctx.save();
