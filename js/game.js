@@ -350,6 +350,14 @@ const SOLO = true; // соло режим: локальный игрок + ми�
 window.addEventListener('error', (e) => console.error('Ошибка игры:', e.message, e.filename, e.lineno));
 window.addEventListener('unhandledrejection', (e) => console.error('Promise:', e.reason));
 
+// Принудительная привязка canvas к #game с правильными стилями
+function fixCanvasPlacement() {
+  const c = game.canvas;
+  const host = typeof document !== 'undefined' ? document.getElementById('game') : null;
+  if (host && c && c.parentElement !== host) host.appendChild(c);
+  if (c && c.style) { c.style.display = 'block'; c.style.width = '100vw'; c.style.height = '100vh'; c.style.margin = '0'; c.style.padding = '0'; }
+}
+
 const game = new Phaser.Game({
   target: (typeof document !== 'undefined') ? (document.getElementById('game') || undefined) : undefined,
   type: Phaser.AUTO,
@@ -359,3 +367,4 @@ const game = new Phaser.Game({
   audio: { noAudio: true },
   scene: GameScene
 });
+fixCanvasPlacement();
