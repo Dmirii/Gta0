@@ -21,10 +21,27 @@ body { margin: 0; background: #0c140c; overflow: hidden; font-family: system-ui,
     if (el) { el.style.display = ''; el.textContent += 'ERR: ' + e.message + ' @' + e.filename + ':' + e.lineno + '\n'; }
   });
   window.gameCanvas = () => document.querySelector('#game canvas');
-  window.addEventListener('DOMContentLoaded', () => setTimeout(() => {
-    const c = window.gameCanvas();
-    window.gameStatus = c ? ('canvas w=' + c.width + ' h=' + c.height + ' style="' + c.style.cssText + '" parent=' + (c.parentElement ? c.parentElement.id : 'none')) : 'NO_CANVAS_IN_#game';
-  }, 300));
+  window.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('debugInfo');
+    if (!el) return;
+    function rectInfo(c) {
+      if (!c) return 'canvas: none';
+      const r = c.getBoundingClientRect();
+      return 'canvas x=' + Math.round(r.x) + ' y=' + Math.round(r.y) + ' w=' + Math.round(r.width) + ' h=' + Math.round(r.height) + ' parent=' + (c.parentElement ? (c.parentElement.id || c.parentElement.tagName) : 'none');
+    }
+    function upd() {
+      const canvases = document.querySelectorAll('canvas');
+      const c = canvases[0];
+      el.textContent = [
+        'canvases: ' + canvases.length,
+        rectInfo(c),
+        'gameStatus: ' + (window.gameStatus || '?'),
+        '#game html: ' + (document.querySelector('#game') ? document.querySelector('#game').innerHTML.slice(0, 120) : '?'),
+        'body h: ' + document.body.scrollHeight
+      ].join(' | ');
+    }
+    setInterval(upd, 900); setTimeout(upd, 200);
+  });
 </script>
 <script src="vendor/phaser.min.js"></script>
 <script src="js/game.js"></script>
