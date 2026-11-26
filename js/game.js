@@ -24,7 +24,7 @@
       trim: '#e4c94b',
       stripe: '#2e6f9e',
       accent: '#ffb84d',
-      img: 'assets/cars/car-0.jpg?v=12',
+      img: 'assets/cars/car-0.jpg?v=13',
       cost: 0
     },
     {
@@ -43,7 +43,7 @@
       trim: '#ffd05c',
       stripe: '#26619c',
       accent: '#ff9e42',
-      img: 'assets/cars/car-1.jpg?v=12',
+      img: 'assets/cars/car-1.jpg?v=13',
       cost: 90
     },
     {
@@ -62,7 +62,7 @@
       trim: '#f5c842',
       stripe: '#1b3854',
       accent: '#38e8ff',
-      img: 'assets/cars/car-2.jpg?v=12',
+      img: 'assets/cars/car-2.jpg?v=13',
       cost: 190
     },
     {
@@ -81,7 +81,7 @@
       trim: '#ffb03b',
       stripe: '#2f2924',
       accent: '#ff7034',
-      img: 'assets/cars/car-3.jpg?v=12',
+      img: 'assets/cars/car-3.jpg?v=13',
       cost: 340
     },
     {
@@ -100,7 +100,7 @@
       trim: '#39ff88',
       stripe: '#0c3022',
       accent: '#39ff88',
-      img: 'assets/cars/car-4.jpg?v=12',
+      img: 'assets/cars/car-4.jpg?v=13',
       cost: 540
     }
   ];
@@ -233,6 +233,12 @@
     modalSub: document.getElementById('modal-subtitle'),
     btnPlay: document.getElementById('btn-play'),
     btnRestartModal: document.getElementById('btn-restart-modal'),
+    btnCreditsModal: document.getElementById('btn-credits-modal'),
+    btnCreditsMenu: document.getElementById('btn-credits-menu'),
+    btnCreditsBezel: document.getElementById('btn-credits-bezel'),
+    creditsOverlay: document.getElementById('credits-overlay'),
+    btnCreditsClose: document.getElementById('btn-credits-close'),
+    btnCreditsCloseX: document.getElementById('btn-credits-close-x'),
     btnPauseResume: document.getElementById('btn-pause-resume'),
     btnRestart: document.getElementById('btn-restart'),
     btnResetSave: document.getElementById('btn-reset-save'),
@@ -484,7 +490,7 @@
   if (typeof Image !== 'undefined') {
     driverSheet = new Image();
     driverSheet.onload = () => { driverSheetReady = true; };
-    driverSheet.src = 'assets/driver-sheet.jpg?v=12';
+    driverSheet.src = 'assets/driver-sheet.jpg?v=13';
   }
 
   const DRIVER_QUOTES = {
@@ -4703,6 +4709,36 @@
     }
   }
 
+  let pausedByCredits = false;
+  function isCreditsOpen() {
+    return !!(el.creditsOverlay && !el.creditsOverlay.classList.contains('hidden'));
+  }
+
+  function openCredits() {
+    if (!el.creditsOverlay) return;
+    AudioFX.unlock();
+    if (AudioFX.uiClick) AudioFX.uiClick();
+    if (gameState === 'playing') {
+      pausedByCredits = true;
+      gameState = 'paused';
+      if (AudioFX.setGameState) AudioFX.setGameState(false);
+      el.btnPauseResume.textContent = '▶ ПРОДОЛЖИТЬ';
+    }
+    el.creditsOverlay.classList.remove('hidden');
+  }
+
+  function closeCredits() {
+    if (!el.creditsOverlay || el.creditsOverlay.classList.contains('hidden')) return;
+    el.creditsOverlay.classList.add('hidden');
+    if (AudioFX.uiClick) AudioFX.uiClick();
+    if (pausedByCredits && gameState === 'paused') {
+      pausedByCredits = false;
+      gameState = 'playing';
+      if (AudioFX.setGameState) AudioFX.setGameState(true);
+      el.btnPauseResume.textContent = '❚❚ ПАУЗА';
+    }
+  }
+
   // ==================== РЕСАЙЗ КАНВАСА (МОНИТОР + ТЕЛЕФОН) ====================
   function resizeCanvas() {
     const rect = stageScreen.getBoundingClientRect();
@@ -4731,6 +4767,11 @@
       e.preventDefault();
     }
     keys[e.code] = true;
+
+    if (isCreditsOpen()) {
+      if (e.code === 'Escape') closeCredits();
+      return;
+    }
 
     if (e.code === 'Escape' || e.code === 'KeyP') {
       if (gameState === 'playing') setOverlayState('paused');
@@ -4906,6 +4947,17 @@
     closeMobileMenu();
     setOverlayState('playing');
   });
+
+  if (el.btnCreditsModal) el.btnCreditsModal.addEventListener('click', openCredits);
+  if (el.btnCreditsMenu) el.btnCreditsMenu.addEventListener('click', openCredits);
+  if (el.btnCreditsBezel) el.btnCreditsBezel.addEventListener('click', openCredits);
+  if (el.btnCreditsClose) el.btnCreditsClose.addEventListener('click', closeCredits);
+  if (el.btnCreditsCloseX) el.btnCreditsCloseX.addEventListener('click', closeCredits);
+  if (el.creditsOverlay) {
+    el.creditsOverlay.addEventListener('click', (e) => {
+      if (e.target === el.creditsOverlay) closeCredits();
+    });
+  }
 
   if (el.btnResetSave) {
     let resetConfirmTimer = null;

@@ -1997,5 +1997,248 @@ kbd {
   .t-btn { width: 56px; height: 56px; }
   .t-btn-fire { width: 64px; height: 64px; }
   .terminal-modal p { display: none; }
+  .credits-modal .author-bio,
+  .credits-modal .credits-intro { display: block; }
   #modal-logo { max-height: 112px; }
 }
+
+/* ==================== CREDITS / ОБ АВТОРАХ ==================== */
+.bezel-credits-btn {
+  appearance: none;
+  background: rgba(15, 29, 20, 0.72);
+  border: 1px solid rgba(255, 184, 77, 0.34);
+  border-radius: 3px;
+  color: var(--amber);
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.bezel-credits-btn:hover {
+  background: rgba(34, 58, 42, 0.92);
+  border-color: var(--green);
+  color: var(--green);
+  box-shadow: 0 0 10px rgba(57, 255, 136, 0.28);
+}
+
+.btn-credits-chip {
+  appearance: none;
+  background: rgba(255, 184, 77, 0.12);
+  border: 1px solid rgba(255, 184, 77, 0.45);
+  border-radius: 3px;
+  color: var(--amber);
+  font-family: inherit;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 1px 6px;
+  cursor: pointer;
+  line-height: 1.3;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.btn-credits-chip:hover {
+  background: rgba(57, 255, 136, 0.16);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+#credits-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(2, 7, 4, 0.82);
+  backdrop-filter: blur(5px);
+}
+
+.credits-modal {
+  width: min(740px, 100%);
+  border-top: 3px solid var(--green);
+}
+
+.credits-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.credits-head h2 {
+  margin: 0;
+  font-size: clamp(16px, 2.6vw, 22px);
+  letter-spacing: 0.08em;
+  color: var(--green);
+  text-shadow: 0 0 12px rgba(57, 255, 136, 0.35);
+}
+
+.credits-intro {
+  margin: 0 0 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.credits-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.author-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(10, 21, 14, 0.92) 0%, rgba(6, 13, 9, 0.96) 100%);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 13px;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.45);
+}
+
+.author-card.author-human {
+  border-color: rgba(255, 184, 77, 0.42);
+  border-top: 2px solid var(--amber);
+}
+
+.author-card.author-ai {
+  border-color: rgba(57, 255, 136, 0.42);
+  border-top: 2px solid var(--green);
+}
+
+.author-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.author-avatar {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.author-avatar svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.author-role-tag {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: var(--amber);
+  margin-bottom: 2px;
+}
+
+.author-role-tag.ai {
+  color: var(--green);
+}
+
+.author-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #e9fff1;
+  letter-spacing: 0.03em;
+}
+
+.author-handle {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.author-bio {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--green-soft);
+}
+
+.author-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.contact-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #ffe3b0;
+  text-decoration: none;
+  background: rgba(255, 184, 77, 0.1);
+  border: 1px solid rgba(255, 184, 77, 0.36);
+  border-radius: 4px;
+  transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.contact-chip:hover {
+  background: rgba(255, 184, 77, 0.22);
+  border-color: var(--amber);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.contact-chip.ai {
+  color: #baffd4;
+  background: rgba(57, 255, 136, 0.1);
+  border-color: rgba(57, 255, 136, 0.38);
+}
+
+.contact-chip.ai:hover {
+  background: rgba(57, 255, 136, 0.22);
+  border-color: var(--green);
+  color: #fff;
+}
+
+.chip-ico {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.credits-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.credits-stamp {
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+@media (max-width: 680px) {
+  .credits-grid {
+    grid-template-columns: 1fr;
+  }
+  .credits-modal {
+    padding: 15px 14px;
+  }
+  .credits-footer {
+    justify-content: flex-end;
+  }
+  .credits-stamp {
+    width: 100%;
+    text-align: center;
+  }
+}
+

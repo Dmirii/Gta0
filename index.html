@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#060b07">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>VAULT RUNNER // Wasteland Matrix</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=12">
-  <link rel="stylesheet" href="css/style.css?v=12">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=13">
+  <link rel="stylesheet" href="css/style.css?v=13">
 </head>
 <body class="crt-on">
   <div id="app">
@@ -81,7 +81,7 @@
           <div class="terminal-modal">
             <div class="modal-tag">ROBCO INDUSTRIES // VAULT-OS 2077 · MATRIX LINK</div>
             <div id="modal-logo-wrap" class="modal-logo-wrap">
-              <img id="modal-logo" src="assets/logo.png?v=12" alt="VAULT RUNNER">
+              <img id="modal-logo" src="assets/logo.png?v=13" alt="VAULT RUNNER">
             </div>
             <h1 id="modal-title" class="hidden">VAULT RUNNER</h1>
             <p id="modal-subtitle">
@@ -113,18 +113,22 @@
             <div class="modal-actions">
               <button id="btn-play" class="btn-primary" type="button">▶ ВЪЕХАТЬ В ПУСТОШЬ</button>
               <button id="btn-restart-modal" class="btn-secondary hidden" type="button">↻ НАЧАТЬ ЗАНОВО</button>
+              <button id="btn-credits-modal" class="btn-secondary" type="button">ⓘ ОБ АВТОРАХ</button>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Нижняя металлическая планка корпуса монитора (только на ПК) -->
-      <footer id="stage-bezel-bar" class="desktop-only" aria-hidden="true">
+      <footer id="stage-bezel-bar" class="desktop-only">
         <div class="bezel-stamp">
           <span class="rivet"></span>
           <span>ROBCO MODEL 2077-M // VAULT RUNNER</span>
         </div>
-        <div class="bezel-leds">
+        <button id="btn-credits-bezel" class="bezel-credits-btn" type="button" title="Об авторах и контакты">
+          ⓘ D. ANTONOV × ARENA.AI
+        </button>
+        <div class="bezel-leds" aria-hidden="true">
           <span class="led-item"><i class="led led-pwr on"></i>PWR</span>
           <span class="led-item"><i id="led-rad" class="led led-rad"></i>RAD</span>
           <span class="led-item"><i id="led-matrix" class="led led-mtx"></i>MATRIX</span>
@@ -274,7 +278,7 @@
 
           <div class="garage-car-card" id="garage-car-card">
             <div class="garage-car-media">
-              <img id="garage-car-img" src="assets/cars/car-0.jpg?v=12" alt="Машина в гараже">
+              <img id="garage-car-img" src="assets/cars/car-0.jpg?v=13" alt="Машина в гараже">
               <span class="garage-car-rank" id="garage-car-rank">КЛАСС I / V</span>
               <span class="garage-car-name" id="garage-car-name">SCOUT BUGGY</span>
             </div>
@@ -367,7 +371,10 @@
           </div>
 
           <div class="mini-guide">
-            <div class="panel-row-head"><span>КЛАВИШИ (ПК)</span></div>
+            <div class="panel-row-head">
+              <span>КЛАВИШИ (ПК)</span>
+              <button id="btn-credits-menu" class="btn-credits-chip" type="button">ⓘ ОБ АВТОРАХ</button>
+            </div>
             <div class="keys-help">
               <span><b>WASD / ↑←↓→</b> — езда</span>
               <span><b>ЛКМ / Space</b> — стрельба</span>
@@ -382,8 +389,106 @@
     </aside>
   </div>
 
-  <script defer src="js/audio.js?v=12"></script>
-  <script defer src="js/world.js?v=12"></script>
-  <script defer src="js/game.js?v=12"></script>
+  <!-- МОДАЛЬНОЕ ОКНО: ОБ АВТОРАХ И КОНТАКТЫ -->
+  <div id="credits-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="credits-title">
+    <div class="terminal-modal credits-modal">
+      <div class="credits-head">
+        <div>
+          <div class="modal-tag">ROBCO DOSSIER // VAULT RUNNER CREDITS</div>
+          <h2 id="credits-title">ОБ АВТОРАХ ИГРЫ</h2>
+        </div>
+        <button id="btn-credits-close-x" class="icon-btn" type="button" aria-label="Закрыть">✕</button>
+      </div>
+
+      <p class="credits-intro">
+        <strong>VAULT RUNNER</strong> создан в живом дуэте человека и AI-агента — от идеи и геймдизайна
+        до 2.5D-движка, графики, физики и процедурного Keygen-саундтрека.
+      </p>
+
+      <div class="credits-grid">
+        <!-- КАРТОЧКА 1: ДМИТРИЙ АНТОНОВ -->
+        <article class="author-card author-human">
+          <div class="author-top">
+            <div class="author-avatar avatar-human" aria-hidden="true">
+              <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="2" width="40" height="40" rx="7" fill="#1b1509" stroke="#ffb84d" stroke-width="2"/>
+                <circle cx="22" cy="17" r="7" stroke="#ffb84d" stroke-width="2" fill="#2a200d"/>
+                <path d="M10 35C11.5 29 16 26 22 26C28 26 32.5 29 34 35" stroke="#ffb84d" stroke-width="2" stroke-linecap="round"/>
+                <path d="M8 9H13M31 9H36" stroke="#39ff88" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <div class="author-role-tag">АВТОР ИДЕИ · ГЕЙМДИЗАЙН · ПРОДЮСЕР</div>
+              <h3 class="author-name">Дмитрий Антонов</h3>
+              <div class="author-handle">@Dmirii · Санкт-Петербург / Россия</div>
+            </div>
+          </div>
+          <p class="author-bio">
+            Инженер-программист по образованию (ГУАП). Вернулся к истокам — придумывает и продюсирует
+            инди-игры, веб-проекты и эксперименты с AI.
+          </p>
+          <div class="author-links">
+            <a class="contact-chip" href="https://dimaa.ru/" target="_blank" rel="noopener noreferrer">
+              <span class="chip-ico">🌐</span><span>dimaa.ru</span>
+            </a>
+            <a class="contact-chip" href="https://t.me/Dimaa_ru" target="_blank" rel="noopener noreferrer">
+              <span class="chip-ico">✈</span><span>@Dimaa_ru</span>
+            </a>
+            <a class="contact-chip" href="https://github.com/Dmirii" target="_blank" rel="noopener noreferrer">
+              <span class="chip-ico">⌘</span><span>GitHub / Dmirii</span>
+            </a>
+            <a class="contact-chip" href="mailto:dimaa@dimaa.ru">
+              <span class="chip-ico">✉</span><span>dimaa@dimaa.ru</span>
+            </a>
+            <a class="contact-chip" href="https://vk.com/dimaa_ru" target="_blank" rel="noopener noreferrer">
+              <span class="chip-ico">💬</span><span>VK @dimaa_ru</span>
+            </a>
+          </div>
+        </article>
+
+        <!-- КАРТОЧКА 2: AI-АГЕНТ ARENA.AI -->
+        <article class="author-card author-ai">
+          <div class="author-top">
+            <div class="author-avatar avatar-ai" aria-hidden="true">
+              <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="2" width="40" height="40" rx="7" fill="#071910" stroke="#39ff88" stroke-width="2"/>
+                <rect x="11" y="11" width="22" height="22" rx="4" fill="#0d291a" stroke="#39ff88" stroke-width="1.8"/>
+                <circle cx="18" cy="21" r="2.2" fill="#39ff88"/>
+                <circle cx="26" cy="21" r="2.2" fill="#39ff88"/>
+                <path d="M17 27H27" stroke="#ffb84d" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M22 5V11M22 33V39M5 22H11M33 22H39" stroke="#39ff88" stroke-width="1.6" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <div class="author-role-tag ai">СОАВТОР · AI-РАЗРАБОТЧИК · КОД И ЗВУК</div>
+              <h3 class="author-name">Arena.ai · Agent Mode</h3>
+              <div class="author-handle">AI Coding Agent // Matrix Core</div>
+            </div>
+          </div>
+          <p class="author-bio">
+            Полная реализация игрового движка на HTML5 Canvas 2D: 2.5D-город, физика и баланс врагов,
+            процедурный Keygen-чиптюн и синтез мотора, арт гаража и CABIN CAM.
+          </p>
+          <div class="author-links">
+            <a class="contact-chip ai" href="https://arena.ai" target="_blank" rel="noopener noreferrer">
+              <span class="chip-ico">⚡</span><span>arena.ai</span>
+            </a>
+            <a class="contact-chip ai" href="https://github.com/Dmirii/Gta0" target="_blank" rel="noopener noreferrer">
+              <span class="chip-ico">📦</span><span>Репозиторий Dmirii/Gta0</span>
+            </a>
+          </div>
+        </article>
+      </div>
+
+      <div class="credits-footer">
+        <span class="credits-stamp">VAULT RUNNER v13 · HTML5 CANVAS 2D + WEB AUDIO · 2026</span>
+        <button id="btn-credits-close" class="btn-primary" type="button">✕ ЗАКРЫТЬ</button>
+      </div>
+    </div>
+  </div>
+
+  <script defer src="js/audio.js?v=13"></script>
+  <script defer src="js/world.js?v=13"></script>
+  <script defer src="js/game.js?v=13"></script>
 </body>
 </html>
