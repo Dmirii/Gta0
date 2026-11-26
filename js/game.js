@@ -108,7 +108,7 @@ class GameScene extends Phaser.Scene {
     c.addEventListener('mousedown', (e) => { if (e.button === 2) this.fireOn = true; });
     c.addEventListener('mouseup', () => { this.fireOn = false; });
 
-    this.time.addEvent({ delay: 40, callback: this.sendMove, loop: true });
+    this.time.addEvent({ delay: 40, callback: this.sendMove, scope: this, loop: true });
   }
 
   send(msg) { if (this.socket && this.socket.readyState === 1) this.socket.send(JSON.stringify(msg)); }
@@ -344,5 +344,6 @@ const game = new Phaser.Game({
   width: VIEW_W,
   height: VIEW_H,
   backgroundColor: '#0b140b',
+  audio: { noAudio: true },
   scene: GameScene
 });
