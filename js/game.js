@@ -18,13 +18,13 @@
       maxSpeed: 290,
       accel: 465,
       turn: 3.45,
-      ramMult: 0.14,
+      ramMult: 0.08,
       ammoStart: 70,
       fill: '#4c5c56',
       trim: '#e4c94b',
       stripe: '#2e6f9e',
       accent: '#ffb84d',
-      img: 'assets/cars/car-0.jpg?v=10',
+      img: 'assets/cars/car-0.jpg?v=11',
       cost: 0
     },
     {
@@ -37,13 +37,13 @@
       maxSpeed: 332,
       accel: 525,
       turn: 3.12,
-      ramMult: 0.21,
+      ramMult: 0.11,
       ammoStart: 95,
       fill: '#465359',
       trim: '#ffd05c',
       stripe: '#26619c',
       accent: '#ff9e42',
-      img: 'assets/cars/car-1.jpg?v=10',
+      img: 'assets/cars/car-1.jpg?v=11',
       cost: 90
     },
     {
@@ -56,13 +56,13 @@
       maxSpeed: 315,
       accel: 495,
       turn: 2.82,
-      ramMult: 0.29,
+      ramMult: 0.15,
       ammoStart: 120,
       fill: '#2e5d84',
       trim: '#f5c842',
       stripe: '#1b3854',
       accent: '#38e8ff',
-      img: 'assets/cars/car-2.jpg?v=10',
+      img: 'assets/cars/car-2.jpg?v=11',
       cost: 190
     },
     {
@@ -75,13 +75,13 @@
       maxSpeed: 300,
       accel: 470,
       turn: 2.48,
-      ramMult: 0.44,
+      ramMult: 0.24,
       ammoStart: 150,
       fill: '#4d443d',
       trim: '#ffb03b',
       stripe: '#2f2924',
       accent: '#ff7034',
-      img: 'assets/cars/car-3.jpg?v=10',
+      img: 'assets/cars/car-3.jpg?v=11',
       cost: 340
     },
     {
@@ -94,13 +94,13 @@
       maxSpeed: 368,
       accel: 595,
       turn: 3.35,
-      ramMult: 0.36,
+      ramMult: 0.17,
       ammoStart: 180,
       fill: '#141f1c',
       trim: '#39ff88',
       stripe: '#0c3022',
       accent: '#39ff88',
-      img: 'assets/cars/car-4.jpg?v=10',
+      img: 'assets/cars/car-4.jpg?v=11',
       cost: 540
     }
   ];
@@ -482,7 +482,7 @@
   if (typeof Image !== 'undefined') {
     driverSheet = new Image();
     driverSheet.onload = () => { driverSheetReady = true; };
-    driverSheet.src = 'assets/driver-sheet.jpg?v=10';
+    driverSheet.src = 'assets/driver-sheet.jpg?v=11';
   }
 
   const DRIVER_QUOTES = {
@@ -1484,6 +1484,8 @@
     syncUI(true);
   }
 
+  const ROMAN_TIERS = ['I', 'II', 'III', 'IV', 'V'];
+
   function getPlayerPower() {
     if (!player) return 0;
     return (
@@ -1496,23 +1498,32 @@
     );
   }
 
+  // Уровень угрозы мира (1..5): плавно растёт вместе с классом корпуса и апгрейдами игрока (1..5)
+  function getThreatLevel() {
+    if (!player) return 1;
+    const pwr = getPlayerPower();
+    const byPower = 1 + Math.floor(pwr / 5.4);
+    const byClass = player.carClass + 1;
+    return clamp(Math.max(byClass, byPower), 1, 5);
+  }
+
   function getCarSpec() {
     const base = CAR_CLASSES[player.carClass] || CAR_CLASSES[0];
     const mLvl = player.missileLvl || 0;
-    const armorBonusRam = player.armorLvl >= 3 ? 0.14 : (player.armorLvl >= 2 ? 0.05 : 0);
+    const armorBonusRam = player.armorLvl >= 3 ? 0.075 : (player.armorLvl >= 2 ? 0.025 : 0);
     return {
       ...base,
       maxHp: base.maxHp + (player.armorLvl - 1) * 40,
       maxSpeed: base.maxSpeed + (player.engineLvl - 1) * 32,
       accel: base.accel + (player.engineLvl - 1) * 65,
       turn: base.turn + (player.engineLvl - 1) * 0.15,
-      fireDelay: Math.max(0.088, 0.22 - (player.weaponLvl - 1) * 0.036),
-      damage: 18 + (player.weaponLvl - 1) * 8 + player.carClass * 2,
-      missileCd: mLvl === 0 ? 99 : Math.max(1.55, 3.6 - mLvl * 0.7),
-      missileDmg: 56 + mLvl * 18 + player.carClass * 8,
+      fireDelay: Math.max(0.095, 0.22 - (player.weaponLvl - 1) * 0.032),
+      damage: 18 + (player.weaponLvl - 1) * 7 + player.carClass * 2,
+      missileCd: mLvl === 0 ? 99 : Math.max(1.65, 3.6 - mLvl * 0.65),
+      missileDmg: 54 + mLvl * 16 + player.carClass * 8,
       missileSalvo: mLvl >= 3 ? 2 : (mLvl >= 1 ? 1 : 0),
       ramMult: base.ramMult + armorBonusRam,
-      ramSelfMult: Math.max(0.018, 0.06 - player.carClass * 0.008 - (player.armorLvl - 1) * 0.008),
+      ramSelfMult: Math.max(0.025, 0.068 - player.carClass * 0.008 - (player.armorLvl - 1) * 0.007),
       maxFocus: 100 + (player.matrixLvl - 1) * 30,
       focusDrain: Math.max(13, 28 - (player.matrixLvl - 1) * 4),
       focusRegen: 14 + (player.matrixLvl - 1) * 3.5
@@ -1626,66 +1637,78 @@
     loot.push({ id: nextEntId++, x: p.x, y: p.y, type, pulse: Math.random() * Math.PI * 2 });
   }
 
-  function spawnEnemy(kind) {
+  function spawnEnemy(kind, forcedTier) {
     const p = world.pickRoadSpawn(player, 430);
     const pwr = getPlayerPower();
+    const threat = getThreatLevel();
     const m = player.missionsDone;
     const k = kind || 'raider';
 
+    // Тир врага (1..5): следует за уровнем угрозы игрока (иногда -1 тир для живого микса отрядов)
+    let tier = forcedTier
+      ? clamp(forcedTier, 1, 5)
+      : (threat >= 3 && Math.random() < 0.25 ? threat - 1 : threat);
+    const t = tier - 1; // 0..4
+
     let cfg;
     if (k === 'boss') {
+      const hpTable = [280, 360, 480, 650, 840];
       cfg = {
-        hp: Math.round(190 + pwr * 20 + m * 10),
-        len: 52, wid: 26,
-        speed: 175 + Math.min(35, pwr * 2),
-        dmg: Math.round(14 + pwr * 0.55),
-        fireCd: 1.35,
-        aggro: 740,
-        range: 420,
-        bounty: 75 + Math.round(pwr * 2),
-        score: 420
+        hp: Math.round(hpTable[t] + pwr * 7.5 + m * 7),
+        len: 52 + t * 1.5, wid: 26 + t * 0.6,
+        speed: 174 + t * 13 + Math.min(18, pwr),
+        dmg: Math.round(14 + t * 3.0 + pwr * 0.2),
+        fireCd: Math.max(0.95, 1.38 - t * 0.08),
+        aggro: 760,
+        range: 430,
+        bounty: 75 + t * 24 + Math.round(pwr * 1.2),
+        score: 420 + t * 110
       };
     } else if (k === 'agent') {
+      const hpTable = [108, 168, 240, 320, 410];
       cfg = {
-        hp: Math.round(84 + pwr * 11 + m * 7),
-        len: 39, wid: 20,
-        speed: 228 + Math.min(48, pwr * 2.5),
-        dmg: Math.round(12 + pwr * 0.45),
-        fireCd: Math.max(0.68, 0.98 - pwr * 0.015),
+        hp: Math.round(hpTable[t] + pwr * 4.5 + m * 4),
+        len: 39 + t * 0.8, wid: 20 + t * 0.4,
+        speed: 224 + t * 14 + Math.min(20, pwr * 1.1),
+        dmg: Math.round(11 + t * 2.4 + pwr * 0.18),
+        fireCd: Math.max(0.62, 1.02 - t * 0.08),
         aggro: 780,
-        range: 395,
-        bounty: 35 + Math.round(pwr * 1.1),
-        score: 210
+        range: 405,
+        bounty: 35 + t * 12 + Math.round(pwr * 0.8),
+        score: 210 + t * 55
       };
     } else if (k === 'heavy') {
+      const hpTable = [124, 195, 275, 370, 470];
       cfg = {
-        hp: Math.round(98 + pwr * 12 + m * 6),
-        len: 44, wid: 23,
-        speed: 158 + Math.min(28, pwr * 1.6),
-        dmg: Math.round(10 + pwr * 0.4),
-        fireCd: 1.32,
-        aggro: 540,
-        range: 345,
-        bounty: 30 + Math.round(pwr * 0.9),
-        score: 165
+        hp: Math.round(hpTable[t] + pwr * 5.0 + m * 4),
+        len: 44 + t * 1.1, wid: 23 + t * 0.5,
+        speed: 156 + t * 11 + Math.min(16, pwr * 0.9),
+        dmg: Math.round(10 + t * 2.2 + pwr * 0.18),
+        fireCd: Math.max(0.92, 1.34 - t * 0.08),
+        aggro: 560,
+        range: 360,
+        bounty: 30 + t * 11 + Math.round(pwr * 0.7),
+        score: 165 + t * 45
       };
     } else {
+      const hpTable = [62, 108, 158, 215, 275];
       cfg = {
-        hp: Math.round(48 + pwr * 7 + m * 4),
-        len: 34, wid: 19,
-        speed: 176 + Math.min(36, pwr * 2),
-        dmg: Math.round(8.5 + pwr * 0.35),
-        fireCd: Math.max(1.05, 1.45 - pwr * 0.018),
-        aggro: 490,
-        range: 310,
-        bounty: 18 + Math.round(pwr * 0.5),
-        score: 105
+        hp: Math.round(hpTable[t] + pwr * 3.0 + m * 3),
+        len: 34 + t * 0.9, wid: 19 + t * 0.4,
+        speed: 174 + t * 13 + Math.min(18, pwr),
+        dmg: Math.round(8.5 + t * 1.9 + pwr * 0.15),
+        fireCd: Math.max(0.92, 1.44 - t * 0.1),
+        aggro: 500 + t * 25,
+        range: 315 + t * 18,
+        bounty: 18 + t * 7 + Math.round(pwr * 0.4),
+        score: 105 + t * 30
       };
     }
 
     enemies.push({
       id: nextEntId++,
       kind: k,
+      tier,
       x: p.x,
       y: p.y,
       vx: 0,
@@ -1703,9 +1726,26 @@
       bounty: cfg.bounty,
       score: cfg.score,
       shootCd: 0.7 + Math.random() * 0.9,
+      missileCd: 3.4 + Math.random() * 1.8,
+      ramCd: 0,
       wanderAng: Math.random() * Math.PI * 2,
       wanderTimer: 1 + Math.random() * 2
     });
+  }
+
+  function refreshFarEnemies(announce) {
+    if (!player) return;
+    const threat = getThreatLevel();
+    // Заменяем устаревших дальних врагов на новые отряды под текущий уровень угрозы игрока
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      const e = enemies[i];
+      if ((e.tier || 1) < threat && dist(e, player) > 520) {
+        enemies.splice(i, 1);
+      }
+    }
+    if (announce && threat >= 2) {
+      addLog(`⚠ СИСТЕМА АДАПТИРУЕТСЯ: усиленные отряды MK-${ROMAN_TIERS[threat - 1]} вошли в сектор!`, 'danger');
+    }
   }
 
   function findNearestEnemy(x, y, maxRange, preferAng) {
@@ -1724,36 +1764,43 @@
     return best;
   }
 
-  function fireHomingMissile(x, y, ang, dmg, target) {
-    const speed = 380;
+  function fireHomingMissile(x, y, ang, dmg, target, owner) {
+    const isEnemy = owner === 'enemy';
+    const speed = isEnemy ? 275 : 380;
     bullets.push({
-      owner: 'player',
+      owner: isEnemy ? 'enemy' : 'player',
       homing: true,
-      targetId: target ? target.id : null,
+      targetId: (!isEnemy && target) ? target.id : null,
       x, y,
       ang,
       speed,
       vx: Math.cos(ang) * speed,
       vy: Math.sin(ang) * speed,
       dmg,
-      splashRadius: 64,
-      color: '#ff7a2f',
-      radius: 5.0,
-      life: 2.55,
+      splashRadius: isEnemy ? 46 : 64,
+      color: isEnemy ? '#ff384c' : '#ff7a2f',
+      radius: isEnemy ? 4.6 : 5.0,
+      life: isEnemy ? 2.8 : 2.55,
       smokeCd: 0
     });
-    addLightFlash(x, y, 165, '#ff8e3c', 0.14);
+    addLightFlash(x, y, 165, isEnemy ? '#ff384c' : '#ff8e3c', 0.14);
   }
 
   function detonateMissile(b) {
     AudioFX.explode();
     shakeAmt = Math.min(11, shakeAmt + 4.5);
-    addLightFlash(b.x, b.y, 210, '#ff8a36', 0.28);
+    addLightFlash(b.x, b.y, 210, b.owner === 'enemy' ? '#ff384c' : '#ff8a36', 0.28);
     spawnBurst(b.x, b.y, '#ffbe4f', 14, 190);
     spawnBurst(b.x, b.y, '#ff4d36', 10, 145);
     spawnBurst(b.x, b.y, '#8fa396', 6, 85);
 
     const rad = b.splashRadius || 64;
+    if (b.owner === 'enemy') {
+      if (player && Math.hypot(b.x - player.x, b.y - player.y) < rad + 18) {
+        damagePlayer(b.dmg, false);
+      }
+      return;
+    }
     for (let j = enemies.length - 1; j >= 0; j--) {
       const e = enemies[j];
       const d = Math.hypot(b.x - e.x, b.y - e.y);
@@ -2056,6 +2103,7 @@
       btn.addEventListener('click', () => {
         AudioFX.unlock();
         if (u.maxed || player.caps < u.cost) return;
+        const prevThreat = getThreatLevel();
         player.caps -= u.cost;
         u.apply();
         AudioFX.upgrade();
@@ -2066,6 +2114,9 @@
         }
         addLog(`Установлено: ${u.name}`, 'matrix');
         addFloatText(player.x, player.y - 24, `АПГРЕЙД: ${u.name}`, '#38e8ff');
+        if (getThreatLevel() > prevThreat || u.id === 'car') {
+          refreshFarEnemies(getThreatLevel() > prevThreat);
+        }
         saveProgress();
         renderGarage();
         syncUI(true);
@@ -2455,20 +2506,21 @@
 
   function updateEnemies(dt) {
     const pwr = getPlayerPower();
+    const threat = getThreatLevel();
     const targetCount = Math.min(12, 5 + player.trace + Math.floor((player.missionsDone + player.carClass) / 2));
     enemySpawnTimer -= dt;
     if (enemySpawnTimer <= 0 && enemies.length < targetCount) {
-      enemySpawnTimer = Math.max(2.1, 3.2 - pwr * 0.05);
+      enemySpawnTimer = Math.max(2.0, 3.1 - threat * 0.16);
       const bossCount = enemies.filter((e) => e.kind === 'boss').length;
-      const maxBosses = pwr >= 11 ? 2 : 1;
+      const maxBosses = threat >= 4 ? 2 : 1;
       const roll = Math.random();
 
       let kind = 'raider';
-      if ((pwr >= 7 || player.carClass >= 2 || player.trace >= 4) && bossCount < maxBosses && roll < (0.10 + player.carClass * 0.03)) {
+      if ((threat >= 3 || player.trace >= 4) && bossCount < maxBosses && roll < (0.08 + threat * 0.032)) {
         kind = 'boss';
-      } else if ((player.trace >= 2 || pwr >= 4.5) && roll < (0.30 + player.trace * 0.08 + pwr * 0.012)) {
+      } else if ((threat >= 2 || player.trace >= 2) && roll < (0.20 + threat * 0.07 + player.trace * 0.06)) {
         kind = 'agent';
-      } else if ((pwr >= 2.2 || player.carClass >= 1 || player.trace >= 2) && roll < (0.58 + pwr * 0.018)) {
+      } else if ((threat >= 2 || player.trace >= 1) && roll < (0.48 + threat * 0.09)) {
         kind = 'heavy';
       }
       spawnEnemy(kind);
@@ -2477,43 +2529,68 @@
     const spec = getCarSpec();
     for (let i = enemies.length - 1; i >= 0; i--) {
       const e = enemies[i];
+      if (e.ramCd > 0) e.ramCd = Math.max(0, e.ramCd - dt);
       const d = dist(e, player);
+
+      // Если устаревший враг оказался далеко вне поля зрения — уступаем слот свежему отряду текущего уровня угрозы
+      if ((e.tier || 1) < threat && d > 1350) {
+        enemies.splice(i, 1);
+        continue;
+      }
+
       const isAgent = e.kind === 'agent';
       const isBoss = e.kind === 'boss';
       const isHeavy = e.kind === 'heavy';
+      const eTier = e.tier || 1;
       const aggroDist = e.aggro || (isAgent ? 780 : 480);
 
       if (d < aggroDist && !player.inDepot) {
         // Преследование игрока с объездом зданий
         const desiredAng = Math.atan2(player.y - e.y, player.x - e.x);
         const diff = normAngle(desiredAng - e.ang);
-        const turnRate = isBoss ? 2.1 : (isHeavy ? 2.4 : 2.95);
+        const turnRate = isBoss ? 2.15 : (isHeavy ? 2.45 : 3.0);
         e.ang = normAngle(e.ang + clamp(diff, -turnRate * dt, turnRate * dt));
         const holdDist = isBoss ? 175 : 135;
         const desiredSpeed = d > holdDist ? e.speed : e.speed * 0.35;
         e.vx += (Math.cos(e.ang) * desiredSpeed - e.vx) * Math.min(1, 3.8 * dt);
         e.vy += (Math.sin(e.ang) * desiredSpeed - e.vy) * Math.min(1, 3.8 * dt);
 
-        // Стрельба по игроку (зависит от архетипа врага)
+        // Стрельба по игроку (эволюционирует с тиром врага eTier 1..5!)
         e.shootCd -= dt;
         const shootRange = e.range || (isAgent ? 390 : 300);
         if (e.shootCd <= 0 && d < shootRange) {
           e.shootCd = e.fireCd || (isAgent ? 0.95 : 1.45);
-          const aim = Math.atan2(player.y - e.y, player.x - e.x) + (Math.random() - 0.5) * (isAgent ? 0.09 : 0.2);
+          const spread = isAgent ? 0.08 : Math.max(0.09, 0.21 - (eTier - 1) * 0.025);
+          const aim = Math.atan2(player.y - e.y, player.x - e.x) + (Math.random() - 0.5) * spread;
           const mx = e.x + Math.cos(aim) * (e.len * 0.52);
           const my = e.y + Math.sin(aim) * (e.len * 0.52);
+          const px = -Math.sin(aim) * 4.2;
+          const py = Math.cos(aim) * 4.2;
 
           if (isBoss) {
             // Каратель Системы: 3-ствольный веерный залп!
             fireBullet('enemy', mx, my, aim - 0.14, 465, e.dmg * 0.78, '#ff4d5a', 4.0);
-            fireBullet('enemy', mx, my, aim, 490, e.dmg, '#39ff88', 4.3);
+            fireBullet('enemy', mx, my, aim, 495, e.dmg, '#39ff88', 4.3);
             fireBullet('enemy', mx, my, aim + 0.14, 465, e.dmg * 0.78, '#ff4d5a', 4.0);
           } else if (isHeavy) {
-            // Броневик: сдвоенный залп
-            const px = -Math.sin(aim) * 4.2;
-            const py = Math.cos(aim) * 4.2;
-            fireBullet('enemy', mx + px, my + py, aim - 0.04, 415, e.dmg * 0.72, '#ff8e47', 3.5);
-            fireBullet('enemy', mx - px, my - py, aim + 0.04, 415, e.dmg * 0.72, '#ff8e47', 3.5);
+            if (eTier >= 4) {
+              // Броневик MK-IV/V: тяжёлый тройной залп
+              fireBullet('enemy', mx, my, aim - 0.11, 430, e.dmg * 0.65, '#ff8e47', 3.5);
+              fireBullet('enemy', mx, my, aim, 450, e.dmg * 0.78, '#ffb84d', 3.8);
+              fireBullet('enemy', mx, my, aim + 0.11, 430, e.dmg * 0.65, '#ff8e47', 3.5);
+            } else {
+              // Броневик MK-I..III: сдвоенный залп
+              fireBullet('enemy', mx + px, my + py, aim - 0.04, 415, e.dmg * 0.72, '#ff8e47', 3.5);
+              fireBullet('enemy', mx - px, my - py, aim + 0.04, 415, e.dmg * 0.72, '#ff8e47', 3.5);
+            }
+          } else if (isAgent && eTier >= 3) {
+            // Агент Матрицы MK-III+: парная изумрудная плазма
+            fireBullet('enemy', mx + px * 0.8, my + py * 0.8, aim - 0.025, 495, e.dmg * 0.72, '#39ff88', 3.5);
+            fireBullet('enemy', mx - px * 0.8, my - py * 0.8, aim + 0.025, 495, e.dmg * 0.72, '#39ff88', 3.5);
+          } else if (!isAgent && eTier >= 3) {
+            // Боевой Рейдер MK-III+: сдвоенный пулемёт
+            fireBullet('enemy', mx + px * 0.7, my + py * 0.7, aim - 0.035, 420, e.dmg * 0.68, '#ff7d57', 3.3);
+            fireBullet('enemy', mx - px * 0.7, my - py * 0.7, aim + 0.035, 420, e.dmg * 0.68, '#ff7d57', 3.3);
           } else {
             fireBullet(
               'enemy',
@@ -2524,6 +2601,17 @@
               isAgent ? '#39ff88' : '#ff6b57',
               3.4
             );
+          }
+        }
+
+        // Каратель MK-IV/V дополнительно запускает наводящуюся ракету Системы (от неё можно уходить в Матрице!)
+        if (isBoss && eTier >= 4 && d < 480 && d > 120) {
+          e.missileCd = (e.missileCd || 4) - dt;
+          if (e.missileCd <= 0) {
+            e.missileCd = eTier >= 5 ? 3.8 : 4.8;
+            const aim = Math.atan2(player.y - e.y, player.x - e.x);
+            fireHomingMissile(e.x + Math.cos(aim) * 24, e.y + Math.sin(aim) * 24, aim, Math.round(24 + eTier * 3), null, 'enemy');
+            if (AudioFX.missile) AudioFX.missile();
           }
         }
       } else {
@@ -2548,24 +2636,48 @@
         e.wanderTimer = 1.0;
       }
 
-      // Столкновение машина-в-машину с игроком (учёт класса кузова и шипастого тарана!)
-      const minSep = (spec.wid + e.wid) * 0.58;
+      // Столкновение машина-в-машину с игроком (честная импульсная физика + кулдаун удара, БЕЗ ваншота от касания!)
+      const minSep = (spec.wid + e.wid) * 0.56;
       const pd = dist(e, player);
       if (pd < minSep && pd > 0.01) {
         const nx = (player.x - e.x) / pd;
         const ny = (player.y - e.y) / pd;
-        const push = (minSep - pd) * 0.55;
-        player.x += nx * push;
-        player.y += ny * push;
-        e.x -= nx * push;
-        e.y -= ny * push;
-        const relSp = Math.hypot(player.vx - e.vx, player.vy - e.vy);
-        if (relSp > 115) {
-          e.hp -= relSp * spec.ramMult;
-          const bossFactor = isBoss ? 1.55 : (isHeavy ? 1.2 : 1.0);
-          damagePlayer(relSp * spec.ramSelfMult * bossFactor, false);
-          spawnBurst((player.x + e.x) / 2, (player.y + e.y) / 2, '#ffb84d', 7, 145);
+        const overlap = minSep - pd;
+        // Полное разделение кузовов с учётом массы (WAR RIG тяжелее, Каратель тяжелее всех)
+        const playerMass = 1.0 + player.carClass * 0.35 + (player.armorLvl - 1) * 0.12;
+        const enemyMass = isBoss ? 2.6 : (isHeavy ? 1.75 : (isAgent ? 1.15 : 1.0));
+        const totalMass = playerMass + enemyMass;
+        player.x += nx * overlap * (enemyMass / totalMass + 0.15);
+        player.y += ny * overlap * (enemyMass / totalMass + 0.15);
+        e.x -= nx * overlap * (playerMass / totalMass + 0.15);
+        e.y -= ny * overlap * (playerMass / totalMass + 0.15);
+
+        // Скорость сближения именно вдоль нормали удара (боковое касание не даёт урон лобового тарана!)
+        const closing = (e.vx - player.vx) * nx + (e.vy - player.vy) * ny;
+        if (closing > 0) {
+          // Упругий отскок + гашение скорости сближения, чтобы машины не «пилили» друг друга каждый кадр
+          const restitution = 0.38;
+          const jImp = (1 + restitution) * closing / (1 / playerMass + 1 / enemyMass);
+          player.vx += (jImp / playerMass) * nx;
+          player.vy += (jImp / playerMass) * ny;
+          e.vx -= (jImp / enemyMass) * nx;
+          e.vy -= (jImp / enemyMass) * ny;
+        }
+
+        if (closing > 105 && e.ramCd <= 0) {
+          e.ramCd = 0.46; // 1 удар за столкновение, без пофреймового «распиливания»!
+          const armorResist = isBoss ? 0.52 : (isHeavy ? 0.72 : (eTier >= 3 ? 0.85 : 1.0));
+          const ramDmg = Math.min(closing * spec.ramMult * armorResist, 145);
+          e.hp -= ramDmg;
+          const bossFactor = isBoss ? 1.55 : (isHeavy ? 1.25 : 1.0);
+          damagePlayer(Math.max(4, closing * spec.ramSelfMult * bossFactor), false);
+          AudioFX.crash();
+          spawnBurst((player.x + e.x) / 2, (player.y + e.y) / 2, '#ffb84d', 8, 150);
           if (e.hp <= 0) destroyEnemy(i);
+        } else if (closing > 45 && e.ramCd <= 0) {
+          // Лёгкое касание: только скрежет и искры
+          e.ramCd = 0.25;
+          spawnBurst((player.x + e.x) / 2, (player.y + e.y) / 2, '#ffd485', 3, 75);
         }
       }
     }
@@ -2577,6 +2689,7 @@
     const isAgent = e.kind === 'agent';
     const isBoss = e.kind === 'boss';
     const isHeavy = e.kind === 'heavy';
+    const tierTag = (e.tier || 1) >= 2 ? ` MK-${ROMAN_TIERS[(e.tier || 1) - 1]}` : '';
     explodeVehicle(e.x, e.y, isAgent || isBoss);
     enemies.splice(index, 1);
 
@@ -2591,12 +2704,12 @@
     traceDecayTimer = 0;
 
     const label = isBoss
-      ? `КАРАТЕЛЬ УНИЧТОЖЕН! +${capsGain} ₵`
+      ? `КАРАТЕЛЬ${tierTag} УНИЧТОЖЕН! +${capsGain} ₵`
       : isAgent
-        ? `Агент Матрицы нейтрализован! +${capsGain} ₵`
+        ? `Агент${tierTag} нейтрализован! +${capsGain} ₵`
         : isHeavy
-          ? `Броневик рейдеров подорван! +${capsGain} ₵`
-          : `Рейдер уничтожен! +${capsGain} ₵`;
+          ? `Броневик${tierTag} подорван! +${capsGain} ₵`
+          : `Рейдер${tierTag} уничтожен! +${capsGain} ₵`;
 
     addFloatText(e.x, e.y - 16, `+${capsGain} ₵`, isBoss ? '#39ff88' : '#ffb84d');
     addLog(label, (isAgent || isBoss) ? 'matrix' : '');
@@ -2623,19 +2736,28 @@
     for (let i = bullets.length - 1; i >= 0; i--) {
       const b = bullets[i];
 
-      // Самонаводящаяся ракета: доворот к цели + шлейф дыма
+      // Самонаводящаяся ракета (игрока или Карателя MK-IV/V): доворот к цели + шлейф дыма
       if (b.homing) {
-        let target = enemies.find((e) => e.id === b.targetId);
-        if (!target) {
-          target = findNearestEnemy(b.x, b.y, 460, b.ang);
-          b.targetId = target ? target.id : null;
+        if (b.owner === 'enemy') {
+          if (player && player.hp > 0) {
+            const desiredAng = Math.atan2(player.y - b.y, player.x - b.x);
+            const diff = normAngle(desiredAng - b.ang);
+            b.ang = normAngle(b.ang + clamp(diff, -3.1 * dt, 3.1 * dt));
+          }
+          b.speed = Math.min(410, b.speed + 120 * dt);
+        } else {
+          let target = enemies.find((e) => e.id === b.targetId);
+          if (!target) {
+            target = findNearestEnemy(b.x, b.y, 460, b.ang);
+            b.targetId = target ? target.id : null;
+          }
+          if (target) {
+            const desiredAng = Math.atan2(target.y - b.y, target.x - b.x);
+            const diff = normAngle(desiredAng - b.ang);
+            b.ang = normAngle(b.ang + clamp(diff, -5.6 * dt, 5.6 * dt));
+          }
+          b.speed = Math.min(590, b.speed + 260 * dt);
         }
-        if (target) {
-          const desiredAng = Math.atan2(target.y - b.y, target.x - b.x);
-          const diff = normAngle(desiredAng - b.ang);
-          b.ang = normAngle(b.ang + clamp(diff, -5.6 * dt, 5.6 * dt));
-        }
-        b.speed = Math.min(590, b.speed + 260 * dt);
         b.vx = Math.cos(b.ang) * b.speed;
         b.vy = Math.sin(b.ang) * b.speed;
 
@@ -2648,7 +2770,9 @@
             vx: -Math.cos(b.ang) * 28 + (Math.random() - 0.5) * 24,
             vy: -Math.sin(b.ang) * 28 + (Math.random() - 0.5) * 24,
             size: 2.5 + Math.random() * 2.5,
-            color: Math.random() < 0.45 ? '#ffb84d' : '#8ea095',
+            color: b.owner === 'enemy'
+              ? (Math.random() < 0.5 ? '#ff4d5a' : '#806469')
+              : (Math.random() < 0.45 ? '#ffb84d' : '#8ea095'),
             life: 0.28,
             maxLife: 0.28
           });
@@ -2685,9 +2809,13 @@
         }
         if (hit) bullets.splice(i, 1);
       } else {
-        if (Math.hypot(b.x - player.x, b.y - player.y) < 20) {
-          spawnBurst(b.x, b.y, '#ff4d5a', 5, 100);
-          damagePlayer(b.dmg, false);
+        if (Math.hypot(b.x - player.x, b.y - player.y) < (b.homing ? 24 : 20)) {
+          if (b.homing) {
+            detonateMissile(b);
+          } else {
+            spawnBurst(b.x, b.y, '#ff4d5a', 5, 100);
+            damagePlayer(b.dmg, false);
+          }
           bullets.splice(i, 1);
         }
       }
@@ -2992,12 +3120,12 @@
         ctx.closePath();
         ctx.fill();
         // Стабилизаторы
-        ctx.fillStyle = '#ffb84d';
+        ctx.fillStyle = b.owner === 'enemy' ? '#ff384c' : '#ffb84d';
         ctx.fillRect(-5.5, -4, 3, 8);
-        // Корпус и красная боеголовка
-        ctx.fillStyle = '#e8f0ec';
+        // Корпус и боеголовка
+        ctx.fillStyle = b.owner === 'enemy' ? '#2c1418' : '#e8f0ec';
         ctx.fillRect(-5, -2.1, 9, 4.2);
-        ctx.fillStyle = '#ff384c';
+        ctx.fillStyle = b.owner === 'enemy' ? '#ff2a42' : '#ff384c';
         ctx.beginPath();
         ctx.moveTo(4, -2.2);
         ctx.lineTo(8.5, 0);
@@ -4070,6 +4198,7 @@
     const isAgent = e.kind === 'agent';
     const isBoss = e.kind === 'boss';
     const isHeavy = e.kind === 'heavy';
+    const eTier = e.tier || 1;
     const hl = e.len / 2;
     const hw = e.wid / 2;
 
@@ -4105,10 +4234,23 @@
       ctx.fillRect(wx - 4.5, hw - 1.6, 9, 3.8);
     }
 
+    // Бортовая броня на усиленных врагах (MK-II+)
+    if (eTier >= 2 && !isBoss) {
+      ctx.fillStyle = '#2b312f';
+      ctx.strokeStyle = isAgent ? '#39ff88' : '#ffb84d';
+      ctx.lineWidth = 0.9;
+      ctx.fillRect(-hl + 5, -hw - 2.2, e.len - 10, 2.5);
+      ctx.fillRect(-hl + 5, hw - 0.3, e.len - 10, 2.5);
+      if (eTier >= 3) {
+        ctx.strokeRect(-hl + 5, -hw - 2.2, e.len - 10, 2.5);
+        ctx.strokeRect(-hl + 5, hw - 0.3, e.len - 10, 2.5);
+      }
+    }
+
     // Кузов
-    ctx.fillStyle = isBoss ? '#1c1014' : (isAgent ? '#0f1a14' : (isHeavy ? '#54463d' : '#9c3a2b'));
-    ctx.strokeStyle = isBoss ? '#ff3d52' : (isAgent ? '#39ff88' : (isHeavy ? '#ffb84d' : '#ff8c52'));
-    ctx.lineWidth = isBoss ? 2.4 : 1.8;
+    ctx.fillStyle = isBoss ? '#1c1014' : (isAgent ? '#0f1a14' : (isHeavy ? '#54463d' : (eTier >= 3 ? '#7c2b22' : '#9c3a2b')));
+    ctx.strokeStyle = isBoss ? '#ff3d52' : (isAgent ? '#39ff88' : (isHeavy ? '#ffb84d' : (eTier >= 2 ? '#ffaa52' : '#ff8c52')));
+    ctx.lineWidth = isBoss ? 2.4 : (eTier >= 3 ? 2.1 : 1.8);
     ctx.fillRect(-hl, -hw, e.len, e.wid);
     ctx.strokeRect(-hl, -hw, e.len, e.wid);
 
@@ -4127,18 +4269,36 @@
       ctx.closePath();
       ctx.fill();
     } else if (isHeavy) {
-      // Броневик рейдеров: передний кенгурятник + полоса брони + башня
+      // Броневик рейдеров: передний кенгурятник + полоса брони (+ клин-таран на MK-III+)
       ctx.fillStyle = '#302925';
       ctx.fillRect(-hl + 3, -hw + 3, e.len * 0.4, e.wid - 6);
       ctx.fillStyle = '#ffb84d';
-      ctx.fillRect(hl, -hw + 1, 4, e.wid - 2);
+      if (eTier >= 3) {
+        ctx.beginPath();
+        ctx.moveTo(hl, -hw - 1);
+        ctx.lineTo(hl + 6, 0);
+        ctx.lineTo(hl, hw + 1);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.fillRect(hl, -hw + 1, 4, e.wid - 2);
+      }
     } else if (isAgent) {
       ctx.fillStyle = '#39ff88';
       ctx.fillRect(-hl + 3, -1.2, e.len - 6, 2.4);
+      if (eTier >= 3) {
+        ctx.fillStyle = 'rgba(56, 232, 255, 0.85)';
+        ctx.fillRect(-hl + 4, -hw + 2, e.len - 10, 1.5);
+        ctx.fillRect(-hl + 4, hw - 3.5, e.len - 10, 1.5);
+      }
     } else {
       ctx.fillStyle = '#ffbe76';
       ctx.fillRect(hl, -hw + 2, 2.6, 3);
       ctx.fillRect(hl, hw - 5, 2.6, 3);
+      if (eTier >= 3) {
+        ctx.fillStyle = '#d4ded8';
+        ctx.fillRect(hl, -hw + 0.5, 3.8, e.wid - 1);
+      }
     }
 
     // Стекло
@@ -4148,38 +4308,46 @@
     ctx.fillRect(hl - 13, -hw + 3, 6, e.wid - 6);
     ctx.restore();
 
-    // Турель на Броневике и Карателе (целится на игрока)
-    if (isHeavy || isBoss) {
+    // Турель на Броневике, Карателе и Боевых Рейдерах/Агентах MK-III+
+    if (isHeavy || isBoss || eTier >= 3) {
       const aimAng = player ? Math.atan2(player.y - e.y, player.x - e.x) : e.ang;
       ctx.save();
       ctx.translate(e.x, e.y);
       ctx.rotate(aimAng);
-      ctx.fillStyle = isBoss ? '#2c0f15' : '#332c28';
-      ctx.strokeStyle = isBoss ? '#39ff88' : '#ffb84d';
-      ctx.lineWidth = 1.4;
+      ctx.fillStyle = isBoss ? '#2c0f15' : (isAgent ? '#0d261a' : '#332c28');
+      ctx.strokeStyle = (isBoss || isAgent) ? '#39ff88' : '#ffb84d';
+      ctx.lineWidth = 1.3;
       ctx.beginPath();
-      ctx.arc(0, 0, isBoss ? 7.5 : 5.5, 0, Math.PI * 2);
+      ctx.arc(0, 0, isBoss ? 7.5 : (isHeavy ? 5.6 : 4.6), 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = isBoss ? '#ff4d5a' : '#ffb84d';
-      ctx.fillRect(4, -3.2, isBoss ? 14 : 10, 2.2);
-      ctx.fillRect(4, 1.0, isBoss ? 14 : 10, 2.2);
+      ctx.fillStyle = isBoss ? '#ff4d5a' : (isAgent ? '#39ff88' : '#ffb84d');
+      const blen = isBoss ? 14 : (isHeavy ? 11 : 9);
+      ctx.fillRect(3.5, -3.0, blen, 2.0);
+      ctx.fillRect(3.5, 1.0, blen, 2.0);
       ctx.restore();
     }
 
-    // Полоска HP над врагом (всегда видна у Карателя, и при ранении у остальных)
+    // Полоска HP и ранг MK-II..V над врагом
     if (isBoss || e.hp < e.maxHp) {
-      const bw = isBoss ? 48 : (isHeavy ? 36 : 30);
-      const by = e.y - (isBoss ? 30 : 24);
-      ctx.fillStyle = 'rgba(0,0,0,0.72)';
+      const bw = isBoss ? 50 : (isHeavy ? 38 : 32);
+      const by = e.y - (isBoss ? 31 : 25);
+      ctx.fillStyle = 'rgba(0,0,0,0.74)';
       ctx.fillRect(e.x - bw / 2, by, bw, isBoss ? 5 : 4);
       ctx.fillStyle = isBoss ? '#ff384c' : (isAgent ? '#39ff88' : (isHeavy ? '#ffb84d' : '#ff4d5a'));
       ctx.fillRect(e.x - bw / 2, by, bw * clamp(e.hp / e.maxHp, 0, 1), isBoss ? 5 : 4);
+
+      const mk = ROMAN_TIERS[eTier - 1] || 'I';
       if (isBoss) {
         ctx.fillStyle = '#ffb84d';
         ctx.font = 'bold 8px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText('КАРАТЕЛЬ', e.x, by - 3);
+        ctx.fillText(`КАРАТЕЛЬ MK-${mk}`, e.x, by - 3);
+      } else if (eTier >= 2) {
+        ctx.fillStyle = isAgent ? '#39ff88' : '#ffd07a';
+        ctx.font = 'bold 8px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`MK-${mk}`, e.x, by - 3);
       }
     }
   }
@@ -4401,7 +4569,8 @@
     el.mCaps.textContent = `${player.caps} ₵`;
 
     // Верхние плашки поверх поля
-    el.hudSector.textContent = world.sectorName(player.x, player.y);
+    const threatMk = ROMAN_TIERS[getThreatLevel() - 1] || 'I';
+    el.hudSector.textContent = `${world.sectorName(player.x, player.y)} · MK-${threatMk}`;
     const stars = '★'.repeat(player.trace) + '☆'.repeat(5 - player.trace);
     el.hudTrace.textContent = `СЛЕД: ${stars}`;
 
