@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#060b07">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>GTA 0 // Wasteland Matrix</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="crt-on">
+  <div id="app">
+    <!-- Компактная верхняя полоса (видна на телефоне/узком экране) -->
+    <header id="mobile-top-bar" aria-label="Мобильная панель статуса">
+      <div class="m-stats">
+        <div class="m-bar-wrap" title="Прочность авто">
+          <span class="m-lbl">HP</span>
+          <div class="bar bar-sm"><div id="m-hp-fill" class="bar-fill hp"></div></div>
+        </div>
+        <div class="m-bar-wrap" title="Фокус Матрицы">
+          <span class="m-lbl">MTX</span>
+          <div class="bar bar-sm"><div id="m-focus-fill" class="bar-fill focus"></div></div>
+        </div>
+        <span class="m-chip" id="m-ammo">40</span>
+        <span class="m-chip amber" id="m-caps">0 ₵</span>
+      </div>
+      <div class="m-actions">
+        <button id="btn-mobile-radar" class="icon-btn" type="button" title="Радар" aria-label="Радар">◎</button>
+        <button id="btn-mobile-menu" class="menu-toggle-btn" type="button" aria-label="Открыть меню">☰ МЕНЮ</button>
+      </div>
+    </header>
+
+    <!-- ОСНОВНОЕ ИГРОВОЕ ПОЛЕ -->
+    <main id="stage-wrap">
+      <canvas id="game-canvas" aria-label="Игровое поле GTA 0"></canvas>
+      <div class="crt-scanlines" aria-hidden="true"></div>
+      <div id="matrix-vignette" aria-hidden="true"></div>
+
+      <!-- Верхний HUD поверх игрового поля -->
+      <div id="stage-hud-top">
+        <div class="hud-pill" id="hud-sector">СЕКТОР 01 · РУИНЫ</div>
+        <div class="hud-pill mission-pill" id="hud-mission">ЦЕЛЬ: ИССЛЕДУЙТЕ ГОРОД</div>
+        <div class="hud-pill trace-pill" id="hud-trace" title="Уровень следа Матрицы">СЛЕД: ☆☆☆☆☆</div>
+      </div>
+
+      <!-- Мобильный мини-радар поверх поля (переключаемый) -->
+      <div id="mobile-radar-float" class="hidden">
+        <canvas id="mobile-minimap" width="124" height="94"></canvas>
+      </div>
+
+      <!-- Мобильное сенсорное управление -->
+      <div id="touch-controls" aria-label="Сенсорное управление">
+        <div id="joy-zone">
+          <div id="joy-base">
+            <div id="joy-stick"></div>
+          </div>
+          <div class="joy-hint">РУЛЬ / ГАЗ</div>
+        </div>
+
+        <div id="touch-buttons">
+          <button id="btn-touch-depot" class="t-btn t-btn-amber hidden" type="button">
+            <span>ДЕПО</span>
+            <small>РЕМОНТ</small>
+          </button>
+          <button id="btn-touch-matrix" class="t-btn t-btn-matrix" type="button">
+            <span>⚡</span>
+            <small>МАТРИЦА</small>
+          </button>
+          <button id="btn-touch-fire" class="t-btn t-btn-fire" type="button">
+            <span>ОГОНЬ</span>
+            <small>АВТО</small>
+          </button>
+        </div>
+      </div>
+
+      <!-- Стартовый / пауза / экран гибели поверх поля -->
+      <div id="overlay-screen">
+        <div class="terminal-modal">
+          <div class="modal-tag">VAULT-OS v0.9 // MATRIX LINK READY</div>
+          <h1 id="modal-title">GTA 0: WASTELAND MATRIX</h1>
+          <p id="modal-subtitle">
+            Постапокалиптический мегаполис под контролем Системы. Гоняй по руинам, собирай крышки и лут,
+            улучшай машину в Бункере-Депо и взламывай время в режиме <strong>Матрицы</strong>.
+          </p>
+
+          <div class="modal-grid">
+            <div class="modal-box">
+              <div class="box-title">ПК / МОНИТОР</div>
+              <ul>
+                <li><kbd>W A S D</kbd> / стрелки — вождение</li>
+                <li><kbd>Мышь</kbd> + <kbd>ЛКМ</kbd> / <kbd>Пробел</kbd> — стрельба</li>
+                <li><kbd>Shift</kbd> / <kbd>ПКМ</kbd> — замедление (Матрица)</li>
+                <li><kbd>E</kbd> — ремонт в Депо · <kbd>Esc</kbd> — пауза</li>
+              </ul>
+            </div>
+            <div class="modal-box">
+              <div class="box-title">ТЕЛЕФОН</div>
+              <ul>
+                <li>Левый стик — руль и газ</li>
+                <li><strong>ОГОНЬ</strong> — стрельба с автонаводкой</li>
+                <li><strong>⚡ МАТРИЦА</strong> — bullet-time</li>
+                <li><strong>☰ МЕНЮ</strong> — гараж, карта и миссии</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button id="btn-play" class="btn-primary" type="button">▶ ВЪЕХАТЬ В ПУСТОШЬ</button>
+            <button id="btn-restart-modal" class="btn-secondary hidden" type="button">↻ НАЧАТЬ ЗАНОВО</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Задник для выезжающего меню на мобильных -->
+    <div id="sidebar-backdrop" aria-hidden="true"></div>
+
+    <!-- БОКОВАЯ ПАНЕЛЬ МЕНЮ (Монитор: всегда видна; Телефон: выдвижная шторка) -->
+    <aside id="sidebar" aria-label="Меню и терминал игрока">
+      <div class="sidebar-header">
+        <div class="brand">
+          <span class="brand-dot"></span>
+          <div>
+            <div class="brand-title">PIP-TERMINAL // GTA 0</div>
+            <div class="brand-sub" id="ui-car-name">SCOUT BUGGY · КЛАСС I</div>
+          </div>
+        </div>
+        <button id="btn-close-menu" class="icon-btn mobile-only" type="button" aria-label="Закрыть меню">✕</button>
+      </div>
+
+      <!-- Тактический радар -->
+      <div class="radar-panel">
+        <div class="panel-row-head">
+          <span>ТАКТИЧЕСКИЙ РАДАР</span>
+          <span id="ui-coords">X:000 Y:000</span>
+        </div>
+        <div class="radar-frame">
+          <canvas id="minimap" width="280" height="190"></canvas>
+          <div class="radar-legend">
+            <span><i class="dot dot-you"></i>Вы</span>
+            <span><i class="dot dot-depot"></i>Депо</span>
+            <span><i class="dot dot-loot"></i>Лут</span>
+            <span><i class="dot dot-raider"></i>Рейдер</span>
+            <span><i class="dot dot-agent"></i>Агент</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Вкладки меню -->
+      <nav class="tab-bar" role="tablist">
+        <button class="tab-btn active" data-tab="status" type="button" role="tab">СТАТУС</button>
+        <button class="tab-btn" data-tab="garage" type="button" role="tab">ГАРАЖ</button>
+        <button class="tab-btn" data-tab="missions" type="button" role="tab">МИССИИ</button>
+        <button class="tab-btn" data-tab="menu" type="button" role="tab">МЕНЮ</button>
+      </nav>
+
+      <!-- Контент вкладок -->
+      <div class="tab-panels">
+        <!-- ВКЛАДКА 1: СТАТУС -->
+        <section class="tab-panel active" id="panel-status">
+          <div class="stat-group">
+            <div class="stat-row">
+              <span>ПРОЧНОСТЬ (HP)</span>
+              <span id="ui-hp-val">100 / 100</span>
+            </div>
+            <div class="bar"><div id="ui-hp-fill" class="bar-fill hp"></div></div>
+
+            <div class="stat-row">
+              <span>ФОКУС МАТРИЦЫ</span>
+              <span id="ui-focus-val">100%</span>
+            </div>
+            <div class="bar"><div id="ui-focus-fill" class="bar-fill focus"></div></div>
+
+            <div class="stat-row">
+              <span>РАДИАЦИЯ (RAD)</span>
+              <span id="ui-rad-val">0%</span>
+            </div>
+            <div class="bar"><div id="ui-rad-fill" class="bar-fill rad"></div></div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-lbl">ПАТРОНЫ</div>
+              <div class="kpi-val" id="ui-ammo">60</div>
+            </div>
+            <div class="kpi-card amber">
+              <div class="kpi-lbl">КРЫШКИ</div>
+              <div class="kpi-val" id="ui-caps">0 ₵</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-lbl">СЧЁТ</div>
+              <div class="kpi-val" id="ui-score">0</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-lbl">ФРАГИ</div>
+              <div class="kpi-val" id="ui-kills">0</div>
+            </div>
+          </div>
+
+          <div class="depot-banner" id="ui-depot-banner">
+            <div class="depot-title">БУНКЕР-ДЕПО (ЦЕНТР)</div>
+            <div class="depot-hint" id="ui-depot-hint">Заедьте в зону Депо для ремонта и снятия радиации</div>
+            <button id="btn-depot-service" class="btn-small" type="button" disabled>РЕМОНТ + АНТИРАД (15 ₵)</button>
+          </div>
+
+          <div class="log-box">
+            <div class="panel-row-head">
+              <span>ЖУРНАЛ СВЯЗИ</span>
+              <span id="ui-speed">0 КМ/Ч</span>
+            </div>
+            <div id="ui-log" class="log-list"></div>
+          </div>
+        </section>
+
+        <!-- ВКЛАДКА 2: ГАРАЖ / АПГРЕЙДЫ -->
+        <section class="tab-panel" id="panel-garage">
+          <div class="garage-balance">
+            <span>ДОСТУПНО КРЫШЕК:</span>
+            <strong id="ui-garage-caps">0 ₵</strong>
+          </div>
+          <div id="garage-list" class="upgrade-list"></div>
+        </section>
+
+        <!-- ВКЛАДКА 3: МИССИИ -->
+        <section class="tab-panel" id="panel-missions">
+          <div class="mission-card">
+            <div class="mission-badge" id="ui-mission-type">АКТИВНЫЙ КОНТРАКТ</div>
+            <div class="mission-name" id="ui-mission-title">Загрузка...</div>
+            <div class="mission-desc" id="ui-mission-desc"></div>
+            <div class="bar"><div id="ui-mission-fill" class="bar-fill amber"></div></div>
+            <div class="mission-meta">
+              <span id="ui-mission-prog">0 / 3</span>
+              <span id="ui-mission-reward">НАГРАДА: +60 ₵</span>
+            </div>
+          </div>
+
+          <div class="mission-stats-row">
+            <span>ВЫПОЛНЕНО КОНТРАКТОВ:</span>
+            <strong id="ui-missions-done">0</strong>
+          </div>
+          <div class="mission-stats-row">
+            <span>РЕКОРД СЧЁТА:</span>
+            <strong id="ui-best-score">0</strong>
+          </div>
+
+          <div class="mini-guide">
+            <div class="panel-row-head"><span>ТИПЫ ЛУТА НА КАРТЕ</span></div>
+            <div class="loot-legend">
+              <span><i class="dot" style="background:#ff5e5e"></i>Патроны</span>
+              <span><i class="dot" style="background:#55e87b"></i>Аптечка</span>
+              <span><i class="dot" style="background:#ffb84d"></i>Крышки</span>
+              <span><i class="dot" style="background:#38e8ff"></i>Фокус-ядро</span>
+              <span><i class="dot" style="background:#d0ff5e"></i>Антирад</span>
+              <span><i class="dot" style="background:#c77dff"></i>Модуль авто</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ВКЛАДКА 4: МЕНЮ / НАСТРОЙКИ -->
+        <section class="tab-panel" id="panel-menu">
+          <div class="menu-actions">
+            <button id="btn-pause-resume" class="btn-primary full" type="button">❚❚ ПАУЗА</button>
+            <button id="btn-restart" class="btn-secondary full" type="button">↻ НОВАЯ ИГРА</button>
+          </div>
+
+          <div class="settings-list">
+            <label class="setting-row">
+              <span>Звук (синт-эффекты)</span>
+              <input id="opt-sound" type="checkbox" checked>
+            </label>
+            <label class="setting-row">
+              <span>CRT-строки и эффект Матрицы</span>
+              <input id="opt-crt" type="checkbox" checked>
+            </label>
+            <label class="setting-row">
+              <span>Цифровой дождь на фоне</span>
+              <input id="opt-rain" type="checkbox" checked>
+            </label>
+            <label class="setting-row desktop-only">
+              <span>Меню слева (на мониторе)</span>
+              <input id="opt-sidebar-left" type="checkbox">
+            </label>
+            <label class="setting-row col">
+              <div class="stat-row">
+                <span>Масштаб камеры</span>
+                <span id="opt-zoom-val">1.00×</span>
+              </div>
+              <input id="opt-zoom" type="range" min="0.7" max="1.4" step="0.05" value="1.0">
+            </label>
+          </div>
+
+          <div class="mini-guide">
+            <div class="panel-row-head"><span>КЛАВИШИ (ПК)</span></div>
+            <div class="keys-help">
+              <span><b>WASD / ↑←↓→</b> — езда</span>
+              <span><b>ЛКМ / Space</b> — стрельба</span>
+              <span><b>Shift / ПКМ</b> — Матрица</span>
+              <span><b>E</b> — сервис в Депо</span>
+              <span><b>1–4</b> — вкладки меню</span>
+              <span><b>Esc / P</b> — пауза</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </aside>
+  </div>
+
+  <script defer src="js/audio.js"></script>
+  <script defer src="js/world.js"></script>
+  <script defer src="js/game.js"></script>
+</body>
+</html>
