@@ -264,13 +264,18 @@
 
   const DRV = {
     IDLE: 0,
-    BLINK: 1,
-    LEFT: 2,
-    RIGHT: 3,
-    GRIN: 4,
-    HURT: 5,
-    CANTEEN: 6,
-    NEO: 7
+    HALF_BLINK: 1,
+    BLINK: 2,
+    HALF_LEFT: 3,
+    LEFT: 4,
+    HALF_RIGHT: 5,
+    RIGHT: 6,
+    SMIRK: 7,
+    GRIN: 8,
+    HURT: 9,
+    CANTEEN_RAISE: 10,
+    CANTEEN: 11,
+    NEO: 12
   };
 
   let driverSheet = null;
@@ -278,7 +283,7 @@
   if (typeof Image !== 'undefined') {
     driverSheet = new Image();
     driverSheet.onload = () => { driverSheetReady = true; };
-    driverSheet.src = 'assets/driver-sheet.jpg?v=6';
+    driverSheet.src = 'assets/driver-sheet.jpg?v=7';
   }
 
   const DRIVER_QUOTES = {
@@ -379,21 +384,24 @@
     quoteTimer: 0,
 
     steerSmooth: 0,
+    headYaw: 0,
     grinTimer: 0,
+    grinDur: 1.9,
     hurtTimer: 0,
     canteenTimer: 0,
-    canteenDur: 2.6,
+    canteenDur: 2.9,
     neoTimer: 0,
     subliminalNeoTimer: 0,
     codeFlashTimer: 0,
     glitchSliceTimer: 0,
     vaultAuraTimer: 0,
 
-    blinkTimer: 2.8,
+    blinkTimer: 1.8,
     blinkDur: 0,
+    blinkTotal: 0.19,
     doubleBlink: false,
 
-    glanceTimer: 2.6,
+    glanceTimer: 3.4,
     glanceDir: 0,
     glanceDur: 0,
 
@@ -448,6 +456,7 @@
     driverCam.joltX = 0;
     driverCam.joltY = 0;
     driverCam.steerSmooth = 0;
+    driverCam.headYaw = 0;
     driverCam.autoSipCooldown = 20 + Math.random() * 12;
     driverCam.autoCodeCooldown = 10 + Math.random() * 8;
     driverCam.calmDriveTimer = 0;
@@ -510,7 +519,8 @@
       driverCam.glitchSliceTimer = Math.max(driverCam.glitchSliceTimer, 0.26);
       driverSetQuote(pickQuote(DRIVER_QUOTES.agentKill), 4.0);
     } else {
-      driverCam.grinTimer = Math.max(driverCam.grinTimer, 1.75);
+      driverCam.grinDur = 1.9;
+      driverCam.grinTimer = Math.max(driverCam.grinTimer, driverCam.grinDur);
       driverCam.joltY -= 1.8;
       driverSetQuote(pickQuote(DRIVER_QUOTES.kill), 3.4);
     }
@@ -518,9 +528,9 @@
 
   function driverDrinkCanteen(customQuote) {
     if (gameState === 'dead') return;
-    driverCam.canteenDur = 2.7;
+    driverCam.canteenDur = 2.9;
     driverCam.canteenTimer = driverCam.canteenDur;
-    driverCam.vaultAuraTimer = Math.max(driverCam.vaultAuraTimer, 3.2);
+    driverCam.vaultAuraTimer = Math.max(driverCam.vaultAuraTimer, 3.4);
     driverCam.autoSipCooldown = 28 + Math.random() * 16;
     driverSetQuote(customQuote || pickQuote(DRIVER_QUOTES.canteen), 3.8);
   }
@@ -550,7 +560,8 @@
     } else {
       driverCam.canteenTimer = 0;
       driverCam.neoTimer = 0;
-      driverCam.grinTimer = 1.9;
+      driverCam.grinDur = 2.0;
+      driverCam.grinTimer = 2.0;
       driverCam.joltY -= 1.5;
       driverSetQuote(pickQuote(DRIVER_QUOTES.kill), 3.4);
     }
@@ -671,25 +682,41 @@
       if (driverCam.glanceTimer <= 0) {
         driverCam.glanceTimer = 2.3 + Math.random() * 2.6;
         if (Math.abs(driverCam.steerSmooth) < 0.16) {
-          driverCam.glanceDir = Math.random() < 0.5 ? -1 : 1;
-          driverCam.glanceDur = 0.65 + Math.random() * 0.75;
+          const sign = Math.random() < 0.5 ? -1 : 1;
+          // Иногда лёгкий взгляд вбок (0.55), иногда полный поворот головы (1.0)
+          driverCam.glanceDir = sign * (Math.random() < 0.45 ? 0.55 : 1.0);
+          driverCam.glanceDur = 0.75 + Math.random() * 0.75;
         }
       }
     }
 
-    // Естественное моргание глазами
+    // Плавный угол поворота головы (-1..+1) для 5-ступенчатой покадровой анимации (LEFT ↔ HALF_LEFT ↔ IDLE ↔ HALF_RIGHT ↔ RIGHT)
+    let targetYaw = 0;
+    if (Math.abs(driverCam.steerSmooth) > 0.12) {
+      targetYaw = clamp(driverCam.steerSmooth * 1.15, -1, 1);
+    } else if (driverCam.glanceDir !== 0) {
+      targetYaw = driverCam.glanceDir;
+    }
+    driverCam.headYaw += (targetYaw - driverCam.headYaw) * Math.min(1, 6.2 * dt);
+
+    // Естественное 3-фазное моргание глазами (IDLE → HALF_BLINK → BLINK → HALF_BLINK → IDLE)
     if (driverCam.blinkDur > 0) {
-      driverCam.blinkDur -= dt;
+      driverCam.blinkDur = Math.max(0, driverCam.blinkDur - dt);
     } else {
       driverCam.blinkTimer -= dt;
       if (driverCam.blinkTimer <= 0) {
-        driverCam.blinkDur = 0.13;
-        if (!driverCam.doubleBlink && Math.random() < 0.22) {
-          driverCam.doubleBlink = true;
-          driverCam.blinkTimer = 0.24;
+        if (Math.abs(driverCam.headYaw) >= 0.22) {
+          driverCam.blinkTimer = 0.2;
         } else {
-          driverCam.doubleBlink = false;
-          driverCam.blinkTimer = 2.6 + Math.random() * 2.8;
+          driverCam.blinkTotal = 0.19;
+          driverCam.blinkDur = driverCam.blinkTotal;
+          if (!driverCam.doubleBlink && Math.random() < 0.22) {
+            driverCam.doubleBlink = true;
+            driverCam.blinkTimer = 0.28;
+          } else {
+            driverCam.doubleBlink = false;
+            driverCam.blinkTimer = 2.6 + Math.random() * 2.8;
+          }
         }
       }
     }
@@ -717,27 +744,40 @@
       nextMood = 'УДАР';
       hardCut = true;
     } else if (driverCam.canteenTimer > 0) {
-      nextFrame = DRV.CANTEEN;
+      // 3-этапная анимация фляжки Убежища: поднимает (0.36с) → пьёт → опускает (0.36с)
+      const cElapsed = driverCam.canteenDur - driverCam.canteenTimer;
+      const inTransition = cElapsed < 0.36 || driverCam.canteenTimer < 0.36;
+      nextFrame = inTransition ? DRV.CANTEEN_RAISE : DRV.CANTEEN;
       nextPersona = 'vault';
       nextMood = 'ФЛЯЖКА';
     } else if (driverCam.grinTimer > 0) {
-      nextFrame = DRV.GRIN;
+      // 3-этапная ухмылка Carmageddon: полуухмылка → полный оскал → полуухмылка
+      const gElapsed = Math.max(0, driverCam.grinDur - driverCam.grinTimer);
+      const isPeak = gElapsed >= 0.13 && driverCam.grinTimer >= 0.34;
+      nextFrame = isPeak ? DRV.GRIN : DRV.SMIRK;
       nextPersona = 'driver';
       nextMood = 'АЗАРТ';
     } else {
-      // Повороты головы от руля или свободный обзор + моргание
-      if (driverCam.steerSmooth < -0.22) {
+      // 5-ступенчатый поворот головы + 3-фазное моргание + хитрая полуухмылка на высокой скорости/стрельбе
+      if (driverCam.headYaw <= -0.66) {
         nextFrame = DRV.LEFT;
-        nextMood = speed > 140 ? 'ДРИФТ ◀' : 'ПОВОРОТ ◀';
-      } else if (driverCam.steerSmooth > 0.22) {
+        if (Math.abs(driverCam.steerSmooth) > 0.22) nextMood = speed > 140 ? 'ДРИФТ ◀' : 'ПОВОРОТ ◀';
+      } else if (driverCam.headYaw <= -0.22) {
+        nextFrame = DRV.HALF_LEFT;
+        if (Math.abs(driverCam.steerSmooth) > 0.22) nextMood = speed > 140 ? 'ДРИФТ ◀' : 'ПОВОРОТ ◀';
+      } else if (driverCam.headYaw >= 0.66) {
         nextFrame = DRV.RIGHT;
-        nextMood = speed > 140 ? 'ДРИФТ ▶' : 'ПОВОРОТ ▶';
-      } else if (driverCam.glanceDir < 0) {
-        nextFrame = DRV.LEFT;
-      } else if (driverCam.glanceDir > 0) {
-        nextFrame = DRV.RIGHT;
+        if (Math.abs(driverCam.steerSmooth) > 0.22) nextMood = speed > 140 ? 'ДРИФТ ▶' : 'ПОВОРОТ ▶';
+      } else if (driverCam.headYaw >= 0.22) {
+        nextFrame = DRV.HALF_RIGHT;
+        if (Math.abs(driverCam.steerSmooth) > 0.22) nextMood = speed > 140 ? 'ДРИФТ ▶' : 'ПОВОРОТ ▶';
       } else if (driverCam.blinkDur > 0) {
-        nextFrame = DRV.BLINK;
+        const bp = 1 - driverCam.blinkDur / Math.max(0.05, driverCam.blinkTotal);
+        nextFrame = (bp < 0.25 || bp > 0.74) ? DRV.HALF_BLINK : DRV.BLINK;
+      } else if (driverCam.muzzleFlash > 0.08 || (isPlaying && speed > 215 && !radHigh)) {
+        nextFrame = DRV.SMIRK;
+      } else if (radHigh && Math.sin(elapsed * 1.4) > 0.55) {
+        nextFrame = DRV.HALF_BLINK;
       } else {
         nextFrame = DRV.IDLE;
       }
@@ -763,7 +803,8 @@
         driverCam.glitchSliceTimer = Math.max(driverCam.glitchSliceTimer, 0.22);
       }
     } else if (driverCam.blend < 1) {
-      driverCam.blend = Math.min(1, driverCam.blend + dt * 9.5);
+      // С реальными переходными кадрами достаточно короткой (~55мс) стыковки без двоения
+      driverCam.blend = Math.min(1, driverCam.blend + dt * 18);
     }
 
     driverCam.persona = nextPersona;
@@ -950,8 +991,8 @@
 
     let sipTilt = 0;
     let sipBobY = 0;
-    if (driverCam.canteenTimer > 0) {
-      const p = 1 - driverCam.canteenTimer / Math.max(0.1, driverCam.canteenDur);
+    if (driverCam.canteenTimer > 0 && driverCam.curFrame === DRV.CANTEEN) {
+      const p = clamp((driverCam.canteenDur - driverCam.canteenTimer - 0.36) / Math.max(0.2, driverCam.canteenDur - 0.72), 0, 1);
       const wave = Math.sin(p * Math.PI);
       sipTilt = -0.042 * wave;
       sipBobY = -1.6 * wave + Math.sin(p * Math.PI * 4) * 0.7;
@@ -982,7 +1023,15 @@
           driverCam.codeFlashTimer > 0 ? clamp(driverCam.codeFlashTimer, 0, 0.95) : 0,
           matrixBreach > 0.25 ? (matrixBreach - 0.25) * 0.95 : 0
         );
-    const headShiftX = driverCam.curFrame === DRV.LEFT ? -0.065 : (driverCam.curFrame === DRV.RIGHT ? 0.065 : 0);
+    const headShiftX = driverCam.curFrame === DRV.LEFT
+      ? -0.065
+      : driverCam.curFrame === DRV.HALF_LEFT
+        ? -0.018
+        : driverCam.curFrame === DRV.HALF_RIGHT
+          ? 0.032
+          : driverCam.curFrame === DRV.RIGHT
+            ? 0.065
+            : 0;
     if (goggleCodeIntensity > 0.03) {
       renderGoggleMatrixCode(driverCtx, w, goggleCodeIntensity, headShiftX);
     }
