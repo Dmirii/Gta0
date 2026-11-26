@@ -347,7 +347,11 @@ class GameScene extends Phaser.Scene {
 
 const SOLO = true; // соло режим: локальный игрок + мир + ИИ
 
+window.addEventListener('error', (e) => console.error('Ошибка игры:', e.message, e.filename, e.lineno));
+window.addEventListener('unhandledrejection', (e) => console.error('Promise:', e.reason));
+
 const game = new Phaser.Game({
+  target: (typeof document !== 'undefined') ? (document.getElementById('game') || undefined) : undefined,
   type: Phaser.AUTO,
   width: VIEW_W,
   height: VIEW_H,
