@@ -8,6 +8,7 @@
 
 const GAME_W = 1920, GAME_H = 1280; // мир
 const VIEW_W = 1280, VIEW_H = 720; // окно
+const P = 4; // пиксель мира («псевдографика» — мир в крупных пикселях)
 const CAR_L = 30, CAR_W = 16;
 const TILE = 64, ROAD = 14, GRID_W = 30, GRID_H = 20;
 const DEPOT_X = GAME_W / 2, DEPOT_Y = GAME_H / 2;
@@ -127,9 +128,15 @@ class GameScene extends Phaser.Scene {
     const g = this.add.graphics().setDepth(0);
     // фон
     g.fillStyle(0x0b140b).fillRect(0, 0, GAME_W, GAME_H);
-    // дороги
-    for (let i = 0; i <= GRID_W; i++) g.fillStyle(hex(STYLE.road)).fillRect(i * TILE - ROAD / 2, 0, ROAD, GAME_H);
-    for (let j = 0; j <= GRID_H; j++) g.fillStyle(hex(STYLE.road)).fillRect(0, j * TILE - ROAD / 2, GAME_W, ROAD);
+    // дороги — «псевдографика»: крупные пиксельные полосы
+    for (let i = 0; i <= GRID_W; i++) {
+      const x = i * TILE - ROAD / 2;
+      for (let y = 0; y < GAME_H; y += 2 * P) g.fillStyle(hex(STYLE.road)).fillRect(x, y, ROAD, P);
+    }
+    for (let j = 0; j <= GRID_H; j++) {
+      const y = j * TILE - ROAD / 2;
+      for (let x = 0; x < GAME_W; x += 2 * P) g.fillStyle(hex(STYLE.road)).fillRect(x, y, P, ROAD);
+    }
     // здания (псевдо-руины — разные выцветшие цвета)
     for (let tx = 0; tx < GRID_W; tx++) {
       for (let ty = 0; ty < GRID_H; ty++) {
