@@ -89,14 +89,15 @@ class GameScene extends Phaser.Scene {
     this.logText = this.add.text(12, 26, '', { fontSize: '11px', fill: '#9abd96', stroke: '#000', strokeThickness: 3 });
     this.deathText = null;
 
-    this.socket = new WebSocket(wsUrl());
-    this.socket.onopen = () => this.send({ t: 'hi', nick: getNick() });
-    this.socket.onerror = () => this.log('Нет соединения с сервером');
-    this.socket.onclose = () => {
-      this.online = false;
-      if (!this.meId) this.log('Сервер недоступен — игра без мультиплеера');
-    };
-    this.socket.onmessage = (ev) => { try { this.onMessage(JSON.parse(ev.data)); } catch { /* ignore */ } };
+    if (SOLO) {
+      this.socket = null; // соло — без сервера и мультиплеера
+    } else {
+      this.socket = new WebSocket(wsUrl());
+      this.socket.onopen = () => this.send({ t: 'hi', nick: getNick() });
+      this.socket.onerror = () => this.log('Нет соединения с сервером');
+      this.socket.onclose = () => { this.online = false; };
+      this.socket.onmessage = (ev) => { try { this.onMessage(JSON.parse(ev.data)); } catch { /* ignore */ } };
+    }
 
     this.keys = this.input.keyboard.addKeys({ w: 'KeyW', a: 'KeyA', s: 'KeyS', d: 'KeyD', space: 'Space' });
     this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER).on('down', () => this.onEnterKey());
