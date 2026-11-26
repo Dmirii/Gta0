@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#060b07">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>VAULT RUNNER // Wasteland Matrix</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=9">
-  <link rel="stylesheet" href="css/style.css?v=9">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=10">
+  <link rel="stylesheet" href="css/style.css?v=10">
 </head>
 <body class="crt-on">
   <div id="app">
@@ -81,7 +81,7 @@
           <div class="terminal-modal">
             <div class="modal-tag">ROBCO INDUSTRIES // VAULT-OS 2077 · MATRIX LINK</div>
             <div id="modal-logo-wrap" class="modal-logo-wrap">
-              <img id="modal-logo" src="assets/logo.png?v=9" alt="VAULT RUNNER">
+              <img id="modal-logo" src="assets/logo.png?v=10" alt="VAULT RUNNER">
             </div>
             <h1 id="modal-title" class="hidden">VAULT RUNNER</h1>
             <p id="modal-subtitle">
@@ -161,9 +161,17 @@
           <div class="radar-legend">
             <span><i class="dot dot-you"></i>Вы</span>
             <span><i class="dot dot-depot"></i>Депо</span>
-            <span><i class="dot dot-loot"></i>Лут</span>
             <span><i class="dot dot-raider"></i>Рейдер</span>
             <span><i class="dot dot-agent"></i>Агент</span>
+            <span><i class="dot dot-boss"></i>Каратель</span>
+          </div>
+          <div class="radar-loot-legend" aria-label="Типы лута на карте">
+            <span><i class="dot sq" style="background:#ff5e5e"></i>Патроны</span>
+            <span><i class="dot sq" style="background:#55e87b"></i>Аптечка</span>
+            <span><i class="dot sq" style="background:#ffb84d"></i>Крышки</span>
+            <span><i class="dot sq" style="background:#38e8ff"></i>Фокус</span>
+            <span><i class="dot sq" style="background:#d0ff5e"></i>Антирад</span>
+            <span><i class="dot sq" style="background:#c77dff"></i>Модуль</span>
           </div>
         </div>
       </div>
@@ -266,7 +274,7 @@
 
           <div class="garage-car-card" id="garage-car-card">
             <div class="garage-car-media">
-              <img id="garage-car-img" src="assets/cars/car-0.jpg?v=9" alt="Машина в гараже">
+              <img id="garage-car-img" src="assets/cars/car-0.jpg?v=10" alt="Машина в гараже">
               <span class="garage-car-rank" id="garage-car-rank">КЛАСС I / V</span>
               <span class="garage-car-name" id="garage-car-name">SCOUT BUGGY</span>
             </div>
@@ -304,14 +312,12 @@
           </div>
 
           <div class="mini-guide">
-            <div class="panel-row-head"><span>ТИПЫ ЛУТА НА КАРТЕ</span></div>
-            <div class="loot-legend">
-              <span><i class="dot" style="background:#ff5e5e"></i>Патроны</span>
-              <span><i class="dot" style="background:#55e87b"></i>Аптечка</span>
-              <span><i class="dot" style="background:#ffb84d"></i>Крышки</span>
-              <span><i class="dot" style="background:#38e8ff"></i>Фокус-ядро</span>
-              <span><i class="dot" style="background:#d0ff5e"></i>Антирад</span>
-              <span><i class="dot" style="background:#c77dff"></i>Модуль авто</span>
+            <div class="panel-row-head"><span>ТИПЫ КОНТРАКТОВ</span></div>
+            <div class="keys-help">
+              <span><b>Сбор</b> — лут → Депо</span>
+              <span><b>Зачистка</b> — фраги</span>
+              <span><b>Взлом</b> — терминал 5с</span>
+              <span><b>Уход</b> — пережить След</span>
             </div>
           </div>
         </section>
@@ -370,8 +376,8 @@
     </aside>
   </div>
 
-  <script defer src="js/audio.js?v=9"></script>
-  <script defer src="js/world.js?v=9"></script>
-  <script defer src="js/game.js?v=9"></script>
+  <script defer src="js/audio.js?v=10"></script>
+  <script defer src="js/world.js?v=10"></script>
+  <script defer src="js/game.js?v=10"></script>
 </body>
 </html>

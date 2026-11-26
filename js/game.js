@@ -24,7 +24,7 @@
       trim: '#e4c94b',
       stripe: '#2e6f9e',
       accent: '#ffb84d',
-      img: 'assets/cars/car-0.jpg?v=9',
+      img: 'assets/cars/car-0.jpg?v=10',
       cost: 0
     },
     {
@@ -43,7 +43,7 @@
       trim: '#ffd05c',
       stripe: '#26619c',
       accent: '#ff9e42',
-      img: 'assets/cars/car-1.jpg?v=9',
+      img: 'assets/cars/car-1.jpg?v=10',
       cost: 90
     },
     {
@@ -62,7 +62,7 @@
       trim: '#f5c842',
       stripe: '#1b3854',
       accent: '#38e8ff',
-      img: 'assets/cars/car-2.jpg?v=9',
+      img: 'assets/cars/car-2.jpg?v=10',
       cost: 190
     },
     {
@@ -81,7 +81,7 @@
       trim: '#ffb03b',
       stripe: '#2f2924',
       accent: '#ff7034',
-      img: 'assets/cars/car-3.jpg?v=9',
+      img: 'assets/cars/car-3.jpg?v=10',
       cost: 340
     },
     {
@@ -100,7 +100,7 @@
       trim: '#39ff88',
       stripe: '#0c3022',
       accent: '#39ff88',
-      img: 'assets/cars/car-4.jpg?v=9',
+      img: 'assets/cars/car-4.jpg?v=10',
       cost: 540
     }
   ];
@@ -482,7 +482,7 @@
   if (typeof Image !== 'undefined') {
     driverSheet = new Image();
     driverSheet.onload = () => { driverSheetReady = true; };
-    driverSheet.src = 'assets/driver-sheet.jpg?v=9';
+    driverSheet.src = 'assets/driver-sheet.jpg?v=10';
   }
 
   const DRIVER_QUOTES = {
@@ -4259,10 +4259,11 @@
     const sx = mw / world.WIDTH;
     const sy = mh / world.HEIGHT;
 
-    // Лут
-    mCtx.fillStyle = '#38e8ff';
+    // Лут (цветные квадратики 1-в-1 с легендой типов лута под радаром)
     for (const it of loot) {
-      mCtx.fillRect(it.x * sx - 1.5, it.y * sy - 1.5, 3, 3);
+      const def = LOOT_DEFS[it.type];
+      mCtx.fillStyle = def ? def.color : '#38e8ff';
+      mCtx.fillRect(it.x * sx - 1.8, it.y * sy - 1.8, 3.6, 3.6);
     }
 
     // Враги (Каратель — крупный ромб, Броневик — янтарный, Агент — изумруд, Рейдер — красный)

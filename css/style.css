@@ -396,7 +396,7 @@ body.crt-on .crt-scanlines {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 280 / 132;
+  aspect-ratio: 280 / 124;
   border-radius: 4px;
   background: #040a06;
   box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.8);
@@ -407,7 +407,7 @@ body.crt-on .crt-scanlines {
   justify-content: space-between;
   gap: 4px;
   margin-top: 4px;
-  font-size: 9px;
+  font-size: 8.8px;
   color: var(--muted);
 }
 
@@ -415,20 +415,50 @@ body.crt-on .crt-scanlines {
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  white-space: nowrap;
+}
+
+.radar-loot-legend {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px 5px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(57, 255, 136, 0.14);
+  font-size: 8.5px;
+  color: var(--green-soft);
+}
+
+.radar-loot-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dot {
   display: inline-block;
-  width: 7px;
-  height: 7px;
+  width: 6.5px;
+  height: 6.5px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+.dot.sq {
+  border-radius: 1.5px;
 }
 .dot-you { background: #ffffff; box-shadow: 0 0 5px #fff; }
 .dot-depot { background: var(--amber); }
 .dot-loot { background: var(--cyan); }
 .dot-raider { background: var(--red); }
 .dot-agent { background: var(--green); }
+.dot-boss {
+  background: #ff384c;
+  border: 1px solid var(--amber);
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
 
 /* ==================== КАМЕРА В КАБИНЕ ВОДИТЕЛЯ (ПК) ==================== */
 .cabin-panel {
@@ -1734,7 +1764,9 @@ kbd {
   .brand-title { font-size: 11px; }
   .brand-sub { font-size: 9px; margin-top: 1px; }
   .radar-panel { padding: 4px 9px 5px; }
-  #minimap { aspect-ratio: 280 / 116; }
+  #minimap { aspect-ratio: 280 / 104; }
+  .radar-legend { font-size: 8.3px; margin-top: 3px; }
+  .radar-loot-legend { font-size: 8px; margin-top: 3px; padding-top: 3px; gap: 1.5px 4px; }
   .cabin-panel { padding: 4px 9px 5px; }
   .cabin-screen-frame { width: 78px; height: 78px; }
   #driver-ecg { height: 21px; }
@@ -1760,9 +1792,10 @@ kbd {
 }
 
 @media (min-width: 900px) and (max-height: 730px) {
-  #minimap { aspect-ratio: 280 / 100; }
-  .radar-legend { font-size: 8.5px; margin-top: 3px; }
-  .cabin-screen-frame { width: 68px; height: 68px; }
+  #minimap { aspect-ratio: 280 / 88; }
+  .radar-legend { font-size: 8px; margin-top: 2px; }
+  .radar-loot-legend { font-size: 7.8px; margin-top: 2px; padding-top: 2px; }
+  .cabin-screen-frame { width: 64px; height: 64px; }
   #driver-ecg { height: 18px; }
   .driver-quote { min-height: 24px; font-size: 8.5px; }
   .garage-car-media { height: 82px; }
