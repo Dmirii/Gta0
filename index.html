@@ -12,7 +12,7 @@ body { margin: 0; background: #0c140c; overflow: hidden; font-family: system-ui,
 </head>
 <body>
 <div id="game"></div>
-<div id="gameLog" style="display:none; white-space:pre; font-size:12px; position:fixed; top:42px; left:12px; z-index:999; color:#ff4d4d; background:#0008; padding:4px;"></div>
+<div id="gameLog" style="white-space:pre; font-size:12px; position:fixed; top:42px; left:12px; z-index:999; color:#ff4d4d; background:#0008; padding:4px;"></div>
 <script>
   // отладка: если поле игры не видно — показать лог ошибок
   window.addEventListener('error', (e) => {
@@ -20,6 +20,10 @@ body { margin: 0; background: #0c140c; overflow: hidden; font-family: system-ui,
     if (el) { el.style.display = ''; el.textContent += 'ERR: ' + e.message + ' @' + e.filename + ':' + e.lineno + '\n'; }
   });
   window.gameCanvas = () => document.querySelector('#game canvas');
+  window.addEventListener('DOMContentLoaded', () => setTimeout(() => {
+    const c = window.gameCanvas();
+    window.gameStatus = c ? ('canvas w=' + c.width + ' h=' + c.height + ' style="' + c.style.cssText + '" parent=' + (c.parentElement ? c.parentElement.id : 'none')) : 'NO_CANVAS_IN_#game';
+  }, 300));
 </script>
 <script src="vendor/phaser.min.js"></script>
 <script src="js/game.js"></script>
