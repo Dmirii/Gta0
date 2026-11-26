@@ -187,7 +187,17 @@
     joyStick: document.getElementById('joy-stick'),
     btnTouchFire: document.getElementById('btn-touch-fire'),
     btnTouchMatrix: document.getElementById('btn-touch-matrix'),
-    btnTouchDepot: document.getElementById('btn-touch-depot')
+    btnTouchDepot: document.getElementById('btn-touch-depot'),
+
+    cabinPanel: document.getElementById('cabin-panel'),
+    cabinScreenFrame: document.getElementById('cabin-screen-frame'),
+    driverCam: document.getElementById('driver-cam'),
+    driverEcg: document.getElementById('driver-ecg'),
+    driverRecDot: document.getElementById('driver-rec-dot'),
+    driverPersonaBadge: document.getElementById('driver-persona-badge'),
+    driverMoodLabel: document.getElementById('driver-mood-label'),
+    driverBpm: document.getElementById('driver-bpm'),
+    driverQuote: document.getElementById('driver-quote')
   };
 
   // ==================== УТИЛИТЫ ====================
@@ -248,6 +258,895 @@
     floatTexts.push({ x, y, text, color: color || '#39ff88', life: 1.15, maxLife: 1.15 });
   }
 
+  // ==================== КАМЕРА В КАБИНЕ ВОДИТЕЛЯ (ПК: CARMAGEDDON / FALLOUT / МАТРИЦА) ====================
+  const driverCtx = el.driverCam ? el.driverCam.getContext('2d') : null;
+  const ecgCtx = el.driverEcg ? el.driverEcg.getContext('2d') : null;
+
+  const DRV = {
+    IDLE: 0,
+    BLINK: 1,
+    LEFT: 2,
+    RIGHT: 3,
+    GRIN: 4,
+    HURT: 5,
+    CANTEEN: 6,
+    NEO: 7
+  };
+
+  let driverSheet = null;
+  let driverSheetReady = false;
+  if (typeof Image !== 'undefined') {
+    driverSheet = new Image();
+    driverSheet.onload = () => { driverSheetReady = true; };
+    driverSheet.src = 'assets/driver-sheet.jpg?v=6';
+  }
+
+  const DRIVER_QUOTES = {
+    menu: [
+      'Двигатель прогрет. Готов к выезду.',
+      'Сектор-0 шумит. Выходим на трассу.',
+      'Резина в пыли, турель заряжена.'
+    ],
+    kill: [
+      'На металлолом!',
+      'Жги резину! Следующий!',
+      'Чистая работа, железяка!',
+      'Ещё один рейдер в пыль!',
+      'Капот выдержит и не такое.'
+    ],
+    agentKill: [
+      'Агент отключён. Код рассыпался.',
+      'Слишком предсказуемый алгоритм.',
+      'Минус один страж Системы.'
+    ],
+    hurt: [
+      'Броня трещит, держим руль!',
+      'Чёртов бампер! Ответим свинцом.',
+      'Всего лишь царапина на стали.',
+      'Неплохой удар… теперь моя очередь.'
+    ],
+    crash: [
+      'Бетон крепкий, но мы крепче.',
+      'Выруливаем! Кочки в Пустоши злые.'
+    ],
+    canteen: [
+      'Фляжка Убежища-0. Почти без фона.',
+      'Глоток из старых запасов Убежища.',
+      'Война никогда не меняется… но пить хочется.',
+      'Чистая вода — дороже крышек.'
+    ],
+    depot: [
+      'Бункер-Депо. Как дома, в Убежище-0.',
+      'Антирадин и свежий металл. Живём дальше.',
+      'Фляжка полная, корпус залатан.'
+    ],
+    rad: [
+      'Счётчик трещит… пора в Депо.',
+      'Фон зашкаливает. Убежище учило не тянуть.',
+      'Чувствую этот привкус радиации.'
+    ],
+    upgrade: [
+      'Хорошая сборка. За это можно и глотнуть.',
+      'Крышки звенят — тачка становится злее.'
+    ],
+    mission: [
+      'Контракт закрыт. Крышки в кармане.',
+      'Надёжная работа выходца из Убежища.'
+    ],
+    neo: [
+      'Я вижу код за этим бетоном.',
+      'Пули слишком медленные.',
+      'Ложки нет. Есть только газ.',
+      'Реальность трещит… я в потоке.',
+      'Очки поймали сигнал Матрицы.'
+    ],
+    neoBleed: [
+      'Снова этот зелёный код в линзах…',
+      'Показалось? Стены мерцают цифрами.',
+      'Система пытается пробиться сквозь шум.'
+    ],
+    pause: [
+      'Перекур в кабине…',
+      'Осматриваю горизонт.'
+    ],
+    dead: [
+      'НЕТ СИГНАЛА // КАБИНА ОТКЛЮЧЕНА'
+    ]
+  };
+
+  function pickQuote(list) {
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  const CABIN_GLYPHS = '01アイウエオカキクケコ7A9FΞΨ';
+  const goggleCodeCols = [];
+  for (let i = 0; i < 16; i++) {
+    goggleCodeCols.push({
+      y: Math.random() * 60,
+      speed: 36 + Math.random() * 58,
+      seed: Math.floor(Math.random() * 999)
+    });
+  }
+
+  const ECG_SAMPLES = 76;
+  const driverCam = {
+    curFrame: DRV.IDLE,
+    prevFrame: DRV.IDLE,
+    blend: 1,
+    persona: 'driver',
+    mood: 'ОЖИДАНИЕ',
+    quote: DRIVER_QUOTES.menu[0],
+    quoteTimer: 0,
+
+    steerSmooth: 0,
+    grinTimer: 0,
+    hurtTimer: 0,
+    canteenTimer: 0,
+    canteenDur: 2.6,
+    neoTimer: 0,
+    subliminalNeoTimer: 0,
+    codeFlashTimer: 0,
+    glitchSliceTimer: 0,
+    vaultAuraTimer: 0,
+
+    blinkTimer: 2.8,
+    blinkDur: 0,
+    doubleBlink: false,
+
+    glanceTimer: 2.6,
+    glanceDir: 0,
+    glanceDur: 0,
+
+    autoSipCooldown: 22,
+    autoCodeCooldown: 12,
+    calmDriveTimer: 0,
+    clickCycle: 0,
+
+    muzzleFlash: 0,
+    muzzleSide: 0,
+    muzzleColor: '#ffb24a',
+    explosionFlash: 0,
+    explosionColor: '#ff9638',
+    damageFlash: 0,
+    joltX: 0,
+    joltY: 0,
+
+    bpm: 78,
+    targetBpm: 78,
+    ecgPhase: 0,
+    ecgStepAcc: 0,
+    ecgBuf: new Float32Array(ECG_SAMPLES),
+
+    lastUiPersona: '',
+    lastUiMood: '',
+    lastUiQuote: '',
+    lastUiBpm: -1
+  };
+
+  function driverSetQuote(text, holdSec) {
+    driverCam.quote = text;
+    driverCam.quoteTimer = holdSec || 4.0;
+  }
+
+  function driverReset() {
+    driverCam.curFrame = DRV.IDLE;
+    driverCam.prevFrame = DRV.IDLE;
+    driverCam.blend = 1;
+    driverCam.persona = 'driver';
+    driverCam.mood = gameState === 'menu' ? 'ОЖИДАНИЕ' : 'ДОРОГА';
+    driverCam.grinTimer = 0;
+    driverCam.hurtTimer = 0;
+    driverCam.canteenTimer = 0;
+    driverCam.neoTimer = 0;
+    driverCam.subliminalNeoTimer = 0;
+    driverCam.codeFlashTimer = 0.7;
+    driverCam.glitchSliceTimer = 0.16;
+    driverCam.vaultAuraTimer = 0;
+    driverCam.muzzleFlash = 0;
+    driverCam.explosionFlash = 0;
+    driverCam.damageFlash = 0;
+    driverCam.joltX = 0;
+    driverCam.joltY = 0;
+    driverCam.steerSmooth = 0;
+    driverCam.autoSipCooldown = 20 + Math.random() * 12;
+    driverCam.autoCodeCooldown = 10 + Math.random() * 8;
+    driverCam.calmDriveTimer = 0;
+    driverCam.bpm = 78;
+    driverCam.targetBpm = 78;
+    driverCam.ecgBuf.fill(0);
+    driverSetQuote(pickQuote(DRIVER_QUOTES.menu), 5.0);
+  }
+
+  function driverOnGunfire(isPlasma, turretAng) {
+    if (!player) return;
+    const rel = normAngle(turretAng - player.ang);
+    driverCam.muzzleSide = clamp(Math.sin(rel) * 1.15, -1, 1);
+    driverCam.muzzleFlash = Math.min(1, Math.max(driverCam.muzzleFlash, 0.85));
+    driverCam.muzzleColor = isPlasma ? '#4cff9c' : '#ffb44c';
+    driverCam.joltY = Math.min(2.2, driverCam.joltY + 0.9);
+    driverCam.calmDriveTimer = 0;
+    if (isPlasma) {
+      driverCam.codeFlashTimer = Math.max(driverCam.codeFlashTimer, 0.35);
+    }
+  }
+
+  function driverOnExplosion(wx, wy, isAgent) {
+    if (!player) return;
+    const d = Math.hypot(wx - player.x, wy - player.y);
+    if (d > 680) return;
+    const intensity = clamp(1 - d / 680, 0.25, 1.0);
+    driverCam.explosionFlash = Math.max(driverCam.explosionFlash, intensity);
+    driverCam.explosionColor = isAgent ? '#39ff88' : '#ff9436';
+    driverCam.joltX += (Math.random() - 0.5) * 6 * intensity;
+    driverCam.joltY += (Math.random() - 0.5) * 6 * intensity;
+    if (isAgent) {
+      driverCam.codeFlashTimer = Math.max(driverCam.codeFlashTimer, 1.4);
+      driverCam.glitchSliceTimer = Math.max(driverCam.glitchSliceTimer, 0.24);
+    }
+  }
+
+  function driverOnHit(dmg, isCrash) {
+    driverCam.canteenTimer = 0;
+    driverCam.hurtTimer = Math.max(driverCam.hurtTimer, isCrash ? 0.52 : 0.68);
+    driverCam.damageFlash = Math.min(1, Math.max(driverCam.damageFlash, isCrash ? 0.55 : 0.85));
+    driverCam.joltX += (Math.random() - 0.5) * 9;
+    driverCam.joltY += (Math.random() - 0.5) * 7;
+    driverCam.calmDriveTimer = 0;
+    if (dmg >= 8) {
+      driverCam.glitchSliceTimer = Math.max(driverCam.glitchSliceTimer, 0.2);
+      driverCam.codeFlashTimer = Math.max(driverCam.codeFlashTimer, 0.45);
+    }
+    if (driverCam.quoteTimer <= 1.2) {
+      driverSetQuote(pickQuote(isCrash ? DRIVER_QUOTES.crash : DRIVER_QUOTES.hurt), 3.2);
+    }
+  }
+
+  function driverOnKill(isAgent) {
+    driverCam.canteenTimer = 0;
+    driverCam.calmDriveTimer = 0;
+    if (isAgent) {
+      driverCam.neoTimer = Math.max(driverCam.neoTimer, 2.5);
+      driverCam.codeFlashTimer = Math.max(driverCam.codeFlashTimer, 2.5);
+      driverCam.glitchSliceTimer = Math.max(driverCam.glitchSliceTimer, 0.26);
+      driverSetQuote(pickQuote(DRIVER_QUOTES.agentKill), 4.0);
+    } else {
+      driverCam.grinTimer = Math.max(driverCam.grinTimer, 1.75);
+      driverCam.joltY -= 1.8;
+      driverSetQuote(pickQuote(DRIVER_QUOTES.kill), 3.4);
+    }
+  }
+
+  function driverDrinkCanteen(customQuote) {
+    if (gameState === 'dead') return;
+    driverCam.canteenDur = 2.7;
+    driverCam.canteenTimer = driverCam.canteenDur;
+    driverCam.vaultAuraTimer = Math.max(driverCam.vaultAuraTimer, 3.2);
+    driverCam.autoSipCooldown = 28 + Math.random() * 16;
+    driverSetQuote(customQuote || pickQuote(DRIVER_QUOTES.canteen), 3.8);
+  }
+
+  function driverAwakenNeo(duration, customQuote) {
+    if (gameState === 'dead') return;
+    driverCam.canteenTimer = 0;
+    driverCam.neoTimer = Math.max(driverCam.neoTimer, duration || 2.4);
+    driverCam.codeFlashTimer = Math.max(driverCam.codeFlashTimer, (duration || 2.4) + 0.5);
+    driverCam.glitchSliceTimer = Math.max(driverCam.glitchSliceTimer, 0.24);
+    if (customQuote) driverSetQuote(customQuote, 3.8);
+  }
+
+  function driverVaultMoment(customQuote) {
+    if (gameState === 'dead') return;
+    driverCam.vaultAuraTimer = Math.max(driverCam.vaultAuraTimer, 3.5);
+    if (customQuote) driverSetQuote(customQuote, 3.8);
+  }
+
+  function driverInteractiveClick() {
+    if (gameState === 'dead') return;
+    driverCam.clickCycle = (driverCam.clickCycle + 1) % 3;
+    if (driverCam.clickCycle === 1) {
+      driverDrinkCanteen(pickQuote(DRIVER_QUOTES.canteen));
+    } else if (driverCam.clickCycle === 2) {
+      driverAwakenNeo(2.6, pickQuote(DRIVER_QUOTES.neo));
+    } else {
+      driverCam.canteenTimer = 0;
+      driverCam.neoTimer = 0;
+      driverCam.grinTimer = 1.9;
+      driverCam.joltY -= 1.5;
+      driverSetQuote(pickQuote(DRIVER_QUOTES.kill), 3.4);
+    }
+  }
+
+  function sampleEcgWave(phase) {
+    // Классический комплекс P-QRS-T (phase в 0..1)
+    if (phase > 0.12 && phase < 0.20) {
+      return Math.sin(((phase - 0.12) / 0.08) * Math.PI) * 0.24;
+    }
+    if (phase >= 0.24 && phase < 0.27) {
+      return -Math.sin(((phase - 0.24) / 0.03) * Math.PI) * 0.28;
+    }
+    if (phase >= 0.27 && phase < 0.32) {
+      return Math.sin(((phase - 0.27) / 0.05) * Math.PI) * 1.0;
+    }
+    if (phase >= 0.32 && phase < 0.36) {
+      return -Math.sin(((phase - 0.32) / 0.04) * Math.PI) * 0.42;
+    }
+    if (phase > 0.44 && phase < 0.58) {
+      return Math.sin(((phase - 0.44) / 0.14) * Math.PI) * 0.34;
+    }
+    return 0;
+  }
+
+  function updateDriverCam(dt) {
+    // Затухание таймеров и вспышек
+    if (driverCam.quoteTimer > 0) driverCam.quoteTimer = Math.max(0, driverCam.quoteTimer - dt);
+    if (driverCam.grinTimer > 0) driverCam.grinTimer = Math.max(0, driverCam.grinTimer - dt);
+    if (driverCam.hurtTimer > 0) driverCam.hurtTimer = Math.max(0, driverCam.hurtTimer - dt);
+    if (driverCam.canteenTimer > 0) driverCam.canteenTimer = Math.max(0, driverCam.canteenTimer - dt);
+    if (driverCam.neoTimer > 0) driverCam.neoTimer = Math.max(0, driverCam.neoTimer - dt);
+    if (driverCam.subliminalNeoTimer > 0) driverCam.subliminalNeoTimer = Math.max(0, driverCam.subliminalNeoTimer - dt);
+    if (driverCam.codeFlashTimer > 0) driverCam.codeFlashTimer = Math.max(0, driverCam.codeFlashTimer - dt);
+    if (driverCam.glitchSliceTimer > 0) driverCam.glitchSliceTimer = Math.max(0, driverCam.glitchSliceTimer - dt);
+    if (driverCam.vaultAuraTimer > 0) driverCam.vaultAuraTimer = Math.max(0, driverCam.vaultAuraTimer - dt);
+
+    driverCam.muzzleFlash = Math.max(0, driverCam.muzzleFlash - dt * 7.8);
+    driverCam.explosionFlash = Math.max(0, driverCam.explosionFlash - dt * 2.9);
+    driverCam.damageFlash = Math.max(0, driverCam.damageFlash - dt * 3.4);
+    driverCam.joltX *= Math.exp(-14 * dt);
+    driverCam.joltY *= Math.exp(-14 * dt);
+
+    // Анимация падающих цифр Матрицы в линзах очков
+    for (const c of goggleCodeCols) {
+      c.y += c.speed * dt;
+      if (c.y > 54) {
+        c.y = -12;
+        c.seed = (c.seed + 17) % 997;
+      }
+    }
+
+    // Определяем текущее состояние игры, руление и контекст
+    const isDead = gameState === 'dead';
+    const isPlaying = gameState === 'playing' && !!player;
+    const speed = player ? Math.hypot(player.vx, player.vy) : 0;
+
+    let rawSteer = 0;
+    if (isPlaying) {
+      const left = keys.KeyA || keys.ArrowLeft ? 1 : 0;
+      const right = keys.KeyD || keys.ArrowRight ? 1 : 0;
+      rawSteer = right - left;
+      if (joy.active && joy.mag > 0.15) {
+        rawSteer = clamp(normAngle(joy.ang - player.ang) * 1.4, -1, 1);
+      }
+    }
+    driverCam.steerSmooth += (rawSteer - driverCam.steerSmooth) * Math.min(1, 10 * dt);
+
+    // Проверка на взлом терминала Матрицы или близость Агента
+    const isHacking = isPlaying && mission && mission.type === 'hack' && mission.target && dist(player, mission.target) <= mission.target.radius;
+    const radHigh = isPlaying && (player.rad >= 45 || world.getRadIntensity(player.x, player.y) > 0.12);
+
+    // Спонтанные «проблески цифр в очках» и короткий проблеск Нео
+    if (!isDead) {
+      driverCam.autoCodeCooldown -= dt;
+      if (driverCam.autoCodeCooldown <= 0) {
+        driverCam.autoCodeCooldown = 11 + Math.random() * 11;
+        driverCam.codeFlashTimer = Math.max(driverCam.codeFlashTimer, 0.9 + Math.random() * 0.7);
+        if (isPlaying && (matrixBreach > 0.22 || Math.random() < 0.32)) {
+          driverCam.subliminalNeoTimer = 0.42;
+          driverCam.glitchSliceTimer = Math.max(driverCam.glitchSliceTimer, 0.16);
+          if (driverCam.quoteTimer <= 0.5 && Math.random() < 0.55) {
+            driverSetQuote(pickQuote(DRIVER_QUOTES.neoBleed), 3.4);
+          }
+        }
+      }
+      if (matrixBreach > 0.35) {
+        driverCam.codeFlashTimer = Math.max(driverCam.codeFlashTimer, 0.35);
+      }
+    }
+
+    // Спонтанное питьё из фляжки Убежища на спокойной дороге (или изредка в паузе)
+    if (!isDead) {
+      const calmNow = (!isPlaying && gameState === 'paused') ||
+        (isPlaying && !matrixActive && driverCam.hurtTimer <= 0 && driverCam.muzzleFlash <= 0.05 && player.trace <= 2);
+      if (calmNow) {
+        driverCam.calmDriveTimer += dt;
+        driverCam.autoSipCooldown -= dt;
+        if (driverCam.autoSipCooldown <= 0 && driverCam.calmDriveTimer > 6) {
+          driverDrinkCanteen(pickQuote(DRIVER_QUOTES.canteen));
+        }
+      } else {
+        driverCam.calmDriveTimer = Math.max(0, driverCam.calmDriveTimer - dt * 2);
+      }
+    }
+
+    // Предупреждение о радиации от Выходца из Убежища
+    if (radHigh && driverCam.quoteTimer <= 0 && !matrixActive) {
+      driverSetQuote(pickQuote(DRIVER_QUOTES.rad), 4.2);
+    }
+
+    // Автономные повороты головы (осматривается по сторонам и в зеркала)
+    if (driverCam.glanceDur > 0) {
+      driverCam.glanceDur -= dt;
+      if (driverCam.glanceDur <= 0) driverCam.glanceDir = 0;
+    } else {
+      driverCam.glanceTimer -= dt;
+      if (driverCam.glanceTimer <= 0) {
+        driverCam.glanceTimer = 2.3 + Math.random() * 2.6;
+        if (Math.abs(driverCam.steerSmooth) < 0.16) {
+          driverCam.glanceDir = Math.random() < 0.5 ? -1 : 1;
+          driverCam.glanceDur = 0.65 + Math.random() * 0.75;
+        }
+      }
+    }
+
+    // Естественное моргание глазами
+    if (driverCam.blinkDur > 0) {
+      driverCam.blinkDur -= dt;
+    } else {
+      driverCam.blinkTimer -= dt;
+      if (driverCam.blinkTimer <= 0) {
+        driverCam.blinkDur = 0.13;
+        if (!driverCam.doubleBlink && Math.random() < 0.22) {
+          driverCam.doubleBlink = true;
+          driverCam.blinkTimer = 0.24;
+        } else {
+          driverCam.doubleBlink = false;
+          driverCam.blinkTimer = 2.6 + Math.random() * 2.8;
+        }
+      }
+    }
+
+    // Выбор кадра, личности (Гонщик / Выходец из Убежища / Нео) и статуса
+    let nextFrame = DRV.IDLE;
+    let nextPersona = 'driver';
+    let nextMood = isPlaying ? 'ДОРОГА' : (gameState === 'paused' ? 'ПАУЗА' : 'ОЖИДАНИЕ');
+    let hardCut = false;
+
+    const neoAwake = !isDead && (matrixActive || isHacking || driverCam.neoTimer > 0 || driverCam.subliminalNeoTimer > 0);
+
+    if (isDead) {
+      nextPersona = 'dead';
+      nextMood = 'NO SIGNAL';
+      nextFrame = DRV.HURT;
+    } else if (neoAwake) {
+      nextFrame = DRV.NEO;
+      nextPersona = 'neo';
+      nextMood = matrixActive ? 'МАТРИЦА' : (isHacking ? 'ВЗЛОМ' : 'СИГНАЛ');
+      hardCut = driverCam.curFrame !== DRV.NEO;
+    } else if (driverCam.hurtTimer > 0) {
+      nextFrame = DRV.HURT;
+      nextPersona = radHigh ? 'vault' : 'driver';
+      nextMood = 'УДАР';
+      hardCut = true;
+    } else if (driverCam.canteenTimer > 0) {
+      nextFrame = DRV.CANTEEN;
+      nextPersona = 'vault';
+      nextMood = 'ФЛЯЖКА';
+    } else if (driverCam.grinTimer > 0) {
+      nextFrame = DRV.GRIN;
+      nextPersona = 'driver';
+      nextMood = 'АЗАРТ';
+    } else {
+      // Повороты головы от руля или свободный обзор + моргание
+      if (driverCam.steerSmooth < -0.22) {
+        nextFrame = DRV.LEFT;
+        nextMood = speed > 140 ? 'ДРИФТ ◀' : 'ПОВОРОТ ◀';
+      } else if (driverCam.steerSmooth > 0.22) {
+        nextFrame = DRV.RIGHT;
+        nextMood = speed > 140 ? 'ДРИФТ ▶' : 'ПОВОРОТ ▶';
+      } else if (driverCam.glanceDir < 0) {
+        nextFrame = DRV.LEFT;
+      } else if (driverCam.glanceDir > 0) {
+        nextFrame = DRV.RIGHT;
+      } else if (driverCam.blinkDur > 0) {
+        nextFrame = DRV.BLINK;
+      } else {
+        nextFrame = DRV.IDLE;
+      }
+
+      if (radHigh) {
+        nextPersona = 'vault';
+        nextMood = 'РАДИАЦИЯ';
+      } else if (driverCam.muzzleFlash > 0.12) {
+        nextMood = 'ОГОНЬ!';
+      } else if ((isPlaying && player.inDepot) || driverCam.vaultAuraTimer > 0) {
+        nextPersona = 'vault';
+        if (Math.abs(driverCam.steerSmooth) <= 0.22) {
+          nextMood = (isPlaying && player.inDepot) ? 'ДЕПО-0' : 'УБЕЖИЩЕ';
+        }
+      }
+    }
+
+    if (nextFrame !== driverCam.curFrame) {
+      driverCam.prevFrame = driverCam.curFrame;
+      driverCam.curFrame = nextFrame;
+      driverCam.blend = hardCut ? 1 : 0;
+      if (hardCut && nextFrame === DRV.NEO) {
+        driverCam.glitchSliceTimer = Math.max(driverCam.glitchSliceTimer, 0.22);
+      }
+    } else if (driverCam.blend < 1) {
+      driverCam.blend = Math.min(1, driverCam.blend + dt * 9.5);
+    }
+
+    driverCam.persona = nextPersona;
+    driverCam.mood = nextMood;
+
+    // Пульс и бегущая ЭКГ (Нео = ледяные 54 BPM, бой = до 148 BPM, смерть = 0)
+    if (isDead) {
+      driverCam.targetBpm = 0;
+    } else if (nextPersona === 'neo') {
+      driverCam.targetBpm = 54;
+    } else if (driverCam.canteenTimer > 0 || (isPlaying && player.inDepot)) {
+      driverCam.targetBpm = 66;
+    } else if (!isPlaying) {
+      driverCam.targetBpm = 74;
+    } else {
+      let tBpm = 78 + (speed / 280) * 18 + player.trace * 8;
+      if (driverCam.muzzleFlash > 0.1 || driverCam.grinTimer > 0) tBpm += 18;
+      if (driverCam.hurtTimer > 0) tBpm += 28;
+      if (player.hp < player.maxHp * 0.35) tBpm += 24;
+      if (radHigh) tBpm += 14;
+      driverCam.targetBpm = clamp(tBpm, 64, 154);
+    }
+
+    driverCam.bpm += (driverCam.targetBpm - driverCam.bpm) * Math.min(1, 3.2 * dt);
+    const stepRate = 55; // сэмплов/сек по осциллографу
+    driverCam.ecgStepAcc += dt * stepRate;
+    while (driverCam.ecgStepAcc >= 1) {
+      driverCam.ecgStepAcc -= 1;
+      for (let i = 0; i < ECG_SAMPLES - 1; i++) {
+        driverCam.ecgBuf[i] = driverCam.ecgBuf[i + 1];
+      }
+      if (isDead || driverCam.bpm < 5) {
+        driverCam.ecgBuf[ECG_SAMPLES - 1] = 0;
+      } else {
+        driverCam.ecgPhase = (driverCam.ecgPhase + (driverCam.bpm / 60) / stepRate) % 1;
+        driverCam.ecgBuf[ECG_SAMPLES - 1] = sampleEcgWave(driverCam.ecgPhase);
+      }
+    }
+
+    // Синхронизация лёгких текстовых меток в DOM только при изменении
+    if (driverCam.lastUiPersona !== driverCam.persona) {
+      driverCam.lastUiPersona = driverCam.persona;
+      const pCls = `persona-${driverCam.persona}`;
+      const pLabel = driverCam.persona === 'neo'
+        ? 'НЕО // КОД'
+        : driverCam.persona === 'vault'
+          ? 'УБЕЖИЩЕ-0'
+          : driverCam.persona === 'dead'
+            ? 'OFFLINE'
+            : 'ГОНЩИК';
+      if (el.driverPersonaBadge) {
+        el.driverPersonaBadge.textContent = pLabel;
+        el.driverPersonaBadge.className = `driver-persona-badge ${pCls}`;
+      }
+      if (el.cabinScreenFrame) {
+        el.cabinScreenFrame.className = `cabin-screen-frame ${pCls}`;
+      }
+      if (el.driverQuote) {
+        el.driverQuote.className = `driver-quote ${pCls}`;
+      }
+      if (el.driverRecDot) {
+        el.driverRecDot.classList.toggle('off', driverCam.persona === 'dead');
+      }
+    }
+    if (driverCam.lastUiMood !== driverCam.mood && el.driverMoodLabel) {
+      driverCam.lastUiMood = driverCam.mood;
+      el.driverMoodLabel.textContent = driverCam.mood;
+    }
+    const uiQuoteText = isDead ? DRIVER_QUOTES.dead[0] : driverCam.quote;
+    if (driverCam.lastUiQuote !== uiQuoteText && el.driverQuote) {
+      driverCam.lastUiQuote = uiQuoteText;
+      el.driverQuote.textContent = uiQuoteText;
+    }
+    const dispBpm = isDead ? 0 : Math.round(driverCam.bpm);
+    if (driverCam.lastUiBpm !== dispBpm && el.driverBpm) {
+      driverCam.lastUiBpm = dispBpm;
+      el.driverBpm.textContent = isDead ? '00' : String(dispBpm);
+    }
+  }
+
+  function drawDriverFrame(dCtx, frameIdx, size, alpha) {
+    if (!driverSheetReady || !driverSheet) return;
+    dCtx.save();
+    dCtx.globalAlpha = alpha;
+    // Лёгкий запас масштаба (1.07x), чтобы при тряске/наклоне не вылезали чёрные края
+    const pad = size * 0.04;
+    dCtx.drawImage(driverSheet, frameIdx * 256, 0, 256, 256, -pad, -pad, size + pad * 2, size + pad * 2);
+    dCtx.restore();
+  }
+
+  function renderGoggleMatrixCode(dCtx, size, intensity, headShiftX) {
+    // Живые бегущие зелёные цифры Матрицы прямо ВНУТРИ обеих стеклянных линз очков на лбу!
+    if (intensity <= 0.02) return;
+    const lenses = [
+      { cx: size * (0.405 + headShiftX), cy: size * 0.258, rx: size * 0.082, ry: size * 0.062, rot: -0.07 },
+      { cx: size * (0.595 + headShiftX), cy: size * 0.258, rx: size * 0.082, ry: size * 0.062, rot: 0.07 }
+    ];
+
+    dCtx.save();
+    for (let li = 0; li < lenses.length; li++) {
+      const ln = lenses[li];
+      dCtx.save();
+      dCtx.beginPath();
+      dCtx.ellipse(ln.cx, ln.cy, ln.rx, ln.ry, ln.rot, 0, Math.PI * 2);
+      dCtx.clip();
+
+      // Изумрудная подсветка стекла очков
+      dCtx.fillStyle = `rgba(8, 38, 18, ${0.42 * intensity})`;
+      dCtx.fillRect(ln.cx - ln.rx - 2, ln.cy - ln.ry - 2, ln.rx * 2 + 4, ln.ry * 2 + 4);
+
+      dCtx.font = 'bold 7.5px monospace';
+      dCtx.textAlign = 'center';
+      const cols = 5;
+      for (let c = 0; c < cols; c++) {
+        const col = goggleCodeCols[(li * 6 + c) % goggleCodeCols.length];
+        const x = ln.cx - ln.rx * 0.72 + (c / (cols - 1)) * (ln.rx * 1.44);
+        const headY = (ln.cy - ln.ry) + ((col.y * 0.7) % (ln.ry * 2.5));
+        for (let r = 0; r < 4; r++) {
+          const gy = headY - r * 6.5;
+          const ch = CABIN_GLYPHS[(col.seed + c * 3 + r + Math.floor(elapsed * 12)) % CABIN_GLYPHS.length];
+          dCtx.fillStyle = r === 0
+            ? `rgba(210, 255, 226, ${0.95 * intensity})`
+            : `rgba(57, 255, 136, ${(0.82 - r * 0.18) * intensity})`;
+          dCtx.fillText(ch, x, gy);
+        }
+      }
+      dCtx.restore();
+
+      // Лёгкое внешнее изумрудное свечение вокруг линз
+      const glow = dCtx.createRadialGradient(ln.cx, ln.cy, 2, ln.cx, ln.cy, ln.rx * 1.9);
+      glow.addColorStop(0, `rgba(57, 255, 136, ${0.28 * intensity})`);
+      glow.addColorStop(1, 'rgba(57, 255, 136, 0)');
+      dCtx.fillStyle = glow;
+      dCtx.beginPath();
+      dCtx.arc(ln.cx, ln.cy, ln.rx * 1.9, 0, Math.PI * 2);
+      dCtx.fill();
+    }
+    dCtx.restore();
+  }
+
+  function renderDriverCam() {
+    if (!driverCtx || !el.cabinPanel || el.cabinPanel.offsetParent === null) return;
+
+    const w = el.driverCam.width;
+    const h = el.driverCam.height;
+    driverCtx.clearRect(0, 0, w, h);
+
+    if (gameState === 'dead') {
+      // Аналоговый белый шум + NO SIGNAL при уничтожении машины
+      driverCtx.fillStyle = '#070c09';
+      driverCtx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 240; i++) {
+        const nx = Math.random() * w;
+        const ny = Math.random() * h;
+        const v = 30 + Math.floor(Math.random() * 140);
+        driverCtx.fillStyle = `rgb(${v},${v + 12},${v})`;
+        driverCtx.fillRect(nx, ny, 2 + Math.random() * 4, 1.5);
+      }
+      const barY = (elapsed * 70) % h;
+      driverCtx.fillStyle = 'rgba(255, 77, 90, 0.22)';
+      driverCtx.fillRect(0, barY, w, 16);
+
+      driverCtx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+      driverCtx.fillRect(14, h * 0.38, w - 28, 34);
+      driverCtx.strokeStyle = 'rgba(255, 77, 90, 0.75)';
+      driverCtx.strokeRect(14, h * 0.38, w - 28, 34);
+      driverCtx.fillStyle = '#ff6b76';
+      driverCtx.font = 'bold 12px monospace';
+      driverCtx.textAlign = 'center';
+      driverCtx.fillText('NO SIGNAL', w / 2, h * 0.38 + 21);
+      renderDriverEcg();
+      return;
+    }
+
+    const speed = player ? Math.hypot(player.vx, player.vy) : 0;
+    const speedRatio = clamp(speed / 260, 0, 1);
+
+    // Живая физика кабины: вибрация мотора, кочки, наклон в повороте, лёгкое запрокидывание при питье из фляжки
+    const idleBreathY = Math.sin(elapsed * 2.2) * 1.0;
+    const engineVibX = Math.sin(elapsed * 31) * (0.35 + speedRatio * 1.15);
+    const engineVibY = Math.cos(elapsed * 27) * (0.3 + speedRatio * 1.05);
+    const steerRoll = driverCam.steerSmooth * 0.042;
+    const steerShiftX = driverCam.steerSmooth * 3.0;
+
+    let sipTilt = 0;
+    let sipBobY = 0;
+    if (driverCam.canteenTimer > 0) {
+      const p = 1 - driverCam.canteenTimer / Math.max(0.1, driverCam.canteenDur);
+      const wave = Math.sin(p * Math.PI);
+      sipTilt = -0.042 * wave;
+      sipBobY = -1.6 * wave + Math.sin(p * Math.PI * 4) * 0.7;
+    }
+
+    driverCtx.save();
+    driverCtx.translate(w / 2 + engineVibX + steerShiftX + driverCam.joltX, h / 2 + idleBreathY + engineVibY + sipBobY + driverCam.joltY);
+    driverCtx.rotate(steerRoll + sipTilt);
+    driverCtx.translate(-w / 2, -h / 2);
+
+    if (driverSheetReady) {
+      if (driverCam.blend < 1) {
+        drawDriverFrame(driverCtx, driverCam.prevFrame, w, 1);
+        drawDriverFrame(driverCtx, driverCam.curFrame, w, driverCam.blend);
+      } else {
+        drawDriverFrame(driverCtx, driverCam.curFrame, w, 1);
+      }
+    } else {
+      driverCtx.fillStyle = '#0a140d';
+      driverCtx.fillRect(0, 0, w, h);
+    }
+
+    // 1) Живые цифры Матрицы в стёклах очков на лбу (работают и при пробуждении Нео, и при проблесках кода!)
+    const isNeoFrame = driverCam.curFrame === DRV.NEO;
+    const goggleCodeIntensity = isNeoFrame
+      ? 1.0
+      : Math.max(
+          driverCam.codeFlashTimer > 0 ? clamp(driverCam.codeFlashTimer, 0, 0.95) : 0,
+          matrixBreach > 0.25 ? (matrixBreach - 0.25) * 0.95 : 0
+        );
+    const headShiftX = driverCam.curFrame === DRV.LEFT ? -0.065 : (driverCam.curFrame === DRV.RIGHT ? 0.065 : 0);
+    if (goggleCodeIntensity > 0.03) {
+      renderGoggleMatrixCode(driverCtx, w, goggleCodeIntensity, headShiftX);
+    }
+
+    // 2) Тёплое янтарное свечение Pip-Boy / фляжки Убежища-0
+    if (driverCam.canteenTimer > 0 || driverCam.persona === 'vault') {
+      const pulse = 0.2 + Math.sin(elapsed * 5) * 0.06;
+      const gVault = driverCtx.createRadialGradient(w * 0.5, h * 0.95, 8, w * 0.5, h * 0.72, w * 0.78);
+      gVault.addColorStop(0, `rgba(255, 184, 77, ${driverCam.canteenTimer > 0 ? pulse + 0.16 : pulse})`);
+      gVault.addColorStop(1, 'rgba(255, 184, 77, 0)');
+      driverCtx.save();
+      driverCtx.globalCompositeOperation = 'screen';
+      driverCtx.fillStyle = gVault;
+      driverCtx.fillRect(0, 0, w, h);
+      driverCtx.restore();
+    }
+
+    // 3) Отблески стрельбы из турели и взрывов по лицу и кожанке водителя!
+    const flashStr = Math.max(driverCam.muzzleFlash, driverCam.explosionFlash);
+    if (flashStr > 0.03) {
+      const useExpl = driverCam.explosionFlash >= driverCam.muzzleFlash;
+      const fx = w * (0.5 + (useExpl ? 0 : driverCam.muzzleSide * 0.34));
+      const fy = h * (useExpl ? 0.35 : 0.42);
+      const isGreen = (useExpl ? driverCam.explosionColor : driverCam.muzzleColor).startsWith('#39') ||
+                      (useExpl ? driverCam.explosionColor : driverCam.muzzleColor).startsWith('#4c');
+      const rgb = isGreen ? '76, 255, 156' : '255, 178, 72';
+
+      driverCtx.save();
+      driverCtx.globalCompositeOperation = 'screen';
+      const mg = driverCtx.createRadialGradient(fx, fy, 4, fx, fy, w * 0.95);
+      mg.addColorStop(0, `rgba(255, 244, 210, ${flashStr * 0.58})`);
+      mg.addColorStop(0.32, `rgba(${rgb}, ${flashStr * 0.48})`);
+      mg.addColorStop(1, `rgba(${rgb}, 0)`);
+      driverCtx.fillStyle = mg;
+      driverCtx.fillRect(0, 0, w, h);
+      driverCtx.restore();
+    }
+
+    // 4) Лёгкие боковые нити цифр Матрицы по краям монитора при активном Нео / сильном глитче
+    if (isNeoFrame || driverCam.codeFlashTimer > 0.35) {
+      const edgeAlpha = isNeoFrame ? 0.42 : Math.min(0.28, (driverCam.codeFlashTimer - 0.35) * 0.35);
+      driverCtx.save();
+      driverCtx.font = 'bold 9px monospace';
+      for (let i = 0; i < 6; i++) {
+        const col = goggleCodeCols[i * 2];
+        const x = i < 3 ? 6 + i * 9 : w - 8 - (i - 3) * 9;
+        const y = (col.y * 3.1) % (h + 24);
+        const ch = CABIN_GLYPHS[(col.seed + Math.floor(elapsed * 10)) % CABIN_GLYPHS.length];
+        driverCtx.fillStyle = `rgba(57, 255, 136, ${edgeAlpha})`;
+        driverCtx.fillText(ch, x, y);
+      }
+      driverCtx.restore();
+    }
+
+    driverCtx.restore();
+
+    // 5) Горизонтальный цифровой срез-глитч при пробуждении Нео или сильном попадании
+    if (driverCam.glitchSliceTimer > 0) {
+      const slices = 3;
+      for (let s = 0; s < slices; s++) {
+        const sy = Math.floor(Math.random() * (h - 14));
+        const sh = 4 + Math.floor(Math.random() * 10);
+        const dx = (Math.random() - 0.5) * 14;
+        driverCtx.drawImage(el.driverCam, 0, sy, w, sh, dx, sy, w, sh);
+        driverCtx.fillStyle = driverCam.persona === 'neo'
+          ? 'rgba(57, 255, 136, 0.18)'
+          : 'rgba(255, 184, 77, 0.14)';
+        driverCtx.fillRect(0, sy, w, 2);
+      }
+    }
+
+    // 6) Радиационная рябь Гейгера
+    if (player && player.rad >= 35) {
+      const radNoise = Math.floor(((player.rad - 30) / 70) * 34);
+      driverCtx.fillStyle = 'rgba(255, 198, 92, 0.55)';
+      for (let n = 0; n < radNoise; n++) {
+        driverCtx.fillRect(Math.random() * w, Math.random() * h, 2, 1.5);
+      }
+    }
+
+    // 7) Красная вспышка по краям при получении урона
+    if (driverCam.damageFlash > 0.03) {
+      driverCtx.strokeStyle = `rgba(255, 65, 82, ${driverCam.damageFlash * 0.85})`;
+      driverCtx.lineWidth = 7;
+      driverCtx.strokeRect(2, 2, w - 4, h - 4);
+    }
+
+    // 8) Тонкие CRT-сканлайны + ретро-виньетка монитора кабины
+    driverCtx.fillStyle = 'rgba(0, 0, 0, 0.16)';
+    for (let y = 0; y < h; y += 3) {
+      driverCtx.fillRect(0, y, w, 1);
+    }
+    const vig = driverCtx.createRadialGradient(w / 2, h / 2, w * 0.36, w / 2, h / 2, w * 0.72);
+    vig.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vig.addColorStop(1, 'rgba(2, 6, 4, 0.58)');
+    driverCtx.fillStyle = vig;
+    driverCtx.fillRect(0, 0, w, h);
+
+    // Уголки видоискателя камеры
+    driverCtx.strokeStyle = driverCam.persona === 'neo'
+      ? 'rgba(57, 255, 136, 0.65)'
+      : driverCam.persona === 'vault'
+        ? 'rgba(255, 184, 77, 0.65)'
+        : 'rgba(156, 230, 184, 0.35)';
+    driverCtx.lineWidth = 1.2;
+    const cLen = 8;
+    driverCtx.beginPath();
+    driverCtx.moveTo(5, 5 + cLen); driverCtx.lineTo(5, 5); driverCtx.lineTo(5 + cLen, 5);
+    driverCtx.moveTo(w - 5 - cLen, 5); driverCtx.lineTo(w - 5, 5); driverCtx.lineTo(w - 5, 5 + cLen);
+    driverCtx.moveTo(5, h - 5 - cLen); driverCtx.lineTo(5, h - 5); driverCtx.lineTo(5 + cLen, h - 5);
+    driverCtx.moveTo(w - 5 - cLen, h - 5); driverCtx.lineTo(w - 5, h - 5); driverCtx.lineTo(w - 5, h - 5 - cLen);
+    driverCtx.stroke();
+
+    renderDriverEcg();
+  }
+
+  function renderDriverEcg() {
+    if (!ecgCtx || !el.driverEcg) return;
+    const ew = el.driverEcg.width;
+    const eh = el.driverEcg.height;
+    ecgCtx.clearRect(0, 0, ew, eh);
+
+    // Сетка осциллографа
+    ecgCtx.strokeStyle = 'rgba(57, 255, 136, 0.1)';
+    ecgCtx.lineWidth = 1;
+    ecgCtx.beginPath();
+    ecgCtx.moveTo(0, eh * 0.5);
+    ecgCtx.lineTo(ew, eh * 0.5);
+    for (let x = 24; x < ew; x += 24) {
+      ecgCtx.moveTo(x, 0);
+      ecgCtx.lineTo(x, eh);
+    }
+    ecgCtx.stroke();
+
+    // Цвет линии пульса зависит от личности и состояния
+    const strokeCol = driverCam.persona === 'dead'
+      ? '#ff4d5a'
+      : driverCam.persona === 'neo'
+        ? '#39ff88'
+        : driverCam.persona === 'vault'
+          ? '#ffb84d'
+          : (driverCam.bpm > 118 ? '#ff7654' : '#4eff9b');
+
+    ecgCtx.strokeStyle = strokeCol;
+    ecgCtx.lineWidth = 1.6;
+    ecgCtx.beginPath();
+    const baseY = eh * 0.58;
+    const amp = eh * 0.44;
+    for (let i = 0; i < ECG_SAMPLES; i++) {
+      const x = (i / (ECG_SAMPLES - 1)) * (ew - 4) + 2;
+      const y = baseY - driverCam.ecgBuf[i] * amp;
+      if (i === 0) ecgCtx.moveTo(x, y);
+      else ecgCtx.lineTo(x, y);
+    }
+    ecgCtx.stroke();
+
+    // Светящаяся ведущая точка пульса
+    const lastY = baseY - driverCam.ecgBuf[ECG_SAMPLES - 1] * amp;
+    ecgCtx.fillStyle = '#eafff2';
+    ecgCtx.beginPath();
+    ecgCtx.arc(ew - 2, lastY, 2.1, 0, Math.PI * 2);
+    ecgCtx.fill();
+  }
+
   // ==================== ИНИЦИАЛИЗАЦИЯ МИРА И ИГРОКА ====================
   function resetRun() {
     const cls = CAR_CLASSES[0];
@@ -302,6 +1201,7 @@
     for (let i = 0; i < 5; i++) spawnEnemy('raider');
 
     pickNextMission(true);
+    driverReset();
     addLog('Терминал Vault-OS синхронизирован.', 'matrix');
     addLog('VAULT RUNNER // Сектор активен. Собирай крышки и выживай.', '');
     renderGarage();
@@ -379,6 +1279,7 @@
 
   function completeMission() {
     if (!mission) return;
+    const prevType = mission.type;
     const reward = mission.reward;
     player.caps += reward;
     player.score += reward * 4;
@@ -387,6 +1288,11 @@
     player.focus = player.maxFocus;
     player.trace = Math.max(0, player.trace - 1);
     AudioFX.missionDone();
+    if (prevType === 'hack' || prevType === 'survive') {
+      driverAwakenNeo(2.6, pickQuote(DRIVER_QUOTES.neo));
+    } else {
+      driverDrinkCanteen(pickQuote(DRIVER_QUOTES.mission));
+    }
     addFloatText(player.x, player.y - 26, `КОНТРАКТ +${reward} ₵`, '#ffb84d');
     addLog(`Контракт выполнен! Получено +${reward} ₵ и +25 HP.`, 'matrix');
     updateBestScore();
@@ -483,6 +1389,7 @@
   function explodeVehicle(x, y, isAgent) {
     AudioFX.explode();
     shakeAmt = Math.min(14, shakeAmt + 8);
+    driverOnExplosion(x, y, isAgent);
     addLightFlash(x, y, 280, isAgent ? '#39ff88' : '#ff9436', 0.42);
     spawnBurst(x, y, '#ffb84d', 18, 220);
     spawnBurst(x, y, isAgent ? '#39ff88' : '#ff4d5a', 14, 170);
@@ -508,6 +1415,7 @@
     player.ammo += 30;
     player.trace = Math.max(0, player.trace - 1);
     AudioFX.upgrade();
+    driverDrinkCanteen(pickQuote(DRIVER_QUOTES.depot));
     addFloatText(player.x, player.y - 24, emergencyFree ? 'АВАРИЙНЫЙ РЕМОНТ!' : 'РЕМОНТ + АНТИРАД', '#39ff88');
     addLog('Бункер-Депо: корпус восстановлен, радиация снята, +30 патр.', 'matrix');
     renderGarage();
@@ -618,6 +1526,11 @@
         player.caps -= u.cost;
         u.apply();
         AudioFX.upgrade();
+        if (u.id === 'matrix') {
+          driverAwakenNeo(2.2, pickQuote(DRIVER_QUOTES.neo));
+        } else {
+          driverDrinkCanteen(pickQuote(DRIVER_QUOTES.upgrade));
+        }
         addLog(`Установлено: ${u.name}`, 'matrix');
         addFloatText(player.x, player.y - 24, `АПГРЕЙД: ${u.name}`, '#38e8ff');
         renderGarage();
@@ -638,6 +1551,7 @@
         cam.x = world.depot.x + Math.cos(elapsed * 0.25) * 180;
         cam.y = world.depot.y + Math.sin(elapsed * 0.2) * 120;
       }
+      updateDriverCam(dt);
       return;
     }
 
@@ -652,6 +1566,7 @@
         matrixActive = true;
         glitchTimer = Math.max(glitchTimer, 0.22);
         AudioFX.matrix(true);
+        driverAwakenNeo(0.8, pickQuote(DRIVER_QUOTES.neo));
       }
       player.focus = Math.max(0, player.focus - spec.focusDrain * dt);
       if (player.focus <= 1) {
@@ -735,6 +1650,8 @@
       uiTimer = 0;
       syncUI(false);
     }
+
+    updateDriverCam(dt);
   }
 
   function updatePlayer(dt, spec) {
@@ -812,6 +1729,7 @@
       AudioFX.crash();
       spawnBurst(player.x, player.y, '#ffb84d', 5, 110);
       shakeAmt = Math.min(8, shakeAmt + 2.5);
+      driverOnHit(4, true);
     }
 
     // Зелёные цифровые следы при активной Матрице
@@ -840,6 +1758,7 @@
     const inDepot = dist(player, world.depot) <= world.depot.radius;
     if (inDepot && !player.inDepot) {
       addLog('Вы в зоне Бункера-Депо. Нажмите E для ремонта.', 'warn');
+      driverVaultMoment(pickQuote(DRIVER_QUOTES.depot));
     }
     player.inDepot = inDepot;
     if (inDepot && player.rad > 0) {
@@ -907,6 +1826,7 @@
           fireBullet('player', player.x + Math.cos(a) * muzzleDist, player.y + Math.sin(a) * muzzleDist, a, 720, spec.damage, bulletCol, 3.5);
         }
         AudioFX.shoot(player.weaponLvl >= 3);
+        driverOnGunfire(player.weaponLvl >= 3, a);
         spawnBurst(player.x + Math.cos(a) * muzzleDist, player.y + Math.sin(a) * muzzleDist, bulletCol, 3, 95);
       } else {
         player.shootCd = 0.45;
@@ -921,6 +1841,7 @@
     if (!isRad) {
       AudioFX.hit();
       shakeAmt = Math.min(10, shakeAmt + 3.2);
+      driverOnHit(dmg, false);
       if (dmg >= 6) glitchTimer = Math.max(glitchTimer, 0.2);
     }
     if (player.hp <= 0) {
@@ -1037,6 +1958,7 @@
 
     addFloatText(e.x, e.y - 16, `+${capsGain} ₵`, '#ffb84d');
     addLog(isAgent ? `Агент Матрицы нейтрализован! +${capsGain} ₵` : `Рейдер уничтожен! +${capsGain} ₵`, isAgent ? 'matrix' : '');
+    driverOnKill(isAgent);
 
     // Дроп лута на месте взрыва
     if (Math.random() < 0.72) {
@@ -1095,11 +2017,17 @@
       if (dist(player, it) < 34) {
         const def = LOOT_DEFS[it.type];
         if (it.type === 'ammo') player.ammo += 28;
-        else if (it.type === 'medkit') player.hp = Math.min(player.maxHp, player.hp + 35);
-        else if (it.type === 'caps') player.caps += 25;
-        else if (it.type === 'focus') player.focus = Math.min(player.maxFocus, player.focus + 55);
-        else if (it.type === 'radaway') player.rad = Math.max(0, player.rad - 55);
-        else if (it.type === 'module') { player.caps += 35; player.score += 60; }
+        else if (it.type === 'medkit') {
+          player.hp = Math.min(player.maxHp, player.hp + 35);
+          driverDrinkCanteen(pickQuote(DRIVER_QUOTES.canteen));
+        } else if (it.type === 'caps') player.caps += 25;
+        else if (it.type === 'focus') {
+          player.focus = Math.min(player.maxFocus, player.focus + 55);
+          driverAwakenNeo(1.8, pickQuote(DRIVER_QUOTES.neo));
+        } else if (it.type === 'radaway') {
+          player.rad = Math.max(0, player.rad - 55);
+          driverDrinkCanteen('Антирадин пошёл. Фляжка снова выручает.');
+        } else if (it.type === 'module') { player.caps += 35; player.score += 60; }
 
         player.score += 25;
         AudioFX.pickup();
@@ -1383,11 +2311,12 @@
 
     ctx.restore();
 
-    // Тактический радар
+    // Тактический радар и камера в кабине (ПК)
     renderMinimap(minimapCtx, minimapCanvas.width, minimapCanvas.height);
     if (!el.mobileRadarFloat.classList.contains('hidden')) {
       renderMinimap(mobileMinimapCtx, mobileMinimapCanvas.width, mobileMinimapCanvas.height);
     }
+    renderDriverCam();
   }
 
   // ==================== КАРТА ДИНАМИЧЕСКОГО СВЕТА (CYBER-NOIR) ====================
@@ -2397,6 +3326,7 @@
       el.btnPlay.textContent = '▶ ПРОДОЛЖИТЬ';
       el.btnRestartModal.classList.remove('hidden');
       el.btnPauseResume.textContent = '▶ ПРОДОЛЖИТЬ';
+      driverSetQuote(pickQuote(DRIVER_QUOTES.pause), 5.0);
     } else if (state === 'dead') {
       if (el.modalLogoWrap) el.modalLogoWrap.classList.add('hidden');
       el.modalTitle.classList.remove('hidden');
@@ -2627,6 +3557,13 @@
     AudioFX.unlock();
     depotService();
   });
+
+  if (el.cabinScreenFrame) {
+    el.cabinScreenFrame.addEventListener('click', () => {
+      AudioFX.unlock();
+      driverInteractiveClick();
+    });
+  }
 
   el.btnMobileMenu.addEventListener('click', openMobileMenu);
   el.btnCloseMenu.addEventListener('click', closeMobileMenu);

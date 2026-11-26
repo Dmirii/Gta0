@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#060b07">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>VAULT RUNNER // Wasteland Matrix</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=5">
-  <link rel="stylesheet" href="css/style.css?v=5">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=6">
+  <link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body class="crt-on">
   <div id="app">
@@ -81,7 +81,7 @@
           <div class="terminal-modal">
             <div class="modal-tag">ROBCO INDUSTRIES // VAULT-OS 2077 · MATRIX LINK</div>
             <div id="modal-logo-wrap" class="modal-logo-wrap">
-              <img id="modal-logo" src="assets/logo.png?v=5" alt="VAULT RUNNER">
+              <img id="modal-logo" src="assets/logo.png?v=6" alt="VAULT RUNNER">
             </div>
             <h1 id="modal-title" class="hidden">VAULT RUNNER</h1>
             <p id="modal-subtitle">
@@ -157,13 +157,34 @@
           <span id="ui-coords">X:000 Y:000</span>
         </div>
         <div class="radar-frame">
-          <canvas id="minimap" width="280" height="190"></canvas>
+          <canvas id="minimap" width="280" height="150"></canvas>
           <div class="radar-legend">
             <span><i class="dot dot-you"></i>Вы</span>
             <span><i class="dot dot-depot"></i>Депо</span>
             <span><i class="dot dot-loot"></i>Лут</span>
             <span><i class="dot dot-raider"></i>Рейдер</span>
             <span><i class="dot dot-agent"></i>Агент</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Камера в кабине водителя (только ПК: Carmageddon / Fallout / Матрица) -->
+      <div class="cabin-panel desktop-only" id="cabin-panel">
+        <div class="panel-row-head">
+          <span class="cabin-head-rec"><i class="rec-dot" id="driver-rec-dot"></i>CABIN CAM // 01</span>
+          <span class="driver-persona-badge persona-driver" id="driver-persona-badge">ГОНЩИК</span>
+        </div>
+        <div class="cabin-body">
+          <div class="cabin-screen-frame" id="cabin-screen-frame" title="Нажмите на монитор кабины для реакции пилота">
+            <canvas id="driver-cam" width="160" height="160" aria-label="Камера водителя"></canvas>
+          </div>
+          <div class="cabin-telemetry">
+            <div class="cabin-ecg-head">
+              <span id="driver-mood-label">ДОРОГА</span>
+              <span class="cabin-bpm"><strong id="driver-bpm">78</strong> BPM</span>
+            </div>
+            <canvas id="driver-ecg" width="152" height="28" aria-hidden="true"></canvas>
+            <div class="driver-quote" id="driver-quote">Двигатель прогрет. Готов к выезду.</div>
           </div>
         </div>
       </div>
@@ -331,8 +352,8 @@
     </aside>
   </div>
 
-  <script defer src="js/audio.js?v=5"></script>
-  <script defer src="js/world.js?v=5"></script>
-  <script defer src="js/game.js?v=5"></script>
+  <script defer src="js/audio.js?v=6"></script>
+  <script defer src="js/world.js?v=6"></script>
+  <script defer src="js/game.js?v=6"></script>
 </body>
 </html>
