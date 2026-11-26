@@ -118,6 +118,7 @@
     sidebar: document.getElementById('sidebar'),
     backdrop: document.getElementById('sidebar-backdrop'),
     overlay: document.getElementById('overlay-screen'),
+    modalLogoWrap: document.getElementById('modal-logo-wrap'),
     modalTitle: document.getElementById('modal-title'),
     modalSub: document.getElementById('modal-subtitle'),
     btnPlay: document.getElementById('btn-play'),
@@ -302,7 +303,7 @@
 
     pickNextMission(true);
     addLog('Терминал Vault-OS синхронизирован.', 'matrix');
-    addLog('Добро пожаловать в GTA 0. Собирай крышки и выживай.', '');
+    addLog('VAULT RUNNER // Сектор активен. Собирай крышки и выживай.', '');
     renderGarage();
     syncUI(true);
   }
@@ -2382,17 +2383,23 @@
 
     el.overlay.classList.remove('hidden');
     if (state === 'menu') {
-      el.modalTitle.textContent = 'GTA 0: WASTELAND MATRIX';
-      el.modalSub.innerHTML = 'Постапокалиптический мегаполис под контролем Системы. Гоняй по руинам, собирай крышки и лут, улучшай машину в Бункере-Депо и взламывай время в режиме <strong>Матрицы</strong>.';
+      if (el.modalLogoWrap) el.modalLogoWrap.classList.remove('hidden');
+      el.modalTitle.classList.add('hidden');
+      el.modalTitle.textContent = 'VAULT RUNNER';
+      el.modalSub.innerHTML = 'Постапокалиптический мегаполис под скрытым кодом Системы. Гоняй по руинам, собирай крышки и лут, улучшай машину в Бункере-Депо и прорывай время в режиме <strong>Матрицы</strong>.';
       el.btnPlay.textContent = '▶ ВЪЕХАТЬ В ПУСТОШЬ';
       el.btnRestartModal.classList.add('hidden');
     } else if (state === 'paused') {
-      el.modalTitle.textContent = 'ТЕРМИНАЛ НА ПАУЗЕ';
+      if (el.modalLogoWrap) el.modalLogoWrap.classList.add('hidden');
+      el.modalTitle.classList.remove('hidden');
+      el.modalTitle.textContent = 'VAULT RUNNER // ПАУЗА';
       el.modalSub.textContent = 'Симуляция приостановлена. Вы можете изучить карту или улучшить авто в Гараже.';
       el.btnPlay.textContent = '▶ ПРОДОЛЖИТЬ';
       el.btnRestartModal.classList.remove('hidden');
       el.btnPauseResume.textContent = '▶ ПРОДОЛЖИТЬ';
     } else if (state === 'dead') {
+      if (el.modalLogoWrap) el.modalLogoWrap.classList.add('hidden');
+      el.modalTitle.classList.remove('hidden');
       el.modalTitle.textContent = 'СИГНАЛ ПОТЕРЯН // МАШИНА УНИЧТОЖЕНА';
       el.modalSub.textContent = `Итог заезда: Счёт ${Math.floor(player.score)} · Фраги ${player.kills} · Контракты ${player.missionsDone} · Рекорд ${bestScore}.`;
       el.btnPlay.textContent = '↻ НОВЫЙ ЗАЕЗД (ENTER)';

@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#060b07">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>GTA 0 // Wasteland Matrix</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=4">
-  <link rel="stylesheet" href="css/style.css?v=4">
+  <title>VAULT RUNNER // Wasteland Matrix</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=5">
+  <link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body class="crt-on">
   <div id="app">
@@ -34,7 +34,7 @@
     <!-- ОСНОВНОЕ ИГРОВОЕ ПОЛЕ (в металлической рамке RobCo / Pip-Boy) -->
     <main id="stage-wrap">
       <div id="stage-screen">
-        <canvas id="game-canvas" aria-label="Игровое поле GTA 0"></canvas>
+        <canvas id="game-canvas" aria-label="Игровое поле VAULT RUNNER"></canvas>
         <div class="crt-scanlines" aria-hidden="true"></div>
         <div class="crt-bezel-vignette" aria-hidden="true"></div>
         <div id="matrix-vignette" aria-hidden="true"></div>
@@ -80,7 +80,10 @@
         <div id="overlay-screen">
           <div class="terminal-modal">
             <div class="modal-tag">ROBCO INDUSTRIES // VAULT-OS 2077 · MATRIX LINK</div>
-            <h1 id="modal-title">GTA 0: WASTELAND MATRIX</h1>
+            <div id="modal-logo-wrap" class="modal-logo-wrap">
+              <img id="modal-logo" src="assets/logo.png?v=5" alt="VAULT RUNNER">
+            </div>
+            <h1 id="modal-title" class="hidden">VAULT RUNNER</h1>
             <p id="modal-subtitle">
               Постапокалиптический мегаполис под скрытым кодом Системы. Гоняй по руинам, собирай крышки и лут,
               улучшай машину в Бункере-Депо и прорывай время в режиме <strong>Матрицы</strong>.
@@ -119,7 +122,7 @@
       <footer id="stage-bezel-bar" class="desktop-only" aria-hidden="true">
         <div class="bezel-stamp">
           <span class="rivet"></span>
-          <span>ROBCO MODEL 2077-M // VAULT-TEC OPTICS</span>
+          <span>ROBCO MODEL 2077-M // VAULT RUNNER</span>
         </div>
         <div class="bezel-leds">
           <span class="led-item"><i class="led led-pwr on"></i>PWR</span>
@@ -139,7 +142,7 @@
         <div class="brand">
           <span class="brand-dot" id="ui-brand-dot"></span>
           <div>
-            <div class="brand-title" id="ui-brand-title">PIP-TERMINAL // 2077</div>
+            <div class="brand-title" id="ui-brand-title">VAULT RUNNER // 2077</div>
             <div class="brand-sub" id="ui-car-name">SCOUT BUGGY · КЛАСС I</div>
           </div>
         </div>
@@ -328,8 +331,8 @@
     </aside>
   </div>
 
-  <script defer src="js/audio.js?v=4"></script>
-  <script defer src="js/world.js?v=4"></script>
-  <script defer src="js/game.js?v=4"></script>
+  <script defer src="js/audio.js?v=5"></script>
+  <script defer src="js/world.js?v=5"></script>
+  <script defer src="js/game.js?v=5"></script>
 </body>
 </html>

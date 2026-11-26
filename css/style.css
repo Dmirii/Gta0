@@ -965,6 +965,25 @@ body.crt-on .crt-scanlines {
   margin-bottom: 6px;
 }
 
+.modal-logo-wrap {
+  position: relative;
+  margin: 4px auto 12px;
+  max-width: 460px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 184, 77, 0.25);
+  background: #0b120e;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.65), inset 0 0 24px rgba(0, 0, 0, 0.55);
+}
+
+#modal-logo {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  object-position: center;
+}
+
 .terminal-modal h1 {
   margin: 0 0 10px;
   font-size: clamp(18px, 3vw, 25px);
@@ -1323,7 +1342,11 @@ kbd {
   }
 
   .terminal-modal {
-    padding: 15px 14px;
+    padding: 14px 14px;
+  }
+
+  #modal-logo {
+    max-height: 160px;
   }
 }
 
@@ -1345,4 +1368,5 @@ kbd {
   .t-btn { width: 56px; height: 56px; }
   .t-btn-fire { width: 64px; height: 64px; }
   .terminal-modal p { display: none; }
+  #modal-logo { max-height: 112px; }
 }
