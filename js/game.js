@@ -24,7 +24,7 @@
       trim: '#e4c94b',
       stripe: '#2e6f9e',
       accent: '#ffb84d',
-      img: 'assets/cars/car-0.jpg?v=11',
+      img: 'assets/cars/car-0.jpg?v=12',
       cost: 0
     },
     {
@@ -43,7 +43,7 @@
       trim: '#ffd05c',
       stripe: '#26619c',
       accent: '#ff9e42',
-      img: 'assets/cars/car-1.jpg?v=11',
+      img: 'assets/cars/car-1.jpg?v=12',
       cost: 90
     },
     {
@@ -62,7 +62,7 @@
       trim: '#f5c842',
       stripe: '#1b3854',
       accent: '#38e8ff',
-      img: 'assets/cars/car-2.jpg?v=11',
+      img: 'assets/cars/car-2.jpg?v=12',
       cost: 190
     },
     {
@@ -81,7 +81,7 @@
       trim: '#ffb03b',
       stripe: '#2f2924',
       accent: '#ff7034',
-      img: 'assets/cars/car-3.jpg?v=11',
+      img: 'assets/cars/car-3.jpg?v=12',
       cost: 340
     },
     {
@@ -100,7 +100,7 @@
       trim: '#39ff88',
       stripe: '#0c3022',
       accent: '#39ff88',
-      img: 'assets/cars/car-4.jpg?v=11',
+      img: 'assets/cars/car-4.jpg?v=12',
       cost: 540
     }
   ];
@@ -292,6 +292,7 @@
     uiBestScore: document.getElementById('ui-best-score'),
 
     optSound: document.getElementById('opt-sound'),
+    optMusic: document.getElementById('opt-music'),
     optCrt: document.getElementById('opt-crt'),
     optNoir: document.getElementById('opt-noir'),
     optRain: document.getElementById('opt-rain'),
@@ -331,6 +332,7 @@
       const saved = JSON.parse(localStorage.getItem('gta0_prefs') || '{}');
       return {
         sound: saved.sound !== false,
+        music: saved.music !== false,
         crt: saved.crt !== false,
         noir: saved.noir !== false,
         rain: saved.rain !== false,
@@ -338,7 +340,7 @@
         zoom: clamp(Number(saved.zoom || 1), 0.7, 1.4)
       };
     } catch {
-      return { sound: true, crt: true, noir: true, rain: true, sidebarLeft: false, zoom: 1.0 };
+      return { sound: true, music: true, crt: true, noir: true, rain: true, sidebarLeft: false, zoom: 1.0 };
     }
   }
 
@@ -482,7 +484,7 @@
   if (typeof Image !== 'undefined') {
     driverSheet = new Image();
     driverSheet.onload = () => { driverSheetReady = true; };
-    driverSheet.src = 'assets/driver-sheet.jpg?v=11';
+    driverSheet.src = 'assets/driver-sheet.jpg?v=12';
   }
 
   const DRIVER_QUOTES = {
@@ -729,6 +731,7 @@
     driverCam.vaultAuraTimer = Math.max(driverCam.vaultAuraTimer, 3.4);
     driverCam.autoSipCooldown = 28 + Math.random() * 16;
     driverSetQuote(customQuote || pickQuote(DRIVER_QUOTES.canteen), 3.8);
+    if (AudioFX.canteen) AudioFX.canteen();
   }
 
   function driverAwakenNeo(duration, customQuote) {
@@ -1452,6 +1455,7 @@
     enemySpawnTimer = 1.5;
     traceDecayTimer = 0;
     touchMatrixToggle = false;
+    if (matrixActive) AudioFX.matrix(false);
     matrixActive = false;
     matrixBreach = 0;
     glitchTimer = 0;
@@ -1787,7 +1791,7 @@
   }
 
   function detonateMissile(b) {
-    AudioFX.explode();
+    AudioFX.explode(true, b.owner === 'enemy');
     shakeAmt = Math.min(11, shakeAmt + 4.5);
     addLightFlash(b.x, b.y, 210, b.owner === 'enemy' ? '#ff384c' : '#ff8a36', 0.28);
     spawnBurst(b.x, b.y, '#ffbe4f', 14, 190);
@@ -1848,9 +1852,9 @@
     }
   }
 
-  function explodeVehicle(x, y, isAgent) {
-    AudioFX.explode();
-    shakeAmt = Math.min(14, shakeAmt + 8);
+  function explodeVehicle(x, y, isAgent, isBig) {
+    AudioFX.explode(!!isBig, !!isAgent);
+    shakeAmt = Math.min(14, shakeAmt + (isBig ? 10 : 8));
     driverOnExplosion(x, y, isAgent);
     addLightFlash(x, y, 280, isAgent ? '#39ff88' : '#ff9436', 0.42);
     spawnBurst(x, y, '#ffb84d', 18, 220);
@@ -2106,7 +2110,7 @@
         const prevThreat = getThreatLevel();
         player.caps -= u.cost;
         u.apply();
-        AudioFX.upgrade();
+        AudioFX.upgrade(u.id === 'car');
         if (u.id === 'matrix' || (u.id === 'car' && player.carClass === CAR_CLASSES.length - 1)) {
           driverAwakenNeo(2.2, pickQuote(DRIVER_QUOTES.neo));
         } else {
@@ -2131,6 +2135,7 @@
     updateDigitalRain(dt);
 
     if (gameState !== 'playing') {
+      if (AudioFX.updateEngine) AudioFX.updateEngine({ active: false });
       // Мягкий обзор города на стартовом экране
       if (gameState === 'menu') {
         cam.x = world.depot.x + Math.cos(elapsed * 0.25) * 180;
@@ -2244,9 +2249,11 @@
     const fwdX = Math.cos(player.ang);
     const fwdY = Math.sin(player.ang);
     const curFwdSpeed = player.vx * fwdX + player.vy * fwdY;
+    let throttleAmt = 0;
 
     if (joy.active && joy.mag > 0.12) {
       // Интуитивное управление для телефона: рулим в сторону стика, газ = отклонение
+      throttleAmt = joy.mag;
       const diff = normAngle(joy.ang - player.ang);
       const maxTurn = spec.turn * 1.45 * dt;
       player.ang = normAngle(player.ang + clamp(diff, -maxTurn, maxTurn));
@@ -2264,6 +2271,7 @@
 
       const throttle = up - down;
       const steer = right - left;
+      throttleAmt = throttle !== 0 ? 1 : 0;
 
       // Руление (зависит от скорости, на заднем ходу инвертируется)
       const speedFactor = clamp(Math.abs(curFwdSpeed) / 90, 0.35, 1.1);
@@ -2311,14 +2319,33 @@
     player.y += player.vy * dt;
     const hitWall = world.resolveCircle(player, spec.wid * 0.65);
     if (hitWall && prevSpeed > 140) {
-      AudioFX.crash();
+      AudioFX.crash(clamp(prevSpeed / 260, 0.5, 1.3));
       spawnBurst(player.x, player.y, '#ffb84d', 5, 110);
       shakeAmt = Math.min(8, shakeAmt + 2.5);
       driverOnHit(4, true);
     }
 
+    // Живой синтез двигателя (обороты, передачи, турбина, визг шин, шипение нитро)
+    const curSpd = Math.hypot(player.vx, player.vy);
+    if (AudioFX.updateEngine) {
+      const latAbs = Math.abs(player.vx * (-Math.sin(player.ang)) + player.vy * Math.cos(player.ang));
+      const driftAmt = curSpd > 95 ? clamp((latAbs - 38) / 110, 0, 1) : 0;
+      const nitroAmt = (player.engineLvl >= 4 && curSpd > 140 && throttleAmt > 0.2)
+        ? clamp((curSpd - 120) / 220, 0.25, 1)
+        : 0;
+      AudioFX.updateEngine({
+        active: true,
+        carClass: player.carClass,
+        engineLvl: player.engineLvl,
+        speedRatio: clamp(curSpd / Math.max(1, spec.maxSpeed), 0, 1.15),
+        throttle: throttleAmt,
+        drift: driftAmt,
+        nitro: nitroAmt
+      });
+    }
+
     // Зелёные цифровые следы при активной Матрице
-    if (matrixActive && Math.hypot(player.vx, player.vy) > 40 && Math.random() < 0.45) {
+    if (matrixActive && curSpd > 40 && Math.random() < 0.45) {
       ghosts.push({
         x: player.x, y: player.y, ang: player.ang,
         len: spec.len, wid: spec.wid, life: 0.28, maxLife: 0.28
@@ -2326,7 +2353,6 @@
     }
 
     // Выхлопные искры (двигатель ур. 2+) и нитро-форсаж (ур. 4)
-    const curSpd = Math.hypot(player.vx, player.vy);
     if (player.engineLvl >= 4 && curSpd > 140 && Math.random() < 0.65) {
       const bx = player.x - Math.cos(player.ang) * (spec.len * 0.56);
       const by = player.y - Math.sin(player.ang) * (spec.len * 0.56);
@@ -2455,7 +2481,7 @@
           fireBullet('player', mx, my, a, 720, spec.damage, '#ffd86b', 3.4);
         }
         const flashCol = player.weaponLvl >= 3 ? '#39ff88' : '#ffd86b';
-        AudioFX.shoot(player.weaponLvl >= 2);
+        AudioFX.shoot(player.weaponLvl);
         driverOnGunfire(player.weaponLvl >= 3, a);
         spawnBurst(mx, my, flashCol, 3, 95);
       } else {
@@ -2480,7 +2506,7 @@
         const py = Math.cos(a) * 8;
         fireHomingMissile(player.x + px, player.y + py, a - 0.14, spec.missileDmg, lock);
       }
-      if (AudioFX.missile) AudioFX.missile();
+      if (AudioFX.missile) AudioFX.missile(false);
       driverOnGunfire(true, a);
     }
   }
@@ -2489,14 +2515,18 @@
     if (!player || gameState !== 'playing') return;
     player.hp -= dmg;
     if (!isRad) {
-      AudioFX.hit();
+      AudioFX.hit(true);
       shakeAmt = Math.min(10, shakeAmt + 3.2);
       driverOnHit(dmg, false);
       if (dmg >= 6) glitchTimer = Math.max(glitchTimer, 0.2);
     }
     if (player.hp <= 0) {
       player.hp = 0;
-      explodeVehicle(player.x, player.y, false);
+      if (matrixActive) {
+        matrixActive = false;
+        AudioFX.matrix(false);
+      }
+      explodeVehicle(player.x, player.y, false, true);
       updateBestScore();
       saveProgress();
       setOverlayState('dead');
@@ -2611,7 +2641,7 @@
             e.missileCd = eTier >= 5 ? 3.8 : 4.8;
             const aim = Math.atan2(player.y - e.y, player.x - e.x);
             fireHomingMissile(e.x + Math.cos(aim) * 24, e.y + Math.sin(aim) * 24, aim, Math.round(24 + eTier * 3), null, 'enemy');
-            if (AudioFX.missile) AudioFX.missile();
+            if (AudioFX.missile) AudioFX.missile(true);
           }
         }
       } else {
@@ -2671,7 +2701,7 @@
           e.hp -= ramDmg;
           const bossFactor = isBoss ? 1.55 : (isHeavy ? 1.25 : 1.0);
           damagePlayer(Math.max(4, closing * spec.ramSelfMult * bossFactor), false);
-          AudioFX.crash();
+          AudioFX.crash(clamp(closing / 240, 0.55, 1.45));
           spawnBurst((player.x + e.x) / 2, (player.y + e.y) / 2, '#ffb84d', 8, 150);
           if (e.hp <= 0) destroyEnemy(i);
         } else if (closing > 45 && e.ramCd <= 0) {
@@ -2690,7 +2720,7 @@
     const isBoss = e.kind === 'boss';
     const isHeavy = e.kind === 'heavy';
     const tierTag = (e.tier || 1) >= 2 ? ` MK-${ROMAN_TIERS[(e.tier || 1) - 1]}` : '';
-    explodeVehicle(e.x, e.y, isAgent || isBoss);
+    explodeVehicle(e.x, e.y, isAgent || isBoss, isBoss || isHeavy);
     enemies.splice(index, 1);
 
     const capsGain = e.bounty || (isBoss ? 75 : isAgent ? 35 : isHeavy ? 30 : 18);
@@ -2799,7 +2829,7 @@
               detonateMissile(b);
             } else {
               e.hp -= b.dmg;
-              AudioFX.hit();
+              AudioFX.hit(false);
               spawnBurst(b.x, b.y, b.color, 5, 110);
               if (e.hp <= 0) destroyEnemy(j);
             }
@@ -2849,7 +2879,7 @@
         }
 
         player.score += 25;
-        AudioFX.pickup();
+        AudioFX.pickup(it.type);
         addFloatText(it.x, it.y - 12, def.label, def.color);
         addLog(`Подобрано: ${def.label}`);
         loot.splice(i, 1);
@@ -4614,6 +4644,7 @@
   // ==================== МОДАЛКИ, ПАУЗА, МОБИЛЬНОЕ МЕНЮ ====================
   function setOverlayState(state) {
     gameState = state;
+    if (AudioFX.setGameState) AudioFX.setGameState(state === 'playing');
     if (state === 'playing') {
       el.overlay.classList.add('hidden');
       el.btnPauseResume.textContent = '❚❚ ПАУЗА';
@@ -4654,6 +4685,7 @@
     if (gameState === 'playing') {
       pausedByDrawer = true;
       gameState = 'paused';
+      if (AudioFX.setGameState) AudioFX.setGameState(false);
       el.btnPauseResume.textContent = '▶ ПРОДОЛЖИТЬ';
     }
     renderGarage();
@@ -4666,6 +4698,7 @@
     if (pausedByDrawer && gameState === 'paused') {
       pausedByDrawer = false;
       gameState = 'playing';
+      if (AudioFX.setGameState) AudioFX.setGameState(true);
       el.btnPauseResume.textContent = '❚❚ ПАУЗА';
     }
   }
@@ -4708,6 +4741,13 @@
       else if (gameState === 'dead') { resetRun(); setOverlayState('playing'); }
     } else if (e.code === 'KeyE') {
       depotService();
+    } else if (e.code === 'KeyM') {
+      AudioFX.unlock();
+      prefs.music = !prefs.music;
+      applyPrefs();
+      savePrefs();
+      if (AudioFX.uiClick) AudioFX.uiClick();
+      addLog(`Музыка (Keygen-чиптюн): ${prefs.music ? 'ВКЛ' : 'ВЫКЛ'}`, 'matrix');
     } else if (e.code === 'Digit1') switchTab('status');
     else if (e.code === 'Digit2') switchTab('garage');
     else if (e.code === 'Digit3') switchTab('missions');
@@ -4828,8 +4868,12 @@
     tabBtns.forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
     tabPanels.forEach((p) => p.classList.toggle('active', p.id === `panel-${name}`));
     if (name === 'garage') renderGarage();
+    if (AudioFX.uiClick) AudioFX.uiClick();
   }
-  tabBtns.forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  tabBtns.forEach((b) => b.addEventListener('click', () => {
+    AudioFX.unlock();
+    switchTab(b.dataset.tab);
+  }));
 
   el.btnPlay.addEventListener('click', () => {
     AudioFX.unlock();
@@ -4917,9 +4961,11 @@
   // Привязка настроек
   function applyPrefs() {
     AudioFX.setEnabled(prefs.sound);
+    if (AudioFX.setMusicEnabled) AudioFX.setMusicEnabled(prefs.music);
     document.body.classList.toggle('crt-on', prefs.crt);
     el.app.classList.toggle('sidebar-left', prefs.sidebarLeft);
     el.optSound.checked = prefs.sound;
+    if (el.optMusic) el.optMusic.checked = prefs.music;
     el.optCrt.checked = prefs.crt;
     el.optNoir.checked = prefs.noir;
     el.optRain.checked = prefs.rain;
@@ -4928,7 +4974,21 @@
     el.optZoomVal.textContent = `${prefs.zoom.toFixed(2)}×`;
   }
 
-  el.optSound.addEventListener('change', () => { prefs.sound = el.optSound.checked; applyPrefs(); savePrefs(); });
+  el.optSound.addEventListener('change', () => {
+    prefs.sound = el.optSound.checked;
+    if (prefs.sound) AudioFX.unlock();
+    applyPrefs();
+    savePrefs();
+  });
+  if (el.optMusic) {
+    el.optMusic.addEventListener('change', () => {
+      prefs.music = el.optMusic.checked;
+      if (prefs.music) AudioFX.unlock();
+      applyPrefs();
+      savePrefs();
+      if (AudioFX.uiClick) AudioFX.uiClick();
+    });
+  }
   el.optCrt.addEventListener('change', () => { prefs.crt = el.optCrt.checked; applyPrefs(); savePrefs(); });
   el.optNoir.addEventListener('change', () => { prefs.noir = el.optNoir.checked; applyPrefs(); savePrefs(); });
   el.optRain.addEventListener('change', () => { prefs.rain = el.optRain.checked; applyPrefs(); savePrefs(); });
