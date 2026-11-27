@@ -19,6 +19,8 @@ window.GTA0.Audio = (function () {
   let musicBassBus = null;
   let musicArpBus = null;
   let musicLeadBus = null;
+  let musicPadBus = null;
+  let musicAcidBus = null;
   let musicSnareBus = null;
   let musicHatBus = null;
   let engineBus = null;
@@ -79,96 +81,98 @@ window.GTA0.Audio = (function () {
       bass: [0, 12, 0, 12, 0, 12, 7, 12, 0, 12, 0, 12, 7, 10, 12, 7]
     },
 
-    // ---------- ТРЕК 1: СКОРОСТНОЙ C64 SID / TURBO-KEYGEN ГАЛОП (E MINOR, 154 BPM) ----------
+    // ---------- ТРЕК 1: НОЧНОЙ OUTRUN / СИНТВЕЙВ 80-Х (C MINOR, 104 BPM) ----------
     {
-      id: 'core-overdrive',
+      id: 'nightcall-1986',
       code: 'FM-02',
-      name: 'CORE OVERDRIVE',
-      bpm: 154,
-      slowBpm: 90,
-      style: 'overdrive',
+      name: 'NIGHTCALL 1986',
+      bpm: 104,
+      slowBpm: 68,
+      style: 'synthwave',
       chords: [
-        // A: Em - C - D - Bm
-        [64, 67, 71, 40], [60, 64, 67, 36], [62, 66, 69, 38], [59, 62, 66, 35],
-        // B: Em - G - Am - B7 (острый гармонический минор D#!)
-        [64, 67, 71, 40], [67, 71, 74, 43], [57, 60, 64, 33], [59, 63, 66, 35],
-        // C: C - D - Em - G (гипер-арпеджио брейк)
-        [60, 64, 67, 36], [62, 66, 69, 38], [64, 67, 71, 40], [67, 71, 74, 43],
-        // D: Am - C - D - B7 (турбо-финал)
-        [57, 60, 64, 33], [60, 64, 67, 36], [62, 66, 69, 38], [59, 63, 66, 35]
+        // A: Cm - Ab - Fm - G (атмосферная ночная тема)
+        [48, 55, 63, 36], [44, 51, 60, 32], [41, 48, 56, 29], [43, 50, 59, 31],
+        // B: Eb - Bb - Fm - G (широкий мажорный просвет)
+        [51, 55, 58, 39], [46, 53, 58, 34], [41, 48, 56, 29], [43, 50, 59, 31],
+        // C: Ab - Bb - Cm - Eb (эпический припев на трассе)
+        [44, 51, 60, 32], [46, 53, 62, 34], [48, 55, 63, 36], [51, 55, 63, 39],
+        // D: Fm - Cm - Ab - G (меланхоличный финал)
+        [41, 48, 56, 29], [48, 55, 63, 36], [44, 51, 60, 32], [43, 50, 59, 31]
       ],
       lead: [
-        // A: молниеносный 16-й стаккато-разгон в E minor
-        76, 79, 83, 0, 83, 79, 76, 0, 88, -1, 86, 0, 83, 79, 76, 0,
-        72, 76, 79, 0, 84, -1, 83, 0, 79, 76, 72, 0, 76, 79, 84, 0,
-        74, 78, 81, 0, 86, -1, 83, 0, 81, 78, 74, 0, 78, 81, 86, 0,
-        83, -1, 79, 78, 74, 0, 71, 0, 74, 78, 79, 83, 86, 0, 83, 0,
+        // A: длинные певучие аналоговые ноты с широким дыханием
+        79, -1, -1, -1, -1, -1, 75, -1, 74, -1, 72, -1, -1, -1, 0, 0,
+        72, -1, -1, -1, 75, -1, 79, -1, 80, -1, -1, -1, 79, -1, 75, -1,
+        77, -1, -1, -1, -1, -1, 75, -1, 72, -1, 75, -1, 77, -1, 0, 0,
+        74, -1, -1, -1, -1, -1, 0, 0, 71, -1, 74, -1, 79, -1, -1, -1,
 
-        // B: высокий октавный подъём + драма на B7 (D#=87/75)
-        88, 0, 83, 86, 88, 0, 91, -1, 88, 86, 83, 0, 79, 83, 88, 0,
-        86, 0, 83, 86, 91, -1, 86, 0, 83, 79, 83, 86, 91, 0, 86, 0,
-        84, 0, 81, 84, 88, -1, 84, 0, 81, 79, 76, 0, 79, 81, 84, 0,
-        83, -1, 87, 0, 83, 78, 75, 0, 78, 83, 87, 0, 91, 87, 83, 0,
+        // B: ночной горизонт
+        82, -1, -1, -1, 79, -1, 75, -1, 79, -1, -1, -1, 75, -1, 0, 0,
+        77, -1, -1, -1, 74, -1, 70, -1, 74, -1, -1, -1, 77, -1, 75, -1,
+        72, -1, -1, -1, 75, -1, 77, -1, 80, -1, -1, -1, 77, -1, 75, -1,
+        79, -1, -1, -1, -1, -1, 77, -1, 74, -1, -1, -1, 0, 0, 72, 74,
 
-        // C: прыгающий кибер-синт брейк
-        84, 79, 76, 79, 84, 0, 88, 0, 84, 79, 76, 79, 84, 86, 84, 0,
-        86, 81, 78, 81, 86, 0, 90, 0, 86, 81, 78, 81, 86, 88, 86, 0,
-        88, 83, 79, 83, 88, 0, 91, 0, 88, 86, 83, 79, 76, 79, 83, 0,
-        91, -1, 86, 0, 83, 86, 91, 0, 95, -1, 91, 0, 86, 83, 79, 0,
+        // C: высокий неоновый припев
+        75, -1, -1, -1, -1, -1, 79, -1, 80, -1, -1, -1, 84, -1, -1, -1,
+        82, -1, -1, -1, -1, -1, 79, -1, 77, -1, -1, -1, 74, -1, 77, -1,
+        79, -1, -1, -1, -1, -1, 75, -1, 72, -1, -1, -1, 75, -1, 79, -1,
+        82, -1, -1, -1, 84, -1, 82, -1, 79, -1, -1, -1, 0, 0, 75, -1,
 
-        // D: каскадный турбо-финал обратно в Em
-        81, 84, 88, 0, 84, 81, 76, 0, 81, 84, 88, 84, 81, 0, 76, 0,
-        84, 79, 84, 88, 84, 0, 79, 0, 84, 88, 91, 88, 84, 0, 79, 0,
-        86, 81, 86, 90, 86, 0, 81, 0, 86, 90, 93, 90, 86, 0, 81, 0,
-        83, 78, 83, 87, 83, 87, 91, 0, 87, 83, 78, 83, 87, 91, 95, 0
+        // D: мягкий спуск и возврат в главную тему
+        77, -1, -1, -1, 80, -1, 77, -1, 75, -1, 72, -1, 75, -1, 77, -1,
+        79, -1, -1, -1, 75, -1, 72, -1, 67, -1, -1, -1, 72, -1, 75, -1,
+        80, -1, -1, -1, -1, -1, 79, -1, 75, -1, -1, -1, 72, -1, -1, -1,
+        74, -1, -1, -1, -1, -1, 71, -1, 74, -1, 77, -1, 74, -1, 0, 0
       ],
-      bass: [0, 0, 12, 0, 7, 12, 0, 12, 0, 0, 12, 7, 12, 10, 7, 12]
+      // Ровный пульсирующий 8-дольный Outrun-бас (только чётные шаги!)
+      bass: [0, -99, 0, -99, 0, -99, 0, -99, 0, -99, 0, -99, 12, -99, 7, -99]
     },
 
-    // ---------- ТРЕК 2: ФАНК-БРЕЙКБИТ / КИБЕР-ГРУВ (A MINOR, 122 BPM) ----------
+    // ---------- ТРЕК 2: ТЁМНЫЙ КИБЕРПАНК / ACID-ИНДАСТРИАЛ ТЕХНО (F# PHRYGIAN, 128 BPM) ----------
     {
-      id: 'wasteland-pulse',
+      id: 'matrix-rave',
       code: 'FM-03',
-      name: 'WASTELAND PULSE',
-      bpm: 122,
-      slowBpm: 74,
-      style: 'breakbeat',
+      name: 'MATRIX RAVE',
+      bpm: 128,
+      slowBpm: 78,
+      style: 'industrial',
       chords: [
-        // A: Am - Am - F - E7
-        [57, 60, 64, 33], [57, 60, 64, 33], [53, 57, 60, 29], [52, 56, 59, 28],
-        // B: Dm - Am - G - E7
-        [62, 65, 69, 38], [57, 60, 64, 33], [55, 59, 62, 31], [52, 56, 59, 28],
-        // C: F - G - Am - C
-        [53, 57, 60, 29], [55, 59, 62, 31], [57, 60, 64, 33], [60, 64, 67, 36],
-        // D: Dm - F - E7 - E7
-        [62, 65, 69, 38], [53, 57, 60, 29], [52, 56, 59, 28], [52, 56, 59, 28]
+        // A: F#m - F#m - G - F#m (зловещая фригийская секунда F# -> G)
+        [54, 57, 61, 30], [54, 57, 61, 30], [55, 59, 62, 31], [54, 57, 61, 30],
+        // B: F#m - D - E - G (тёмный разгон)
+        [54, 57, 61, 30], [50, 54, 57, 26], [52, 55, 59, 28], [55, 59, 62, 31],
+        // C: F#m - G - Bm - C# (клубный индастриал-дроп)
+        [54, 57, 61, 30], [55, 59, 62, 31], [59, 62, 66, 35], [61, 64, 68, 37],
+        // D: D - E - G - F#m (гипнотический выход)
+        [50, 54, 57, 26], [52, 55, 59, 28], [55, 59, 62, 31], [54, 57, 61, 30]
       ],
       lead: [
-        // A: синкопированный фанк-грув в A minor с паузами и качем
-        69, 0, 0, 72, 0, 76, -1, 0, 74, 0, 72, 0, 69, 0, 67, 0,
-        69, 0, 72, 0, 76, 0, 79, -1, 76, 0, 74, 72, 69, 0, 0, 0,
-        77, 0, 0, 76, 0, 72, -1, 0, 69, 0, 72, 0, 77, 0, 76, 0,
-        76, -1, 0, 74, 72, 0, 71, 0, 68, 0, 71, 0, 76, -1, 0, 0,
+        // A: рубленые металлические FM-колокола в духе подземного клуба Матрицы
+        66, 0, 0, 66, 0, 0, 67, 0, 66, 0, 0, 73, 0, 0, 67, 0,
+        66, 0, 0, 66, 0, 69, 0, 0, 73, 0, 74, 0, 73, 0, 67, 0,
+        67, 0, 0, 67, 0, 0, 71, 0, 74, 0, 0, 71, 0, 0, 67, 0,
+        66, 0, 0, 73, 0, 0, 67, 0, 66, 0, 61, 0, 66, 0, 0, 0,
 
-        // B: ночной круиз (мелодичные скачки)
-        74, 0, 77, 0, 81, -1, 0, 77, 74, 0, 72, 0, 74, 0, 77, 0,
-        76, 0, 0, 72, 0, 69, -1, 0, 72, 0, 76, 0, 81, -1, 0, 0,
-        79, 0, 0, 76, 0, 74, -1, 0, 71, 0, 74, 0, 79, 0, 76, 0,
-        76, -1, 74, 0, 71, 0, 68, 0, 71, 74, 76, 0, 80, -1, 0, 0,
+        // B: индустриальный рифф на октаву выше
+        78, 0, 0, 73, 0, 0, 74, 0, 73, 0, 0, 69, 0, 0, 66, 0,
+        74, 0, 0, 69, 0, 0, 74, 0, 78, 0, 0, 74, 0, 69, 0, 0,
+        76, 0, 0, 71, 0, 0, 76, 0, 79, 0, 0, 76, 0, 71, 0, 0,
+        79, 0, 74, 0, 71, 0, 74, 0, 79, 0, 0, 78, 0, 74, 71, 0,
 
-        // C: фанк-брейк с острой синкопой
-        81, 0, 77, 0, 0, 77, 81, 0, 84, -1, 0, 81, 77, 0, 72, 0,
-        79, 0, 74, 0, 0, 74, 79, 0, 83, -1, 0, 79, 74, 0, 71, 0,
-        81, 0, 0, 79, 0, 76, 0, 72, 76, 0, 79, 0, 81, -1, 0, 0,
-        84, 0, 0, 81, 0, 79, -1, 0, 76, 0, 79, 0, 84, 0, 81, 0,
+        // C: главный кислотный рейв-хук
+        78, 0, 0, 79, 0, 0, 78, 0, 73, 0, 0, 78, 0, 79, 78, 0,
+        79, 0, 0, 83, 0, 0, 79, 0, 74, 0, 0, 79, 0, 83, 79, 0,
+        83, 0, 0, 78, 0, 0, 83, 0, 86, 0, 0, 83, 0, 78, 0, 0,
+        85, 0, 0, 80, 0, 0, 85, 0, 88, 0, 85, 0, 80, 0, 73, 0,
 
-        // D: тяжёлый неоновый кач и выход через E7 (G#=80)
-        86, 0, 0, 81, 0, 77, -1, 0, 81, 0, 84, 0, 81, 0, 77, 0,
-        81, 0, 0, 77, 0, 72, -1, 0, 77, 0, 81, 0, 84, 0, 81, 0,
-        80, 0, 76, 0, 0, 76, 80, 0, 83, -1, 0, 80, 76, 0, 71, 0,
-        76, 0, 80, 0, 83, 0, 80, 76, 74, 0, 71, 0, 68, 71, 76, 0
+        // D: трансовый спад обратно в F# Phrygian
+        86, 0, 0, 81, 0, 0, 78, 0, 74, 0, 0, 78, 0, 81, 0, 0,
+        88, 0, 0, 83, 0, 0, 79, 0, 76, 0, 0, 79, 0, 83, 0, 0,
+        79, 0, 0, 74, 0, 79, 0, 0, 83, 0, 0, 79, 0, 74, 0, 0,
+        78, 0, 73, 0, 74, 0, 73, 0, 67, 0, 66, 0, 73, 0, 66, 0
       ],
-      bass: [0, -99, 0, 12, -99, 10, 12, -99, 0, -99, 7, 10, 12, -99, 7, -99]
+      // Синкопированный кислотный TB-303 бас-паттерн
+      bass: [0, -99, 0, 12, -99, 0, 7, -99, 0, 12, -99, 0, 7, -99, 12, 7]
     }
   ];
 
@@ -237,6 +241,20 @@ window.GTA0.Audio = (function () {
     musicLeadBus.type = 'lowpass';
     musicLeadBus.frequency.value = 3400;
     musicLeadBus.connect(musicBus);
+
+    // Мягкая аналоговая шина для Outrun Synthwave пэдов и певучего лида (без 8-битного скрежета)
+    musicPadBus = ctx.createBiquadFilter();
+    musicPadBus.type = 'lowpass';
+    musicPadBus.frequency.value = 1480;
+    musicPadBus.Q.value = 0.85;
+    musicPadBus.connect(musicBus);
+
+    // Резонансная кислотная шина для TB-303 Acid-баса в треке MATRIX RAVE
+    musicAcidBus = ctx.createBiquadFilter();
+    musicAcidBus.type = 'lowpass';
+    musicAcidBus.frequency.value = 1180;
+    musicAcidBus.Q.value = 5.4;
+    musicAcidBus.connect(musicBus);
 
     musicSnareBus = ctx.createBiquadFilter();
     musicSnareBus.type = 'bandpass';
@@ -453,84 +471,123 @@ window.GTA0.Audio = (function () {
     const f = mtof(midi);
     const osc1 = ctx.createOscillator();
     const osc2 = ctx.createOscillator();
-    if (style === 'overdrive') {
-      // Острый пробивной C64 SID / turbo-lead
-      osc1.type = 'square';
-      osc2.type = 'sawtooth';
-      osc1.frequency.setValueAtTime(f, t);
-      osc2.frequency.setValueAtTime(f, t);
-      osc1.detune.setValueAtTime(-10, t);
-      osc2.detune.setValueAtTime(10, t);
-    } else if (style === 'breakbeat') {
-      // Бархатный фанк-чиптюн: квадрат + тёплый суб-треугольник октавой ниже
-      osc1.type = 'square';
+    const env = ctx.createGain();
+
+    if (style === 'synthwave') {
+      // Тёплый певучий аналоговый синт 80-х (мягкая атака + жирный хорус, совсем не чиптюн!)
+      osc1.type = 'sawtooth';
       osc2.type = 'triangle';
       osc1.frequency.setValueAtTime(f, t);
-      osc2.frequency.setValueAtTime(f * 0.5, t);
-      osc1.detune.setValueAtTime(4, t);
+      osc2.frequency.setValueAtTime(f, t);
+      osc1.detune.setValueAtTime(-11, t);
+      osc2.detune.setValueAtTime(11, t);
+
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.linearRampToValueAtTime(0.14, t + Math.min(0.045, dur * 0.2));
+      env.gain.exponentialRampToValueAtTime(0.095, t + dur * 0.65);
+      env.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+
+      osc1.connect(env);
+      osc2.connect(env);
+      env.connect(musicPadBus || musicBus);
+    } else if (style === 'industrial') {
+      // Тёмный металлический FM-колокол / техно-плак (острый удар + стеклянный обертон)
+      osc1.type = 'triangle';
+      osc2.type = 'sine';
+      osc1.frequency.setValueAtTime(f, t);
+      osc2.frequency.setValueAtTime(f * 2.0, t);
+      osc2.detune.setValueAtTime(6, t);
+
+      const pluckDur = Math.min(0.28, dur * 1.4);
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.linearRampToValueAtTime(0.165, t + 0.003);
+      env.gain.exponentialRampToValueAtTime(0.028, t + pluckDur * 0.45);
+      env.gain.exponentialRampToValueAtTime(0.0008, t + pluckDur);
+
+      osc1.connect(env);
+      osc2.connect(env);
+      env.connect(musicLeadBus || musicBus);
+      osc1.start(t);
+      osc2.start(t);
+      osc1.stop(t + pluckDur + 0.015);
+      osc2.stop(t + pluckDur + 0.015);
+      return;
     } else {
+      // Классический 8-битный Keygen-лид (FM-01 RAZOR NEON)
       osc1.type = 'square';
       osc2.type = 'sawtooth';
       osc1.frequency.setValueAtTime(f, t);
       osc2.frequency.setValueAtTime(f, t);
       osc1.detune.setValueAtTime(-7, t);
       osc2.detune.setValueAtTime(7, t);
+
+      env.gain.setValueAtTime(0.0001, t);
+      env.gain.linearRampToValueAtTime(0.115, t + 0.006);
+      env.gain.exponentialRampToValueAtTime(0.062, t + Math.min(0.085, dur * 0.5));
+      env.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+
+      osc1.connect(env);
+      osc2.connect(env);
+      env.connect(musicLeadBus || musicBus);
     }
-
-    const env = ctx.createGain();
-    const peak = style === 'overdrive' ? 0.11 : (style === 'breakbeat' ? 0.125 : 0.115);
-    env.gain.setValueAtTime(0.0001, t);
-    env.gain.linearRampToValueAtTime(peak, t + 0.006);
-    env.gain.exponentialRampToValueAtTime(peak * 0.54, t + Math.min(0.085, dur * 0.5));
-    env.gain.exponentialRampToValueAtTime(0.0008, t + dur);
-
-    osc1.connect(env);
-    osc2.connect(env);
-    env.connect(musicLeadBus || musicBus);
 
     osc1.start(t);
     osc2.start(t);
-    osc1.stop(t + dur + 0.015);
-    osc2.stop(t + dur + 0.015);
+    osc1.stop(t + dur + 0.02);
+    osc2.stop(t + dur + 0.02);
   }
 
-  function playKeygenArp(chord, t, stepDur, style) {
-    if (style === 'breakbeat') {
-      // Короткий фанковый аккордовый стаб (2 голоса + быстрый затухающий щелчок)
-      const dur = Math.min(0.095, stepDur * 0.72);
-      const o1 = ctx.createOscillator();
-      const o2 = ctx.createOscillator();
-      o1.type = 'square';
-      o2.type = 'sawtooth';
-      o1.frequency.setValueAtTime(mtof(chord[1]), t);
-      o2.frequency.setValueAtTime(mtof(chord[2]), t);
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(0.068, t + 0.004);
-      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-      o1.connect(g);
-      o2.connect(g);
-      g.connect(musicArpBus || musicBus);
-      o1.start(t); o2.start(t);
-      o1.stop(t + dur + 0.01); o2.stop(t + dur + 0.01);
-      return;
-    }
+  function playSynthwavePad(chord, t, dur) {
+    // Густой 3-голосный аналоговый Pad 80-х на пол-такта (через тёплую musicPadBus)
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.055, t + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.038, t + dur * 0.72);
+    g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    g.connect(musicPadBus || musicBus);
 
+    const detunes = [-9, 0, 9];
+    for (let i = 0; i < 3; i++) {
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(mtof(chord[i]), t);
+      o.detune.setValueAtTime(detunes[i], t);
+      o.connect(g);
+      o.start(t);
+      o.stop(t + dur + 0.02);
+    }
+  }
+
+  function playAcidBass(midi, t, dur, accent) {
+    // Кислотный TB-303 бас через резонансную musicAcidBus
+    const f = mtof(midi);
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = 'sawtooth';
+    if (accent) {
+      osc.frequency.setValueAtTime(f * 0.94, t);
+      osc.frequency.exponentialRampToValueAtTime(f, t + 0.028);
+    } else {
+      osc.frequency.setValueAtTime(f, t);
+    }
+    const peak = accent ? 0.24 : 0.175;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(peak, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(peak * 0.35, t + dur * 0.6);
+    g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+    osc.connect(g);
+    g.connect(musicAcidBus || musicBassBus || musicBus);
+    osc.start(t);
+    osc.stop(t + dur + 0.015);
+  }
+
+  function playKeygenArp(chord, t, stepDur) {
     const osc = ctx.createOscillator();
     osc.type = 'square';
-    if (style === 'overdrive') {
-      // Молниеносный 4-нотный восходящий SID-арпеджиатор (корень -> 3 -> 5 -> октава)
-      const sub = stepDur / 4;
-      osc.frequency.setValueAtTime(mtof(chord[0]), t);
-      osc.frequency.setValueAtTime(mtof(chord[1]), t + sub);
-      osc.frequency.setValueAtTime(mtof(chord[2]), t + sub * 2);
-      osc.frequency.setValueAtTime(mtof(chord[0] + 12), t + sub * 3);
-    } else {
-      const subStep = stepDur / 3;
-      osc.frequency.setValueAtTime(mtof(chord[0]), t);
-      osc.frequency.setValueAtTime(mtof(chord[1]), t + subStep);
-      osc.frequency.setValueAtTime(mtof(chord[2]), t + subStep * 2);
-    }
+    const subStep = stepDur / 3;
+    osc.frequency.setValueAtTime(mtof(chord[0]), t);
+    osc.frequency.setValueAtTime(mtof(chord[1]), t + subStep);
+    osc.frequency.setValueAtTime(mtof(chord[2]), t + subStep * 2);
 
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
@@ -543,52 +600,57 @@ window.GTA0.Audio = (function () {
     osc.stop(t + stepDur + 0.01);
   }
 
-  function playDrumKick(t, accent) {
+  function playDrumKick(t, accent, punchy) {
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(accent ? 160 : 145, t);
-    osc.frequency.exponentialRampToValueAtTime(42, t + 0.095);
-    g.gain.setValueAtTime(accent ? 0.34 : 0.27, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.125);
+    osc.type = punchy ? 'sine' : 'triangle';
+    osc.frequency.setValueAtTime(punchy ? 185 : (accent ? 160 : 145), t);
+    osc.frequency.exponentialRampToValueAtTime(punchy ? 36 : 42, t + (punchy ? 0.11 : 0.095));
+    g.gain.setValueAtTime(punchy ? 0.40 : (accent ? 0.34 : 0.27), t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + (punchy ? 0.16 : 0.125));
     osc.connect(g);
     g.connect(musicBus);
     osc.start(t);
-    osc.stop(t + 0.13);
+    osc.stop(t + (punchy ? 0.17 : 0.13));
   }
 
-  function playDrumSnare(t, accent) {
+  function playDrumSnare(t, accent, gated) {
     const src = ctx.createBufferSource();
     src.buffer = noiseBuf;
     const g = ctx.createGain();
-    g.gain.setValueAtTime(accent ? 0.24 : 0.14, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + (accent ? 0.11 : 0.065));
+    const dur = gated ? 0.22 : (accent ? 0.11 : 0.065);
+    g.gain.setValueAtTime(gated ? 0.28 : (accent ? 0.24 : 0.14), t);
+    if (gated) {
+      // Фирменный 80s Gated Reverb Snare (держит хвост, потом резко обрывается)
+      g.gain.linearRampToValueAtTime(0.18, t + 0.14);
+    }
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     src.connect(g);
     g.connect(musicSnareBus || musicBus);
     src.start(t);
-    src.stop(t + 0.12);
+    src.stop(t + dur + 0.015);
 
     if (accent) {
       const osc = ctx.createOscillator();
       const og = ctx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(215, t);
-      osc.frequency.exponentialRampToValueAtTime(105, t + 0.05);
-      og.gain.setValueAtTime(0.14, t);
-      og.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+      osc.frequency.setValueAtTime(gated ? 195 : 215, t);
+      osc.frequency.exponentialRampToValueAtTime(gated ? 88 : 105, t + 0.06);
+      og.gain.setValueAtTime(gated ? 0.18 : 0.14, t);
+      og.gain.exponentialRampToValueAtTime(0.001, t + 0.075);
       osc.connect(og);
       og.connect(musicBus);
       osc.start(t);
-      osc.stop(t + 0.07);
+      osc.stop(t + 0.085);
     }
   }
 
-  function playDrumHat(t, open) {
+  function playDrumHat(t, open, loud) {
     const src = ctx.createBufferSource();
     src.buffer = noiseBuf;
-    const dur = open ? 0.085 : 0.028;
+    const dur = open ? (loud ? 0.115 : 0.085) : 0.028;
     const g = ctx.createGain();
-    g.gain.setValueAtTime(open ? 0.085 : 0.055, t);
+    g.gain.setValueAtTime(open ? (loud ? 0.125 : 0.085) : 0.055, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     src.connect(g);
     g.connect(musicHatBus || musicBus);
@@ -604,87 +666,109 @@ window.GTA0.Audio = (function () {
     const isFillBar = (bar % 4 === 3);
     const style = trk.style;
 
-    // 1) Бас со своим рисунком под каждый трек
+    // 1) Бас: свой характерный инструмент под каждый жанр
     const bassOff = trk.bass[beatStep];
     if (bassOff !== -99) {
-      const bassType = style === 'breakbeat' ? 'square' : 'sawtooth';
-      const bassDur = style === 'breakbeat' ? stepDur * 0.78 : stepDur * 0.92;
-      playTrackerNote(chord[3] + bassOff, t, bassDur, bassType, style === 'breakbeat' ? 0.175 : 0.19, 0, musicBassBus);
+      if (style === 'synthwave') {
+        // Жирный 8-дольный аналоговый Outrun-бас (пила + суб-треугольник)
+        playTrackerNote(chord[3] + bassOff, t, stepDur * 1.75, 'sawtooth', 0.18, -5, musicBassBus);
+        playTrackerNote(chord[3] + bassOff, t, stepDur * 1.65, 'triangle', 0.15, 0, musicBassBus);
+      } else if (style === 'industrial') {
+        // Кислотный TB-303 Acid-бас с акцентами на октавах!
+        playAcidBass(chord[3] + bassOff, t, stepDur * 0.92, bassOff >= 12 || beatStep === 0);
+      } else {
+        playTrackerNote(chord[3] + bassOff, t, stepDur * 0.92, 'sawtooth', 0.19, 0, musicBassBus);
+      }
     }
 
-    // 2) Арпеджио или фанк-стабы
-    if (style === 'breakbeat') {
-      if (beatStep === 2 || beatStep === 6 || beatStep === 11 || beatStep === 14) {
-        playKeygenArp(chord, t, stepDur, style);
+    // 2) Гармоническая подложка: у Keygen — арпеджио, у Synthwave — тёплый пэд 80-х, у Industrial — тёмный дрон-стаб
+    if (style === 'synthwave') {
+      if (beatStep === 0 || beatStep === 8) {
+        playSynthwavePad(chord, t, stepDur * 7.8);
       }
-    } else if (style === 'overdrive') {
-      if (beatStep % 2 === 0 || (bar >= 8 && beatStep % 4 === 1)) {
-        playKeygenArp(chord, t, stepDur * 1.02, style);
+    } else if (style === 'industrial') {
+      // Тёмный низкий индастриал-стаб только в начале каждого 2-го такта
+      if (beatStep === 0 && bar % 2 === 0) {
+        playTrackerNote(chord[0] - 12, t, stepDur * 5.5, 'sawtooth', 0.085, -8, musicPadBus);
+        playTrackerNote(chord[2] - 12, t, stepDur * 5.5, 'sawtooth', 0.065, 8, musicPadBus);
       }
     } else {
       const denseArp = (bar >= 4 && bar < 8) || bar >= 12;
       if (beatStep % 2 === 0 || (denseArp && beatStep % 4 === 3)) {
-        playKeygenArp(chord, t, stepDur * 1.05, style);
+        playKeygenArp(chord, t, stepDur * 1.05);
       }
     }
 
-    // 3) Ведущая мелодия (с просчётом длительности удерживаемых нот `-1`)
+    // 3) Ведущая мелодия (с просчётом длительности удерживаемых нот `-1`, до 10 шагов!)
     const seq = trk.lead;
     const note = seq[step % seq.length];
     if (note > 0) {
       let hold = 1;
-      for (let k = 1; k < 6; k++) {
+      for (let k = 1; k < 10; k++) {
         if (seq[(step + k) % seq.length] === -1) hold++;
         else break;
       }
-      playKeygenLead(note, t, stepDur * (hold * 0.95 + 0.32), style);
+      playKeygenLead(note, t, stepDur * (hold * 0.95 + 0.35), style);
     }
 
-    // 4) Уникальная ритмика ударных для каждого трека!
-    if (isFillBar && beatStep >= 12) {
-      if (beatStep === 12 || beatStep === 14) playDrumSnare(t, true);
-      else if (beatStep === 13) playTrackerNote(48, t, 0.09, 'triangle', 0.22, 0, musicBassBus);
-      else if (beatStep === 15) { playDrumSnare(t, true); playDrumKick(t, true); }
-    } else if (style === 'overdrive') {
-      // Скоростной галоп-бит (CORE / SID): двойные кики + 16-е хэты
-      if (beatStep === 0 || beatStep === 3 || beatStep === 6 || beatStep === 8 || beatStep === 11) {
-        playDrumKick(t, beatStep === 0 || beatStep === 8);
+    // 4) Совершенно разная ритмика ударных под каждый из 3 жанров!
+    if (style === 'synthwave') {
+      // 80-s Outrun / LinnDrum: тяжёлая бочка + огромный Gated-Reverb Snare на 4 и 12
+      if (isFillBar && beatStep >= 12) {
+        if (beatStep === 12) playDrumSnare(t, true, true);
+        else if (beatStep === 13) playTrackerNote(55, t, 0.14, 'triangle', 0.22, 0, musicBassBus);
+        else if (beatStep === 14) playTrackerNote(50, t, 0.14, 'triangle', 0.24, 0, musicBassBus);
+        else if (beatStep === 15) playTrackerNote(45, t, 0.16, 'triangle', 0.26, 0, musicBassBus);
+      } else {
+        if (beatStep === 0 || beatStep === 8 || (beatStep === 10 && bar % 2 === 1)) {
+          playDrumKick(t, true, true);
+        }
+        if (beatStep === 4 || beatStep === 12) {
+          playDrumSnare(t, true, true);
+        }
+        if (beatStep % 2 === 0) {
+          playDrumHat(t, beatStep === 14, false);
+        }
       }
-      if (beatStep === 4 || beatStep === 12) {
-        playDrumSnare(t, true);
-      } else if ((beatStep === 14 || beatStep === 15) && bar % 2 === 1) {
-        playDrumSnare(t, false);
-      }
-      playDrumHat(t, beatStep === 2 || beatStep === 6 || beatStep === 10 || beatStep === 14);
-    } else if (style === 'breakbeat') {
-      // Ломаный электро-брейкбит с призрачными ghost-снейрами!
-      if (beatStep === 0 || beatStep === 3 || beatStep === 10 || (beatStep === 14 && bar % 2 === 1)) {
-        playDrumKick(t, beatStep === 0 || beatStep === 10);
-      }
-      if (beatStep === 4 || beatStep === 12) {
-        playDrumSnare(t, true);
-      } else if (beatStep === 7 || beatStep === 9 || beatStep === 15) {
-        playDrumSnare(t, false);
-      }
-      if (beatStep === 2 || beatStep === 6 || beatStep === 14) {
-        playDrumHat(t, true);
-      } else if (beatStep % 2 === 0) {
-        playDrumHat(t, false);
+    } else if (style === 'industrial') {
+      // Жёсткое клубное техно 4-на-пол (туц-тсс-туц-тсс!)
+      if (isFillBar && beatStep >= 13) {
+        if (beatStep === 13 || beatStep === 14) playDrumKick(t, true, true);
+        else if (beatStep === 15) { playDrumKick(t, true, true); playDrumSnare(t, true, false); }
+      } else {
+        if (beatStep === 0 || beatStep === 4 || beatStep === 8 || beatStep === 12) {
+          playDrumKick(t, true, true);
+        }
+        if (beatStep === 4 || beatStep === 12) {
+          playDrumSnare(t, true, false);
+        }
+        // Фирменный громкий открытый техно-хэт на слабую долю (2, 6, 10, 14)!
+        if (beatStep === 2 || beatStep === 6 || beatStep === 10 || beatStep === 14) {
+          playDrumHat(t, true, true);
+        } else if (beatStep % 4 === 3) {
+          playDrumHat(t, false, false);
+        }
       }
     } else {
-      // Классический 4/4 Amiga / Cracktro драйв
-      if (beatStep === 0 || beatStep === 6 || beatStep === 8 || beatStep === 10) {
-        playDrumKick(t, beatStep === 0 || beatStep === 8);
-      }
-      if (beatStep === 4 || beatStep === 12) {
-        playDrumSnare(t, true);
-      } else if (beatStep === 15 && bar % 2 === 1) {
-        playDrumSnare(t, false);
-      }
-      if (beatStep % 2 === 0) {
-        playDrumHat(t, beatStep === 2 || beatStep === 10);
-      } else if (beatStep === 7 || beatStep === 15) {
-        playDrumHat(t, false);
+      // Классический 4/4 Amiga / Cracktro драйв (FM-01 RAZOR NEON — без изменений)
+      if (isFillBar && beatStep >= 12) {
+        if (beatStep === 12 || beatStep === 14) playDrumSnare(t, true, false);
+        else if (beatStep === 13) playTrackerNote(48, t, 0.09, 'triangle', 0.22, 0, musicBassBus);
+        else if (beatStep === 15) { playDrumSnare(t, true, false); playDrumKick(t, true, false); }
+      } else {
+        if (beatStep === 0 || beatStep === 6 || beatStep === 8 || beatStep === 10) {
+          playDrumKick(t, beatStep === 0 || beatStep === 8, false);
+        }
+        if (beatStep === 4 || beatStep === 12) {
+          playDrumSnare(t, true, false);
+        } else if (beatStep === 15 && bar % 2 === 1) {
+          playDrumSnare(t, false, false);
+        }
+        if (beatStep % 2 === 0) {
+          playDrumHat(t, beatStep === 2 || beatStep === 10, false);
+        } else if (beatStep === 7 || beatStep === 15) {
+          playDrumHat(t, false, false);
+        }
       }
     }
   }
