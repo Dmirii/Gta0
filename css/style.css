@@ -1778,8 +1778,8 @@ kbd {
 /* Компактное лицо водителя CABIN CAM для телефона (правый верхний угол поля) */
 #mobile-cabin-wrap {
   position: absolute;
-  top: 44px;
-  right: 10px;
+  top: 6px;
+  right: 6px;
   z-index: 13;
   width: 56px;
   height: 56px;
@@ -2090,8 +2090,10 @@ kbd {
   #stage-hud-top {
     top: 6px;
     left: 6px;
-    right: 6px;
-    gap: 5px;
+    right: 70px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 
   #hud-sector {
@@ -2100,7 +2102,25 @@ kbd {
 
   .hud-pill {
     font-size: 10px;
-    padding: 4px 7px;
+    padding: 3px 7px;
+  }
+
+  .hud-pill.mission-pill {
+    flex: 0 1 auto;
+    max-width: 100%;
+  }
+
+  .hud-pill.trace-pill {
+    margin-left: 0;
+  }
+
+  #mobile-radar-float {
+    top: 60px;
+    left: 6px;
+  }
+
+  .next-sector-btn {
+    top: 66px;
   }
 
   #touch-controls {
@@ -2167,9 +2187,25 @@ kbd {
   .joy-hint { display: none; }
   .t-btn { width: 56px; height: 56px; }
   .t-btn-fire { width: 64px; height: 64px; }
-  #mobile-cabin-wrap { width: 46px; height: 46px; top: 38px; right: 8px; }
-  #mobile-radar-float { top: 38px; left: 8px; }
-  .next-sector-btn { top: 38px; padding: 5px 10px; font-size: 10px; }
+  #stage-hud-top {
+    right: 58px;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 5px;
+  }
+  .hud-pill.trace-pill {
+    order: -1;
+    margin-left: 0;
+    flex-shrink: 0;
+  }
+  .hud-pill.mission-pill {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  #mobile-cabin-wrap { width: 46px; height: 46px; top: 6px; right: 6px; }
+  #mobile-radar-float { top: 34px; left: 6px; }
+  .next-sector-btn { top: 36px; padding: 5px 10px; font-size: 10px; }
   .terminal-modal p { display: none; }
   .credits-modal .author-bio,
   .credits-modal .credits-intro { display: block; }
