@@ -23,7 +23,7 @@ jobs:
   build-android:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -124,6 +124,39 @@ jobs:
           name: vault-runner-v${{ steps.meta.outputs.version_name }}-debug-test-apk
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Publish direct APK to GitHub Releases (1-tap download on phone)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VN: ${{ steps.meta.outputs.version_name }}
+          VC: ${{ steps.meta.outputs.version_code }}
+          SIGNED: ${{ steps.meta.outputs.signed }}
+        run: |
+          if [ "$SIGNED" = "true" ]; then
+            TAG="v${VN}"
+            cp android/app/build/outputs/apk/release/*.apk "vault-runner-v${VN}-release.apk"
+            cp android/app/build/outputs/bundle/release/*.aab "vault-runner-v${VN}-release.aab"
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              gh release upload "$TAG" "vault-runner-v${VN}-release.apk" "vault-runner-v${VN}-release.aab" --clobber
+            else
+              gh release create "$TAG" "vault-runner-v${VN}-release.apk" "vault-runner-v${VN}-release.aab" \
+                --target "${{ github.sha }}" \
+                --title "VAULT RUNNER v${VN} (RuStore Release)" \
+                --notes "Подписанная релизная сборка v${VN} (versionCode ${VC}) для загрузки в RuStore."
+            fi
+          else
+            TAG="test-apk"
+            cp android/app/build/outputs/apk/debug/*.apk "vault-runner-test.apk"
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              gh release upload "$TAG" "vault-runner-test.apk" --clobber
+            else
+              gh release create "$TAG" "vault-runner-test.apk" \
+                --target "${{ github.sha }}" \
+                --prerelease \
+                --title "VAULT RUNNER (Тестовый APK для телефона)" \
+                --notes "Тестовая debug-сборка v${VN} для установки на Android и съёмки скриншотов. Скачивайте файл vault-runner-test.apk напрямую."
+            fi
+          fi
 
       - name: Clean up temporary keystore
         if: always()
