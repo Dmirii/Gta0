@@ -24,7 +24,7 @@
       trim: '#e4c94b',
       stripe: '#2e6f9e',
       accent: '#ffb84d',
-      img: 'assets/cars/car-0.jpg?v=13',
+      img: 'assets/cars/car-0.jpg?v=14',
       cost: 0
     },
     {
@@ -43,7 +43,7 @@
       trim: '#ffd05c',
       stripe: '#26619c',
       accent: '#ff9e42',
-      img: 'assets/cars/car-1.jpg?v=13',
+      img: 'assets/cars/car-1.jpg?v=14',
       cost: 90
     },
     {
@@ -62,7 +62,7 @@
       trim: '#f5c842',
       stripe: '#1b3854',
       accent: '#38e8ff',
-      img: 'assets/cars/car-2.jpg?v=13',
+      img: 'assets/cars/car-2.jpg?v=14',
       cost: 190
     },
     {
@@ -81,11 +81,11 @@
       trim: '#ffb03b',
       stripe: '#2f2924',
       accent: '#ff7034',
-      img: 'assets/cars/car-3.jpg?v=13',
+      img: 'assets/cars/car-3.jpg?v=14',
       cost: 340
     },
     {
-      name: 'MATRIX PHANTOM',
+      name: 'CYBER PHANTOM',
       rank: 'КЛАСС V',
       style: 'phantom',
       len: 44, wid: 22,
@@ -100,7 +100,7 @@
       trim: '#39ff88',
       stripe: '#0c3022',
       accent: '#39ff88',
-      img: 'assets/cars/car-4.jpg?v=13',
+      img: 'assets/cars/car-4.jpg?v=14',
       cost: 540
     }
   ];
@@ -158,7 +158,7 @@
     ammo:   { color: '#ff5e5e', label: 'Патроны +28',  short: 'A' },
     medkit: { color: '#55e87b', label: 'Аптечка +35 HP', short: '+' },
     caps:   { color: '#ffb84d', label: 'Крышки +25 ₵', short: '₵' },
-    focus:  { color: '#38e8ff', label: 'Ядро Матрицы', short: 'M' },
+    focus:  { color: '#38e8ff', label: 'Ядро Фокуса',  short: 'F' },
     radaway:{ color: '#d0ff5e', label: 'Антирад',      short: 'R' },
     module: { color: '#c77dff', label: 'Модуль +35 ₵', short: '★' }
   };
@@ -332,6 +332,13 @@
     while (a < -Math.PI) a += Math.PI * 2;
     return a;
   }
+  function haptic(pattern) {
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        navigator.vibrate(pattern);
+      }
+    } catch { /* ignore */ }
+  }
 
   function loadPrefs() {
     try {
@@ -490,7 +497,7 @@
   if (typeof Image !== 'undefined') {
     driverSheet = new Image();
     driverSheet.onload = () => { driverSheetReady = true; };
-    driverSheet.src = 'assets/driver-sheet.jpg?v=13';
+    driverSheet.src = 'assets/driver-sheet.jpg?v=14';
   }
 
   const DRIVER_QUOTES = {
@@ -548,9 +555,9 @@
     neo: [
       'Я вижу код за этим бетоном.',
       'Пули слишком медленные.',
-      'Ложки нет. Есть только газ.',
+      'Время встало. Есть только газ.',
       'Реальность трещит… я в потоке.',
-      'Очки поймали сигнал Матрицы.'
+      'Очки поймали скрытый код Системы.'
     ],
     hack: [
       'Взламываю узел… код пошёл в линзы.',
@@ -946,7 +953,7 @@
     } else if (neoAwake) {
       nextFrame = DRV.NEO;
       nextPersona = 'neo';
-      nextMood = isHacking ? 'ВЗЛОМ УЗЛА' : (matrixActive ? 'МАТРИЦА' : 'СИГНАЛ');
+      nextMood = isHacking ? 'ВЗЛОМ УЗЛА' : (matrixActive ? 'ПЕРЕГРУЗКА' : 'СИГНАЛ');
       hardCut = driverCam.curFrame !== DRV.NEO;
     } else if (driverCam.hurtTimer > 0) {
       nextFrame = DRV.HURT;
@@ -1059,7 +1066,7 @@
       driverCam.lastUiPersona = driverCam.persona;
       const pCls = `persona-${driverCam.persona}`;
       const pLabel = driverCam.persona === 'neo'
-        ? 'НЕО // КОД'
+        ? 'КОД // ZERO'
         : driverCam.persona === 'vault'
           ? 'УБЕЖИЩЕ-0'
           : driverCam.persona === 'dead'
@@ -1583,7 +1590,7 @@
       const goal = 16 + tier * 3;
       mission = {
         type: 'survive',
-        title: 'Уход от Следа Матрицы',
+        title: 'Уход от Следа Системы',
         desc: `Выживите под преследованием Системы в течение ${goal} сек.`,
         progress: 0,
         goal,
@@ -1860,6 +1867,7 @@
 
   function explodeVehicle(x, y, isAgent, isBig) {
     AudioFX.explode(!!isBig, !!isAgent);
+    haptic(isBig ? [35, 25, 45] : 22);
     shakeAmt = Math.min(14, shakeAmt + (isBig ? 10 : 8));
     driverOnExplosion(x, y, isAgent);
     addLightFlash(x, y, 280, isAgent ? '#39ff88' : '#ff9436', 0.42);
@@ -1936,9 +1944,9 @@
     ];
     const matrixHints = [
       'Ур.2: Изумрудные решётки охлаждения, больше Фокуса.',
-      'Ур.3: Светящийся реактор Матрицы + неон под днищем.',
-      'Ур.4: Полный нейроконтур — быстрая регенерация bullet-time.',
-      'Ядро Матрицы работает на пиковой синхронизации.'
+      'Ур.3: Светящийся реактор Перегрузки + неон под днищем.',
+      'Ур.4: Полный нейроконтур — быстрая регенерация слоу-мо.',
+      'Ядро Перегрузки работает на пиковой синхронизации.'
     ];
 
     return [
@@ -1954,7 +1962,7 @@
         cost: nextClass ? nextClass.cost : 0,
         desc: nextClass
           ? `${nextClass.rank}: ${nextClass.maxHp} HP, ${nextClass.maxSpeed} скр., новый корпус и фото.`
-          : 'Открыт финальный класс V — MATRIX PHANTOM!',
+          : 'Открыт финальный класс V — CYBER PHANTOM!',
         apply() {
           player.carClass++;
           const sp = getCarSpec();
@@ -2017,7 +2025,7 @@
       },
       {
         id: 'matrix',
-        name: 'Ядро Матрицы',
+        name: 'Ядро Перегрузки',
         cur: player.matrixLvl,
         max: 4,
         lvl: `${player.matrixLvl}/4`,
@@ -2076,7 +2084,7 @@
       if (player.engineLvl === 2) pills.push('<span class="mod-pill">ВЫХЛОП</span>');
       else if (player.engineLvl === 3) pills.push('<span class="mod-pill">V8 БЛОУЭР</span>');
       else if (player.engineLvl >= 4) pills.push('<span class="mod-pill cyan">НИТРО V8</span>');
-      if (player.matrixLvl >= 3) pills.push('<span class="mod-pill">ЯДРО MTX</span>');
+      if (player.matrixLvl >= 3) pills.push('<span class="mod-pill">ЯДРО CODE</span>');
       if (pills.length === 0) {
         pills.push('<span class="mod-pill muted">БАЗОВАЯ КОМПЛЕКТАЦИЯ</span>');
       }
@@ -2708,6 +2716,7 @@
           const bossFactor = isBoss ? 1.55 : (isHeavy ? 1.25 : 1.0);
           damagePlayer(Math.max(4, closing * spec.ramSelfMult * bossFactor), false);
           AudioFX.crash(clamp(closing / 240, 0.55, 1.45));
+          haptic(18);
           spawnBurst((player.x + e.x) / 2, (player.y + e.y) / 2, '#ffb84d', 8, 150);
           if (e.hp <= 0) destroyEnemy(i);
         } else if (closing > 45 && e.ramCd <= 0) {
@@ -4566,7 +4575,7 @@
     if (el.uiSignalBadge) {
       el.uiSignalBadge.classList.remove('warn', 'matrix');
       if (matrixActive) {
-        el.uiSignalBadge.textContent = 'MATRIX SYNC';
+        el.uiSignalBadge.textContent = 'CODE SYNC';
         el.uiSignalBadge.classList.add('matrix');
       } else if (matrixBreach > 0.32) {
         el.uiSignalBadge.textContent = 'SYS BREACH';
@@ -4662,7 +4671,7 @@
       if (el.modalLogoWrap) el.modalLogoWrap.classList.remove('hidden');
       el.modalTitle.classList.add('hidden');
       el.modalTitle.textContent = 'VAULT RUNNER';
-      el.modalSub.innerHTML = 'Постапокалиптический мегаполис под скрытым кодом Системы. Гоняй по руинам, собирай крышки и лут, улучшай машину в Бункере-Депо и прорывай время в режиме <strong>Матрицы</strong>.';
+      el.modalSub.innerHTML = 'Постапокалиптический мегаполис под скрытым кодом Системы. Гоняй по руинам, собирай крышки и лут, улучшай машину в Бункере-Депо и замедляй время в режиме <strong>Цифрового Фокуса</strong>.';
       el.btnPlay.textContent = '▶ ВЪЕХАТЬ В ПУСТОШЬ';
       el.btnRestartModal.classList.add('hidden');
     } else if (state === 'paused') {
@@ -4986,10 +4995,50 @@
     });
   }
 
+  function handleAppBackground() {
+    saveProgress();
+    for (const k in keys) keys[k] = false;
+    mouse.down = false;
+    mouse.rightDown = false;
+    touchFire = false;
+    if (gameState === 'playing') {
+      setOverlayState('paused');
+    }
+    if (AudioFX.suspend) AudioFX.suspend();
+  }
+
+  function handleAppForeground() {
+    if (AudioFX.resume) AudioFX.resume();
+  }
+
   window.addEventListener('beforeunload', () => saveProgress());
+  window.addEventListener('pagehide', handleAppBackground);
+  window.addEventListener('pageshow', handleAppForeground);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') saveProgress();
+    if (document.visibilityState === 'hidden') handleAppBackground();
+    else handleAppForeground();
   });
+
+  // Мост для Android-оболочки (системная кнопка «Назад» и сворачивание приложения)
+  window.VAULT_RUNNER_NATIVE = {
+    onBackPressed() {
+      if (isCreditsOpen()) {
+        closeCredits();
+        return true;
+      }
+      if (el.sidebar && el.sidebar.classList.contains('open')) {
+        closeMobileMenu();
+        return true;
+      }
+      if (gameState === 'playing') {
+        setOverlayState('paused');
+        return true;
+      }
+      return false;
+    },
+    onAppPause: handleAppBackground,
+    onAppResume: handleAppForeground
+  };
 
   el.btnDepotService.addEventListener('click', () => {
     AudioFX.unlock();

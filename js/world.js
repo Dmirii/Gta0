@@ -99,11 +99,11 @@ window.GTA0.World = (function () {
       { x: 11.0 * TILE, y: 4.5 * TILE,  radius: 96  }
     ];
 
-    // 4 Матричных терминала (узлы взлома)
+    // 4 цифровых терминала (узлы взлома)
     const terminals = [
       { id: 1, name: 'УЗЕЛ АЛЬФА', x: 8.5 * TILE,  y: 6.5 * TILE  },
-      { id: 2, name: 'УЗЕЛ НЕО',   x: 16.5 * TILE, y: 8.5 * TILE  },
-      { id: 3, name: 'УЗЕЛ ЗИОН',  x: 10.5 * TILE, y: 10.5 * TILE },
+      { id: 2, name: 'УЗЕЛ ZERO',  x: 16.5 * TILE, y: 8.5 * TILE  },
+      { id: 3, name: 'УЗЕЛ СИГМА', x: 10.5 * TILE, y: 10.5 * TILE },
       { id: 4, name: 'УЗЕЛ ОМЕГА', x: 9.0 * TILE,  y: 14.5 * TILE }
     ];
 
@@ -112,7 +112,7 @@ window.GTA0.World = (function () {
     const buildings = [];
     const bldgGrid = new Map(); // cellIdx -> building
     const NEON_SIGNS = [
-      'NEXUS', 'ZION//0', 'VAULT', 'NUKA', '0xFF42', 'MATRIX',
+      'NEXUS', 'ZERO//0', 'VAULT', 'PULSE', '0xFF42', 'V-CODE',
       'CYBER', 'HOTEL', 'SYS.ERR', 'RAD-7', 'APEX', 'ARCADE'
     ];
 
@@ -402,7 +402,7 @@ window.GTA0.World = (function () {
         const nx = x / WIDTH;
         const ny = y / HEIGHT;
         if (nx > 0.56 && ny < 0.52) return 'СЕКТОР 02 · НЕОНОВЫЙ ДАУНТАУН';
-        if (nx > 0.56 && ny >= 0.52) return 'СЕКТОР 04 · УЗЕЛ МАТРИЦЫ';
+        if (nx > 0.56 && ny >= 0.52) return 'СЕКТОР 04 · УЗЕЛ КОДА';
         if (nx <= 0.44 && ny < 0.52) return 'СЕКТОР 01 · СТАРАЯ ПРОМЗОНА';
         if (nx <= 0.44 && ny >= 0.52) return 'СЕКТОР 03 · РЖАВЫЕ РУИНЫ';
         return 'СЕКТОР 05 · ГЛАВНЫЙ ПРОСПЕКТ';

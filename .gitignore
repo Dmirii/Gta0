@@ -1,0 +1,17 @@
+# Android build & synced web assets (auto-copied from repo root by Gradle)
+android/app/src/main/assets/www/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+
+# Never commit release signing keys!
+*.keystore
+*.jks
+*.p12
+*.pepk
+
+# OS / IDE clutter
+.DS_Store
+.idea/
+*.iml

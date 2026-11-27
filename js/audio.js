@@ -663,6 +663,23 @@ window.GTA0.Audio = (function () {
       updateMusicBusLevel();
     },
 
+    suspend() {
+      updateEngine({ active: false });
+      if (ctx && ctx.state === 'running' && typeof ctx.suspend === 'function') {
+        try { ctx.suspend(); } catch { /* ignore */ }
+      }
+    },
+
+    resume() {
+      if (ctx && ctx.state === 'suspended' && typeof ctx.resume === 'function') {
+        try {
+          ctx.resume();
+          nextStepTime = ctx.currentTime + 0.04;
+        } catch { /* ignore */ }
+      }
+      updateMusicBusLevel();
+    },
+
     updateEngine,
 
     // Многоуровневая стрельба (учитывает уровень турели 1..4!)
