@@ -24,7 +24,7 @@
       trim: '#e4c94b',
       stripe: '#2e6f9e',
       accent: '#ffb84d',
-      img: 'assets/cars/car-0.jpg?v=14',
+      img: 'assets/cars/car-0.jpg?v=15',
       cost: 0
     },
     {
@@ -43,7 +43,7 @@
       trim: '#ffd05c',
       stripe: '#26619c',
       accent: '#ff9e42',
-      img: 'assets/cars/car-1.jpg?v=14',
+      img: 'assets/cars/car-1.jpg?v=15',
       cost: 90
     },
     {
@@ -62,7 +62,7 @@
       trim: '#f5c842',
       stripe: '#1b3854',
       accent: '#38e8ff',
-      img: 'assets/cars/car-2.jpg?v=14',
+      img: 'assets/cars/car-2.jpg?v=15',
       cost: 190
     },
     {
@@ -81,7 +81,7 @@
       trim: '#ffb03b',
       stripe: '#2f2924',
       accent: '#ff7034',
-      img: 'assets/cars/car-3.jpg?v=14',
+      img: 'assets/cars/car-3.jpg?v=15',
       cost: 340
     },
     {
@@ -100,7 +100,7 @@
       trim: '#39ff88',
       stripe: '#0c3022',
       accent: '#39ff88',
-      img: 'assets/cars/car-4.jpg?v=14',
+      img: 'assets/cars/car-4.jpg?v=15',
       cost: 540
     }
   ];
@@ -156,7 +156,7 @@
 
   const LOOT_DEFS = {
     ammo:   { color: '#ff5e5e', label: 'Патроны +28',  short: 'A' },
-    medkit: { color: '#55e87b', label: 'Аптечка +35 HP', short: '+' },
+    medkit: { color: '#55e87b', label: 'Аптечка +24 HP', short: '+' },
     caps:   { color: '#ffb84d', label: 'Крышки +25 ₵', short: '₵' },
     focus:  { color: '#38e8ff', label: 'Ядро Фокуса',  short: 'F' },
     radaway:{ color: '#d0ff5e', label: 'Антирад',      short: 'R' },
@@ -165,9 +165,15 @@
 
   const LOOT_POOL = ['ammo', 'ammo', 'caps', 'caps', 'medkit', 'focus', 'radaway', 'module'];
   const MATRIX_CHARS = '0123456789ABCDEFアイウエオカキクケコサシスセソタチツテト';
+  const SECTORS = WorldMod.SECTORS || [{ index: 0, id: 'downtown', code: '01', name: 'НОЧНОЙ ДАУНТАУН', shortName: '01 ДАУНТАУН', weather: 'rain', capsMult: 1.0, threatBonus: 0, ambient: '#26303d' }];
 
   // ==================== СОСТОЯНИЕ ИГРЫ ====================
-  const world = WorldMod.createWorld();
+  let currentSector = 0;
+  let maxSector = 0;
+  let sectorContracts = 0;
+  let sectorReadyNext = false;
+  let runSeed = Math.floor(Math.random() * 10000);
+  let world = WorldMod.createWorld(currentSector, runSeed);
 
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
@@ -246,6 +252,14 @@
     btnCloseMenu: document.getElementById('btn-close-menu'),
     btnMobileRadar: document.getElementById('btn-mobile-radar'),
     mobileRadarFloat: document.getElementById('mobile-radar-float'),
+    mobileCabinWrap: document.getElementById('mobile-cabin-wrap'),
+    mobileDriverCam: document.getElementById('mobile-driver-cam'),
+    mobileCabinDot: document.getElementById('mobile-cabin-dot'),
+    btnNextSector: document.getElementById('btn-next-sector'),
+    modalRunConfig: document.getElementById('modal-run-config'),
+    sectorPicker: document.getElementById('sector-picker'),
+    btnDiffStd: document.getElementById('btn-diff-std'),
+    btnDiffHard: document.getElementById('btn-diff-hard'),
     matrixVignette: document.getElementById('matrix-vignette'),
 
     hudSector: document.getElementById('hud-sector'),
@@ -299,6 +313,8 @@
 
     optSound: document.getElementById('opt-sound'),
     optMusic: document.getElementById('opt-music'),
+    optHardcore: document.getElementById('opt-hardcore'),
+    optMobileCam: document.getElementById('opt-mobile-cam'),
     optCrt: document.getElementById('opt-crt'),
     optNoir: document.getElementById('opt-noir'),
     optRain: document.getElementById('opt-rain'),
@@ -346,6 +362,8 @@
       return {
         sound: saved.sound !== false,
         music: saved.music !== false,
+        hardcore: !!saved.hardcore,
+        mobileCam: saved.mobileCam !== false,
         crt: saved.crt !== false,
         noir: saved.noir !== false,
         rain: saved.rain !== false,
@@ -353,7 +371,7 @@
         zoom: clamp(Number(saved.zoom || 1), 0.7, 1.4)
       };
     } catch {
-      return { sound: true, music: true, crt: true, noir: true, rain: true, sidebarLeft: false, zoom: 1.0 };
+      return { sound: true, music: true, hardcore: false, mobileCam: true, crt: true, noir: true, rain: true, sidebarLeft: false, zoom: 1.0 };
     }
   }
 
@@ -371,6 +389,8 @@
       missileLvl: 0,
       armorLvl: 1,
       matrixLvl: 1,
+      maxSector: 0,
+      currentSector: 0,
       bestScore: Number(localStorage.getItem('gta0_best_score') || 0) || 0,
       totalKills: 0,
       totalMissions: 0
@@ -391,6 +411,8 @@
         missileLvl: clamp(Math.floor(Number(s.missileLvl ?? 0)), 0, 3),
         armorLvl: clamp(Math.floor(Number(s.armorLvl ?? 1)), 1, 4),
         matrixLvl: clamp(Math.floor(Number(s.matrixLvl ?? 1)), 1, 4),
+        maxSector: clamp(Math.floor(Number(s.maxSector ?? 0)), 0, SECTORS.length - 1),
+        currentSector: clamp(Math.floor(Number(s.currentSector ?? 0)), 0, SECTORS.length - 1),
         bestScore: Math.max(0, Math.floor(Number(s.bestScore ?? 0)), Number(localStorage.getItem('gta0_best_score') || 0) || 0),
         totalKills: Math.max(0, Math.floor(Number(s.totalKills ?? 0))),
         totalMissions: Math.max(0, Math.floor(Number(s.totalMissions ?? 0)))
@@ -413,6 +435,8 @@
         missileLvl: player.missileLvl,
         armorLvl: player.armorLvl,
         matrixLvl: player.matrixLvl,
+        maxSector: clamp(maxSector, 0, SECTORS.length - 1),
+        currentSector: clamp(currentSector, 0, SECTORS.length - 1),
         bestScore: Math.max(bestScore, Math.floor(player.score)),
         totalKills: Math.max(0, Math.floor(player.totalKills || 0)),
         totalMissions: Math.max(0, Math.floor(player.totalMissions || 0))
@@ -472,8 +496,9 @@
     floatTexts.push({ x, y, text, color: color || '#39ff88', life: 1.15, maxLife: 1.15 });
   }
 
-  // ==================== КАМЕРА В КАБИНЕ ВОДИТЕЛЯ (ПК: CARMAGEDDON / FALLOUT / МАТРИЦА) ====================
+  // ==================== КАМЕРА В КАБИНЕ ВОДИТЕЛЯ (ПК + МОБИЛЬНАЯ) ====================
   const driverCtx = el.driverCam ? el.driverCam.getContext('2d') : null;
+  const mobileDriverCtx = el.mobileDriverCam ? el.mobileDriverCam.getContext('2d') : null;
   const ecgCtx = el.driverEcg ? el.driverEcg.getContext('2d') : null;
 
   const DRV = {
@@ -497,7 +522,7 @@
   if (typeof Image !== 'undefined') {
     driverSheet = new Image();
     driverSheet.onload = () => { driverSheetReady = true; };
-    driverSheet.src = 'assets/driver-sheet.jpg?v=14';
+    driverSheet.src = 'assets/driver-sheet.jpg?v=15';
   }
 
   const DRIVER_QUOTES = {
@@ -1162,44 +1187,39 @@
     dCtx.restore();
   }
 
-  function renderDriverCam() {
-    if (!driverCtx || !el.cabinPanel || el.cabinPanel.offsetParent === null) return;
-
-    const w = el.driverCam.width;
-    const h = el.driverCam.height;
-    driverCtx.clearRect(0, 0, w, h);
+  function renderDriverPortraitTo(dCtx, canvasEl) {
+    const w = canvasEl.width;
+    const h = canvasEl.height;
+    dCtx.clearRect(0, 0, w, h);
 
     if (gameState === 'dead') {
-      // Аналоговый белый шум + NO SIGNAL при уничтожении машины
-      driverCtx.fillStyle = '#070c09';
-      driverCtx.fillRect(0, 0, w, h);
-      for (let i = 0; i < 240; i++) {
+      dCtx.fillStyle = '#070c09';
+      dCtx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 200; i++) {
         const nx = Math.random() * w;
         const ny = Math.random() * h;
         const v = 30 + Math.floor(Math.random() * 140);
-        driverCtx.fillStyle = `rgb(${v},${v + 12},${v})`;
-        driverCtx.fillRect(nx, ny, 2 + Math.random() * 4, 1.5);
+        dCtx.fillStyle = `rgb(${v},${v + 12},${v})`;
+        dCtx.fillRect(nx, ny, 2 + Math.random() * 4, 1.5);
       }
       const barY = (elapsed * 70) % h;
-      driverCtx.fillStyle = 'rgba(255, 77, 90, 0.22)';
-      driverCtx.fillRect(0, barY, w, 16);
+      dCtx.fillStyle = 'rgba(255, 77, 90, 0.22)';
+      dCtx.fillRect(0, barY, w, 16);
 
-      driverCtx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-      driverCtx.fillRect(14, h * 0.38, w - 28, 34);
-      driverCtx.strokeStyle = 'rgba(255, 77, 90, 0.75)';
-      driverCtx.strokeRect(14, h * 0.38, w - 28, 34);
-      driverCtx.fillStyle = '#ff6b76';
-      driverCtx.font = 'bold 12px monospace';
-      driverCtx.textAlign = 'center';
-      driverCtx.fillText('NO SIGNAL', w / 2, h * 0.38 + 21);
-      renderDriverEcg();
+      dCtx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+      dCtx.fillRect(10, h * 0.36, w - 20, 32);
+      dCtx.strokeStyle = 'rgba(255, 77, 90, 0.75)';
+      dCtx.strokeRect(10, h * 0.36, w - 20, 32);
+      dCtx.fillStyle = '#ff6b76';
+      dCtx.font = `bold ${Math.round(w * 0.1)}px monospace`;
+      dCtx.textAlign = 'center';
+      dCtx.fillText('NO SIGNAL', w / 2, h * 0.36 + 20);
       return;
     }
 
     const speed = player ? Math.hypot(player.vx, player.vy) : 0;
     const speedRatio = clamp(speed / 260, 0, 1);
 
-    // Живая физика кабины: вибрация мотора, кочки, наклон в повороте, лёгкое запрокидывание при питье из фляжки
     const idleBreathY = Math.sin(elapsed * 2.2) * 1.0;
     const engineVibX = Math.sin(elapsed * 31) * (0.35 + speedRatio * 1.15);
     const engineVibY = Math.cos(elapsed * 27) * (0.3 + speedRatio * 1.05);
@@ -1215,24 +1235,23 @@
       sipBobY = -1.6 * wave + Math.sin(p * Math.PI * 4) * 0.7;
     }
 
-    driverCtx.save();
-    driverCtx.translate(w / 2 + engineVibX + steerShiftX + driverCam.joltX, h / 2 + idleBreathY + engineVibY + sipBobY + driverCam.joltY);
-    driverCtx.rotate(steerRoll + sipTilt);
-    driverCtx.translate(-w / 2, -h / 2);
+    dCtx.save();
+    dCtx.translate(w / 2 + engineVibX + steerShiftX + driverCam.joltX, h / 2 + idleBreathY + engineVibY + sipBobY + driverCam.joltY);
+    dCtx.rotate(steerRoll + sipTilt);
+    dCtx.translate(-w / 2, -h / 2);
 
     if (driverSheetReady) {
       if (driverCam.blend < 1) {
-        drawDriverFrame(driverCtx, driverCam.prevFrame, w, 1);
-        drawDriverFrame(driverCtx, driverCam.curFrame, w, driverCam.blend);
+        drawDriverFrame(dCtx, driverCam.prevFrame, w, 1);
+        drawDriverFrame(dCtx, driverCam.curFrame, w, driverCam.blend);
       } else {
-        drawDriverFrame(driverCtx, driverCam.curFrame, w, 1);
+        drawDriverFrame(dCtx, driverCam.curFrame, w, 1);
       }
     } else {
-      driverCtx.fillStyle = '#0a140d';
-      driverCtx.fillRect(0, 0, w, h);
+      dCtx.fillStyle = '#0a140d';
+      dCtx.fillRect(0, 0, w, h);
     }
 
-    // 1) Живые цифры Матрицы в стёклах очков — только при действии в миссии (взлом узла / След с Агентом) или в Фокусе Матрицы!
     const isNeoFrame = driverCam.curFrame === DRV.NEO;
     const goggleCodeIntensity = isNeoFrame
       ? 1.0
@@ -1250,23 +1269,21 @@
             ? 0.065
             : 0;
     if (goggleCodeIntensity > 0.03) {
-      renderGoggleMatrixCode(driverCtx, w, goggleCodeIntensity, headShiftX);
+      renderGoggleMatrixCode(dCtx, w, goggleCodeIntensity, headShiftX);
     }
 
-    // 2) Тёплое янтарное свечение Pip-Boy / фляжки Убежища-0
     if (driverCam.canteenTimer > 0 || driverCam.persona === 'vault') {
       const pulse = 0.2 + Math.sin(elapsed * 5) * 0.06;
-      const gVault = driverCtx.createRadialGradient(w * 0.5, h * 0.95, 8, w * 0.5, h * 0.72, w * 0.78);
+      const gVault = dCtx.createRadialGradient(w * 0.5, h * 0.95, 8, w * 0.5, h * 0.72, w * 0.78);
       gVault.addColorStop(0, `rgba(255, 184, 77, ${driverCam.canteenTimer > 0 ? pulse + 0.16 : pulse})`);
       gVault.addColorStop(1, 'rgba(255, 184, 77, 0)');
-      driverCtx.save();
-      driverCtx.globalCompositeOperation = 'screen';
-      driverCtx.fillStyle = gVault;
-      driverCtx.fillRect(0, 0, w, h);
-      driverCtx.restore();
+      dCtx.save();
+      dCtx.globalCompositeOperation = 'screen';
+      dCtx.fillStyle = gVault;
+      dCtx.fillRect(0, 0, w, h);
+      dCtx.restore();
     }
 
-    // 3) Отблески стрельбы из турели и взрывов по лицу и кожанке водителя!
     const flashStr = Math.max(driverCam.muzzleFlash, driverCam.explosionFlash);
     if (flashStr > 0.03) {
       const useExpl = driverCam.explosionFlash >= driverCam.muzzleFlash;
@@ -1276,93 +1293,102 @@
                       (useExpl ? driverCam.explosionColor : driverCam.muzzleColor).startsWith('#4c');
       const rgb = isGreen ? '76, 255, 156' : '255, 178, 72';
 
-      driverCtx.save();
-      driverCtx.globalCompositeOperation = 'screen';
-      const mg = driverCtx.createRadialGradient(fx, fy, 4, fx, fy, w * 0.95);
+      dCtx.save();
+      dCtx.globalCompositeOperation = 'screen';
+      const mg = dCtx.createRadialGradient(fx, fy, 4, fx, fy, w * 0.95);
       mg.addColorStop(0, `rgba(255, 244, 210, ${flashStr * 0.58})`);
       mg.addColorStop(0.32, `rgba(${rgb}, ${flashStr * 0.48})`);
       mg.addColorStop(1, `rgba(${rgb}, 0)`);
-      driverCtx.fillStyle = mg;
-      driverCtx.fillRect(0, 0, w, h);
-      driverCtx.restore();
+      dCtx.fillStyle = mg;
+      dCtx.fillRect(0, 0, w, h);
+      dCtx.restore();
     }
 
-    // 4) Лёгкие боковые нити цифр Матрицы по краям монитора при активном Нео / сильном глитче
     if (isNeoFrame || driverCam.codeFlashTimer > 0.35) {
       const edgeAlpha = isNeoFrame ? 0.42 : Math.min(0.28, (driverCam.codeFlashTimer - 0.35) * 0.35);
-      driverCtx.save();
-      driverCtx.font = 'bold 9px monospace';
+      dCtx.save();
+      dCtx.font = 'bold 9px monospace';
       for (let i = 0; i < 6; i++) {
         const col = goggleCodeCols[i * 2];
         const x = i < 3 ? 6 + i * 9 : w - 8 - (i - 3) * 9;
         const y = (col.y * 3.1) % (h + 24);
         const ch = CABIN_GLYPHS[(col.seed + Math.floor(elapsed * 10)) % CABIN_GLYPHS.length];
-        driverCtx.fillStyle = `rgba(57, 255, 136, ${edgeAlpha})`;
-        driverCtx.fillText(ch, x, y);
+        dCtx.fillStyle = `rgba(57, 255, 136, ${edgeAlpha})`;
+        dCtx.fillText(ch, x, y);
       }
-      driverCtx.restore();
+      dCtx.restore();
     }
 
-    driverCtx.restore();
+    dCtx.restore();
 
-    // 5) Горизонтальный цифровой срез-глитч при пробуждении Нео или сильном попадании
     if (driverCam.glitchSliceTimer > 0) {
       const slices = 3;
       for (let s = 0; s < slices; s++) {
         const sy = Math.floor(Math.random() * (h - 14));
         const sh = 4 + Math.floor(Math.random() * 10);
         const dx = (Math.random() - 0.5) * 14;
-        driverCtx.drawImage(el.driverCam, 0, sy, w, sh, dx, sy, w, sh);
-        driverCtx.fillStyle = driverCam.persona === 'neo'
+        dCtx.drawImage(canvasEl, 0, sy, w, sh, dx, sy, w, sh);
+        dCtx.fillStyle = driverCam.persona === 'neo'
           ? 'rgba(57, 255, 136, 0.18)'
           : 'rgba(255, 184, 77, 0.14)';
-        driverCtx.fillRect(0, sy, w, 2);
+        dCtx.fillRect(0, sy, w, 2);
       }
     }
 
-    // 6) Радиационная рябь Гейгера
     if (player && player.rad >= 35) {
       const radNoise = Math.floor(((player.rad - 30) / 70) * 34);
-      driverCtx.fillStyle = 'rgba(255, 198, 92, 0.55)';
+      dCtx.fillStyle = 'rgba(255, 198, 92, 0.55)';
       for (let n = 0; n < radNoise; n++) {
-        driverCtx.fillRect(Math.random() * w, Math.random() * h, 2, 1.5);
+        dCtx.fillRect(Math.random() * w, Math.random() * h, 2, 1.5);
       }
     }
 
-    // 7) Красная вспышка по краям при получении урона
     if (driverCam.damageFlash > 0.03) {
-      driverCtx.strokeStyle = `rgba(255, 65, 82, ${driverCam.damageFlash * 0.85})`;
-      driverCtx.lineWidth = 7;
-      driverCtx.strokeRect(2, 2, w - 4, h - 4);
+      dCtx.strokeStyle = `rgba(255, 65, 82, ${driverCam.damageFlash * 0.85})`;
+      dCtx.lineWidth = 7;
+      dCtx.strokeRect(2, 2, w - 4, h - 4);
     }
 
-    // 8) Тонкие CRT-сканлайны + ретро-виньетка монитора кабины
-    driverCtx.fillStyle = 'rgba(0, 0, 0, 0.16)';
+    dCtx.fillStyle = 'rgba(0, 0, 0, 0.16)';
     for (let y = 0; y < h; y += 3) {
-      driverCtx.fillRect(0, y, w, 1);
+      dCtx.fillRect(0, y, w, 1);
     }
-    const vig = driverCtx.createRadialGradient(w / 2, h / 2, w * 0.36, w / 2, h / 2, w * 0.72);
+    const vig = dCtx.createRadialGradient(w / 2, h / 2, w * 0.36, w / 2, h / 2, w * 0.72);
     vig.addColorStop(0, 'rgba(0, 0, 0, 0)');
     vig.addColorStop(1, 'rgba(2, 6, 4, 0.58)');
-    driverCtx.fillStyle = vig;
-    driverCtx.fillRect(0, 0, w, h);
+    dCtx.fillStyle = vig;
+    dCtx.fillRect(0, 0, w, h);
 
-    // Уголки видоискателя камеры
-    driverCtx.strokeStyle = driverCam.persona === 'neo'
+    dCtx.strokeStyle = driverCam.persona === 'neo'
       ? 'rgba(57, 255, 136, 0.65)'
       : driverCam.persona === 'vault'
         ? 'rgba(255, 184, 77, 0.65)'
         : 'rgba(156, 230, 184, 0.35)';
-    driverCtx.lineWidth = 1.2;
+    dCtx.lineWidth = 1.2;
     const cLen = 8;
-    driverCtx.beginPath();
-    driverCtx.moveTo(5, 5 + cLen); driverCtx.lineTo(5, 5); driverCtx.lineTo(5 + cLen, 5);
-    driverCtx.moveTo(w - 5 - cLen, 5); driverCtx.lineTo(w - 5, 5); driverCtx.lineTo(w - 5, 5 + cLen);
-    driverCtx.moveTo(5, h - 5 - cLen); driverCtx.lineTo(5, h - 5); driverCtx.lineTo(5 + cLen, h - 5);
-    driverCtx.moveTo(w - 5 - cLen, h - 5); driverCtx.lineTo(w - 5, h - 5); driverCtx.lineTo(w - 5, h - 5 - cLen);
-    driverCtx.stroke();
+    dCtx.beginPath();
+    dCtx.moveTo(5, 5 + cLen); dCtx.lineTo(5, 5); dCtx.lineTo(5 + cLen, 5);
+    dCtx.moveTo(w - 5 - cLen, 5); dCtx.lineTo(w - 5, 5); dCtx.lineTo(w - 5, 5 + cLen);
+    dCtx.moveTo(5, h - 5 - cLen); dCtx.lineTo(5, h - 5); dCtx.lineTo(5 + cLen, h - 5);
+    dCtx.moveTo(w - 5 - cLen, h - 5); dCtx.lineTo(w - 5, h - 5); dCtx.lineTo(w - 5, h - 5 - cLen);
+    dCtx.stroke();
+  }
 
-    renderDriverEcg();
+  function renderDriverCam() {
+    if (driverCtx && el.cabinPanel && el.cabinPanel.offsetParent !== null) {
+      renderDriverPortraitTo(driverCtx, el.driverCam);
+      renderDriverEcg();
+    }
+    if (mobileDriverCtx && el.mobileCabinWrap && prefs.mobileCam && el.mobileCabinWrap.offsetParent !== null) {
+      renderDriverPortraitTo(mobileDriverCtx, el.mobileDriverCam);
+      el.mobileCabinWrap.classList.toggle('hurt', driverCam.damageFlash > 0.08 || driverCam.hurtTimer > 0.1);
+      el.mobileCabinWrap.classList.toggle('matrix', matrixActive || driverCam.persona === 'neo');
+      if (el.mobileCabinDot) {
+        el.mobileCabinDot.style.background = driverCam.hurtTimer > 0.1
+          ? '#ff4d5a'
+          : (matrixActive || driverCam.persona === 'neo' ? '#38e8ff' : '#39ff88');
+      }
+    }
   }
 
   function renderDriverEcg() {
@@ -1414,9 +1440,137 @@
   }
 
   // ==================== ИНИЦИАЛИЗАЦИЯ МИРА И ИГРОКА ====================
-  function resetRun(forceFresh) {
+  function capsMultiplier() {
+    const secMult = (world && world.sector && world.sector.capsMult) ? world.sector.capsMult : 1.0;
+    return secMult * (prefs.hardcore ? 1.35 : 1.0);
+  }
+
+  function renderSectorPicker() {
+    if (!el.sectorPicker) return;
+    el.sectorPicker.innerHTML = SECTORS.map((s) => {
+      const unlocked = s.index <= maxSector;
+      const active = s.index === currentSector;
+      const lockTxt = unlocked ? '' : '🔒 ';
+      const multTxt = s.capsMult > 1 ? ` ×${s.capsMult}` : '';
+      return `<button class="cfg-pill ${active ? 'active' : ''}" type="button" data-sector="${s.index}" ${unlocked ? '' : 'disabled'} title="${escapeHtml(s.desc)}">${lockTxt}${escapeHtml(s.shortName)}${multTxt}</button>`;
+    }).join('');
+    el.sectorPicker.querySelectorAll('button[data-sector]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.dataset.sector);
+        if (Number.isNaN(idx) || idx > maxSector) return;
+        AudioFX.unlock();
+        if (AudioFX.uiClick) AudioFX.uiClick();
+        currentSector = idx;
+        runSeed = (runSeed + 17 + Math.floor(Math.random() * 97)) % 10000;
+        world = WorldMod.createWorld(currentSector, runSeed);
+        resetRun(false, currentSector);
+        renderSectorPicker();
+      });
+    });
+  }
+
+  function updateNextSectorButton() {
+    if (!el.btnNextSector) return;
+    if (gameState !== 'playing' || !sectorReadyNext) {
+      el.btnNextSector.classList.add('hidden');
+      return;
+    }
+    const nextIdx = (currentSector + 1) % SECTORS.length;
+    const nextSec = SECTORS[nextIdx];
+    el.btnNextSector.textContent = currentSector < SECTORS.length - 1
+      ? `▶ В СЕКТОР ${nextSec.code} · ${nextSec.shortName} [N]`
+      : `▶ НОВЫЙ ВИТОК · СЕКТОР ${nextSec.code} [N]`;
+    el.btnNextSector.classList.remove('hidden');
+  }
+
+  function advanceToNextSector() {
+    if (!player || !sectorReadyNext) return;
+    const nextIdx = (currentSector + 1) % SECTORS.length;
+    currentSector = nextIdx;
+    maxSector = Math.max(maxSector, currentSector);
+    sectorContracts = 0;
+    sectorReadyNext = false;
+    runSeed = (runSeed + 31 + Math.floor(Math.random() * 113)) % 10000;
+    world = WorldMod.createWorld(currentSector, runSeed);
+
+    // Переносим игрока в Бункер-Депо нового сектора с сохранением всего прогресса заезда
+    player.x = world.depot.x;
+    player.y = world.depot.y + 82;
+    player.vx = 0;
+    player.vy = 0;
+    player.ang = -Math.PI / 2;
+    player.turretAng = -Math.PI / 2;
+    player.hp = Math.min(player.maxHp, player.hp + Math.round(player.maxHp * 0.35));
+    player.rad = Math.max(0, player.rad - 45);
+    player.inDepot = true;
+    cam.x = player.x;
+    cam.y = player.y;
+
+    enemies = [];
+    bullets = [];
+    loot = [];
+    particles = [];
+    skidmarks = [];
+    ghosts = [];
+    lightFlashes = [];
+    enemySpawnTimer = 1.2;
+    glitchTimer = 0.35;
+
+    for (let i = 0; i < 18; i++) spawnLoot();
+    const initCount = prefs.hardcore ? 7 : 6;
+    for (let i = 0; i < initCount; i++) {
+      if (i === 0 && currentSector >= 2) spawnEnemy('agent');
+      else if (i === 1 && currentSector >= 1) spawnEnemy('heavy');
+      else spawnEnemy('raider');
+    }
+
+    const secBonus = Math.round(45 * capsMultiplier());
+    player.caps += secBonus;
+    player.score += secBonus * 5;
+    AudioFX.missionDone();
+    driverAwakenNeo(2.2, `Сектор ${world.sector.code}: ${world.sector.name}. Поехали!`);
+    addFloatText(player.x, player.y - 30, `СЕКТОР ${world.sector.code} +${secBonus} ₵`, '#38e8ff');
+    addLog(`ПРОРЫВ В СЕКТОР ${world.sector.code} · ${world.sector.name} (лут ×${world.sector.capsMult})!`, 'matrix');
+    pickNextMission(false);
+    saveProgress();
+    renderSectorPicker();
+    updateNextSectorButton();
+    renderGarage();
+    syncUI(true);
+  }
+
+  function spawnAmbushWave(count, reason) {
+    if (!player) return;
+    const n = Math.max(1, count + (prefs.hardcore ? 1 : 0));
+    const threat = getThreatLevel();
+    for (let i = 0; i < n; i++) {
+      let kind = 'raider';
+      if (i === 0 && (threat >= 2 || currentSector >= 1)) kind = 'agent';
+      else if (i === 1 && threat >= 2) kind = 'heavy';
+      spawnEnemy(kind, threat);
+    }
+    if (reason) {
+      addLog(`⚠ ЗАСАДА! ${reason}`, 'danger');
+      addFloatText(player.x, player.y - 34, '⚠ ЗАСАДА СИСТЕМЫ!', '#ff4d5a');
+      haptic([24, 30, 24]);
+    }
+  }
+
+  function resetRun(forceFresh, forcedSectorIdx) {
     const saved = forceFresh ? defaultProgress() : loadSavedProgress();
     bestScore = Math.max(bestScore, saved.bestScore || 0);
+    maxSector = clamp(saved.maxSector || 0, 0, SECTORS.length - 1);
+    if (typeof forcedSectorIdx === 'number') {
+      currentSector = clamp(forcedSectorIdx, 0, maxSector);
+    } else if (forceFresh) {
+      currentSector = 0;
+    } else {
+      currentSector = clamp(saved.currentSector || 0, 0, maxSector);
+    }
+    sectorContracts = 0;
+    sectorReadyNext = false;
+    runSeed = (runSeed + 19 + Math.floor(Math.random() * 89)) % 10000;
+    world = WorldMod.createWorld(currentSector, runSeed);
 
     player = {
       x: world.depot.x,
@@ -1465,7 +1619,7 @@
     floatTexts = [];
     lightFlashes = [];
     logs = [];
-    enemySpawnTimer = 1.5;
+    enemySpawnTimer = 1.2;
     traceDecayTimer = 0;
     touchMatrixToggle = false;
     if (matrixActive) AudioFX.matrix(false);
@@ -1479,9 +1633,10 @@
 
     for (let i = 0; i < 18; i++) spawnLoot();
     const pwr = getPlayerPower();
-    for (let i = 0; i < 5; i++) {
-      if (i === 4 && pwr >= 4) spawnEnemy('heavy');
-      else if (i === 3 && pwr >= 7) spawnEnemy('agent');
+    const initEnemies = prefs.hardcore ? 7 : 6;
+    for (let i = 0; i < initEnemies; i++) {
+      if (i === 4 && (pwr >= 3 || currentSector >= 1)) spawnEnemy('heavy');
+      else if (i === 3 && (pwr >= 5 || currentSector >= 2)) spawnEnemy('agent');
       else spawnEnemy('raider');
     }
 
@@ -1495,8 +1650,11 @@
         : 'Терминал Vault-OS синхронизирован.',
       'matrix'
     );
-    addLog('VAULT RUNNER // Сектор активен. Собирай крышки и выживай.', '');
+    const modeTag = prefs.hardcore ? ' [ХАРДКОР +35% ₵]' : '';
+    addLog(`Сектор ${world.sector.code} · ${world.sector.name}${modeTag}.`, '');
     saveProgress();
+    renderSectorPicker();
+    updateNextSectorButton();
     renderGarage();
     syncUI(true);
   }
@@ -1515,13 +1673,15 @@
     );
   }
 
-  // Уровень угрозы мира (1..5): плавно растёт вместе с классом корпуса и апгрейдами игрока (1..5)
+  // Уровень угрозы мира (1..5): растёт с апгрейдами, сектором и режимом Хардкор
   function getThreatLevel() {
     if (!player) return 1;
     const pwr = getPlayerPower();
-    const byPower = 1 + Math.floor(pwr / 5.4);
+    const byPower = 1 + Math.floor(pwr / 4.6);
     const byClass = player.carClass + 1;
-    return clamp(Math.max(byClass, byPower), 1, 5);
+    const secBonus = (world && world.sector && world.sector.threatBonus) ? world.sector.threatBonus : 0;
+    const hcBonus = prefs.hardcore ? 1 : 0;
+    return clamp(Math.max(byClass, byPower) + secBonus + hcBonus, 1, 5);
   }
 
   function getCarSpec() {
@@ -1553,6 +1713,7 @@
     const type = types[Math.floor(Math.random() * types.length)];
     const tier = 1 + Math.floor(player.missionsDone / 2);
     const classBonus = player.carClass * 16;
+    const mult = capsMultiplier();
 
     if (type === 'collect') {
       const goal = Math.min(5, 2 + tier);
@@ -1563,41 +1724,42 @@
         desc: `Соберите ${goal} контейнера лута и доставьте данные в Бункер-Депо.`,
         progress: 0,
         goal,
-        reward: 50 + tier * 20 + classBonus
+        reward: Math.round((50 + tier * 20 + classBonus) * mult)
       };
     } else if (type === 'hunt') {
-      const goal = Math.min(6, 2 + Math.floor((tier + player.carClass) / 2));
+      const goal = Math.min(7, 3 + Math.floor((tier + player.carClass) / 2));
       mission = {
         type: 'hunt',
         title: 'Зачистка сектора',
         desc: `Уничтожьте ${goal} вражеских машин (рейдеров, броневики или Агентов).`,
         progress: 0,
         goal,
-        reward: 65 + tier * 25 + classBonus
+        reward: Math.round((65 + tier * 25 + classBonus) * mult)
       };
     } else if (type === 'hack') {
       const term = world.terminals[Math.floor(Math.random() * world.terminals.length)];
       mission = {
         type: 'hack',
         title: `Взлом: ${term.name}`,
-        desc: `Прибудьте к зелёному терминалу (${term.name}) и удерживайте позицию 5 сек.`,
+        desc: `Прибудьте к зелёному терминалу (${term.name}) и удерживайте позицию 5.5 сек.`,
         target: { x: term.x, y: term.y, name: term.name, radius: 74 },
+        ambushTriggered: false,
         progress: 0,
-        goal: 5,
-        reward: 80 + tier * 25 + classBonus
+        goal: 5.5,
+        reward: Math.round((80 + tier * 25 + classBonus) * mult)
       };
     } else {
-      const goal = 16 + tier * 3;
+      const goal = 18 + tier * 3;
       mission = {
         type: 'survive',
         title: 'Уход от Следа Системы',
         desc: `Выживите под преследованием Системы в течение ${goal} сек.`,
         progress: 0,
         goal,
-        reward: 75 + tier * 25 + classBonus
+        reward: Math.round((75 + tier * 25 + classBonus) * mult)
       };
-      player.trace = Math.max(player.trace, 2);
-      spawnEnemy('agent');
+      player.trace = Math.max(player.trace, 3);
+      spawnAmbushWave(2, 'Перехватчики Системы вышли на след!');
     }
     addLog(`Контракт: ${mission.title}`, 'warn');
   }
@@ -1610,7 +1772,7 @@
     player.score += reward * 4;
     player.missionsDone++;
     player.totalMissions = (player.totalMissions || 0) + 1;
-    player.hp = Math.min(player.maxHp, player.hp + 30);
+    player.hp = Math.min(player.maxHp, player.hp + 20);
     player.focus = player.maxFocus;
     player.trace = Math.max(0, player.trace - 1);
     AudioFX.missionDone();
@@ -1620,7 +1782,23 @@
       driverDrinkCanteen(pickQuote(DRIVER_QUOTES.mission));
     }
     addFloatText(player.x, player.y - 26, `КОНТРАКТ +${reward} ₵`, '#ffb84d');
-    addLog(`Контракт выполнен! Получено +${reward} ₵ и +30 HP.`, 'matrix');
+    addLog(`Контракт выполнен! Получено +${reward} ₵ и +20 HP.`, 'matrix');
+
+    // Прогресс переходов между секторами-биомами (каждые 2 контракта!)
+    sectorContracts++;
+    if (sectorContracts >= 2 && !sectorReadyNext) {
+      sectorReadyNext = true;
+      const nextIdx = Math.min(SECTORS.length - 1, currentSector + 1);
+      if (nextIdx > maxSector) {
+        maxSector = nextIdx;
+        addLog(`ОТКРЫТ НОВЫЙ БИОМ: СЕКТОР ${SECTORS[nextIdx].code} · ${SECTORS[nextIdx].name}! Нажмите [N] или кнопку сверху.`, 'matrix');
+      } else {
+        addLog('Контур сектора пройден! Можно перейти в следующий сектор кнопкой сверху или [N].', 'matrix');
+      }
+      renderSectorPicker();
+      updateNextSectorButton();
+    }
+
     updateBestScore();
     saveProgress();
     renderGarage();
@@ -1655,70 +1833,76 @@
   }
 
   function spawnEnemy(kind, forcedTier) {
-    const p = world.pickRoadSpawn(player, 430);
+    const p = world.pickRoadSpawn(player, 410);
     const pwr = getPlayerPower();
     const threat = getThreatLevel();
     const m = player.missionsDone;
     const k = kind || 'raider';
+    const hc = prefs.hardcore;
+    const hpMult = hc ? 1.24 : 1.08;
+    const dmgMult = hc ? 1.28 : 1.12;
+    const cdMult = hc ? 0.78 : 0.88;
+    const spdMult = hc ? 1.12 : 1.04;
+    const bountyMult = capsMultiplier();
 
-    // Тир врага (1..5): следует за уровнем угрозы игрока (иногда -1 тир для живого микса отрядов)
+    // Тир врага (1..5): следует за уровнем угрозы игрока и сектора
     let tier = forcedTier
       ? clamp(forcedTier, 1, 5)
-      : (threat >= 3 && Math.random() < 0.25 ? threat - 1 : threat);
+      : (threat >= 3 && Math.random() < 0.22 ? threat - 1 : threat);
     const t = tier - 1; // 0..4
 
     let cfg;
     if (k === 'boss') {
-      const hpTable = [280, 360, 480, 650, 840];
+      const hpTable = [300, 390, 520, 690, 890];
       cfg = {
-        hp: Math.round(hpTable[t] + pwr * 7.5 + m * 7),
+        hp: Math.round((hpTable[t] + pwr * 8.0 + m * 8) * hpMult),
         len: 52 + t * 1.5, wid: 26 + t * 0.6,
-        speed: 174 + t * 13 + Math.min(18, pwr),
-        dmg: Math.round(14 + t * 3.0 + pwr * 0.2),
-        fireCd: Math.max(0.95, 1.38 - t * 0.08),
-        aggro: 760,
-        range: 430,
-        bounty: 75 + t * 24 + Math.round(pwr * 1.2),
-        score: 420 + t * 110
+        speed: (182 + t * 14 + Math.min(20, pwr)) * spdMult,
+        dmg: Math.round((15 + t * 3.2 + pwr * 0.22) * dmgMult),
+        fireCd: Math.max(0.72, (1.28 - t * 0.08) * cdMult),
+        aggro: 820,
+        range: 460,
+        bounty: Math.round((78 + t * 24 + Math.round(pwr * 1.2)) * bountyMult),
+        score: Math.round((440 + t * 115) * (hc ? 1.35 : 1.0))
       };
     } else if (k === 'agent') {
-      const hpTable = [108, 168, 240, 320, 410];
+      const hpTable = [118, 180, 255, 340, 435];
       cfg = {
-        hp: Math.round(hpTable[t] + pwr * 4.5 + m * 4),
+        hp: Math.round((hpTable[t] + pwr * 4.8 + m * 4.5) * hpMult),
         len: 39 + t * 0.8, wid: 20 + t * 0.4,
-        speed: 224 + t * 14 + Math.min(20, pwr * 1.1),
-        dmg: Math.round(11 + t * 2.4 + pwr * 0.18),
-        fireCd: Math.max(0.62, 1.02 - t * 0.08),
-        aggro: 780,
-        range: 405,
-        bounty: 35 + t * 12 + Math.round(pwr * 0.8),
-        score: 210 + t * 55
+        speed: (234 + t * 15 + Math.min(22, pwr * 1.15)) * spdMult,
+        dmg: Math.round((12 + t * 2.6 + pwr * 0.2) * dmgMult),
+        fireCd: Math.max(0.48, (0.94 - t * 0.08) * cdMult),
+        aggro: 840,
+        range: 435,
+        bounty: Math.round((36 + t * 12 + Math.round(pwr * 0.8)) * bountyMult),
+        score: Math.round((220 + t * 58) * (hc ? 1.35 : 1.0))
       };
     } else if (k === 'heavy') {
-      const hpTable = [124, 195, 275, 370, 470];
+      const hpTable = [132, 208, 290, 390, 495];
       cfg = {
-        hp: Math.round(hpTable[t] + pwr * 5.0 + m * 4),
+        hp: Math.round((hpTable[t] + pwr * 5.2 + m * 4.5) * hpMult),
         len: 44 + t * 1.1, wid: 23 + t * 0.5,
-        speed: 156 + t * 11 + Math.min(16, pwr * 0.9),
-        dmg: Math.round(10 + t * 2.2 + pwr * 0.18),
-        fireCd: Math.max(0.92, 1.34 - t * 0.08),
-        aggro: 560,
-        range: 360,
-        bounty: 30 + t * 11 + Math.round(pwr * 0.7),
-        score: 165 + t * 45
+        speed: (164 + t * 11 + Math.min(18, pwr * 0.95)) * spdMult,
+        dmg: Math.round((11 + t * 2.4 + pwr * 0.2) * dmgMult),
+        fireCd: Math.max(0.74, (1.24 - t * 0.08) * cdMult),
+        aggro: 620,
+        range: 390,
+        bounty: Math.round((32 + t * 11 + Math.round(pwr * 0.7)) * bountyMult),
+        score: Math.round((175 + t * 48) * (hc ? 1.35 : 1.0))
       };
     } else {
-      const hpTable = [62, 108, 158, 215, 275];
+      const hpTable = [68, 118, 170, 230, 295];
       cfg = {
-        hp: Math.round(hpTable[t] + pwr * 3.0 + m * 3),
+        hp: Math.round((hpTable[t] + pwr * 3.2 + m * 3.2) * hpMult),
         len: 34 + t * 0.9, wid: 19 + t * 0.4,
-        speed: 174 + t * 13 + Math.min(18, pwr),
-        dmg: Math.round(8.5 + t * 1.9 + pwr * 0.15),
-        fireCd: Math.max(0.92, 1.44 - t * 0.1),
-        aggro: 500 + t * 25,
-        range: 315 + t * 18,
-        bounty: 18 + t * 7 + Math.round(pwr * 0.4),
-        score: 105 + t * 30
+        speed: (184 + t * 14 + Math.min(20, pwr)) * spdMult,
+        dmg: Math.round((9.5 + t * 2.1 + pwr * 0.17) * dmgMult),
+        fireCd: Math.max(0.72, (1.32 - t * 0.1) * cdMult),
+        aggro: 560 + t * 30,
+        range: 345 + t * 20,
+        bounty: Math.round((19 + t * 7 + Math.round(pwr * 0.4)) * bountyMult),
+        score: Math.round((110 + t * 32) * (hc ? 1.35 : 1.0))
       };
     }
 
@@ -1742,9 +1926,11 @@
       range: cfg.range,
       bounty: cfg.bounty,
       score: cfg.score,
-      shootCd: 0.7 + Math.random() * 0.9,
-      missileCd: 3.4 + Math.random() * 1.8,
+      shootCd: 0.45 + Math.random() * 0.65,
+      missileCd: 3.0 + Math.random() * 1.5,
       ramCd: 0,
+      flankSide: Math.random() < 0.5 ? -1 : 1,
+      flankTimer: 2.5 + Math.random() * 3.5,
       wanderAng: Math.random() * Math.PI * 2,
       wanderTimer: 1 + Math.random() * 2
     });
@@ -1877,28 +2063,37 @@
   }
 
   // ==================== ГАРАЖ И ДЕПО ====================
+  const DEPOT_SERVICE_COST = 25;
+
   function depotService() {
     if (!player || gameState !== 'playing') return;
     if (!player.inDepot) {
       addLog('Подъедьте к центру Бункера-Депо для сервиса.', 'warn');
       return;
     }
-    const emergencyFree = player.caps < 15 && player.hp < player.maxHp * 0.45;
-    const cost = emergencyFree ? 0 : 15;
+    const emergencyFree = player.caps < DEPOT_SERVICE_COST && player.hp < player.maxHp * 0.55;
+    const cost = emergencyFree ? 0 : DEPOT_SERVICE_COST;
     if (player.caps < cost) {
-      addLog('Недостаточно крышек (нужно 15 ₵).', 'warn');
+      addLog(`Недостаточно крышек (нужно ${DEPOT_SERVICE_COST} ₵).`, 'warn');
       return;
     }
     const spec = getCarSpec();
     player.caps -= cost;
-    player.hp = player.maxHp;
+    player.hp = emergencyFree
+      ? Math.max(player.hp, Math.round(player.maxHp * 0.55))
+      : player.maxHp;
     player.rad = 0;
-    player.ammo = Math.max(player.ammo + 35, spec.ammoStart);
+    player.ammo = Math.max(player.ammo + (emergencyFree ? 22 : 35), spec.ammoStart);
     player.trace = Math.max(0, player.trace - 1);
     AudioFX.upgrade();
     driverDrinkCanteen(pickQuote(DRIVER_QUOTES.depot));
-    addFloatText(player.x, player.y - 24, emergencyFree ? 'АВАРИЙНЫЙ РЕМОНТ!' : 'РЕМОНТ + АНТИРАД', '#39ff88');
-    addLog('Бункер-Депо: корпус восстановлен, радиация снята, боезапас пополнен.', 'matrix');
+    addFloatText(player.x, player.y - 24, emergencyFree ? 'ЛАТКА КОРПУСА (55% HP)' : 'РЕМОНТ + АНТИРАД', '#39ff88');
+    addLog(
+      emergencyFree
+        ? 'Бункер-Депо: аварийная латка до 55% HP и снятие радиации (бесплатно).'
+        : 'Бункер-Депо: корпус полностью восстановлен, радиация снята, боезапас пополнен.',
+      'matrix'
+    );
     saveProgress();
     renderGarage();
     syncUI(true);
@@ -2551,32 +2746,39 @@
   function updateEnemies(dt) {
     const pwr = getPlayerPower();
     const threat = getThreatLevel();
-    const targetCount = Math.min(12, 5 + player.trace + Math.floor((player.missionsDone + player.carClass) / 2));
+    const hc = prefs.hardcore;
+    const targetCount = Math.min(14, 6 + player.trace + Math.floor((player.missionsDone + player.carClass) / 2) + (hc ? 2 : 0));
     enemySpawnTimer -= dt;
     if (enemySpawnTimer <= 0 && enemies.length < targetCount) {
-      enemySpawnTimer = Math.max(2.0, 3.1 - threat * 0.16);
+      enemySpawnTimer = Math.max(1.35, (2.6 - threat * 0.18) * (hc ? 0.78 : 1.0));
       const bossCount = enemies.filter((e) => e.kind === 'boss').length;
-      const maxBosses = threat >= 4 ? 2 : 1;
+      const maxBosses = threat >= 4 || hc ? 2 : 1;
       const roll = Math.random();
 
       let kind = 'raider';
-      if ((threat >= 3 || player.trace >= 4) && bossCount < maxBosses && roll < (0.08 + threat * 0.032)) {
+      if ((threat >= 3 || player.trace >= 4) && bossCount < maxBosses && roll < (0.09 + threat * 0.036)) {
         kind = 'boss';
-      } else if ((threat >= 2 || player.trace >= 2) && roll < (0.20 + threat * 0.07 + player.trace * 0.06)) {
+      } else if ((threat >= 2 || player.trace >= 2 || currentSector >= 2) && roll < (0.24 + threat * 0.075 + player.trace * 0.06)) {
         kind = 'agent';
-      } else if ((threat >= 2 || player.trace >= 1) && roll < (0.48 + threat * 0.09)) {
+      } else if ((threat >= 2 || player.trace >= 1 || currentSector >= 1) && roll < (0.52 + threat * 0.09)) {
         kind = 'heavy';
       }
       spawnEnemy(kind);
     }
 
     const spec = getCarSpec();
+    const bSpdBoost = hc ? 1.36 : 1.24;
+
     for (let i = enemies.length - 1; i >= 0; i--) {
       const e = enemies[i];
       if (e.ramCd > 0) e.ramCd = Math.max(0, e.ramCd - dt);
+      e.flankTimer = (e.flankTimer || 2.5) - dt;
+      if (e.flankTimer <= 0) {
+        e.flankTimer = 2.6 + Math.random() * 3.2;
+        if (Math.random() < 0.45) e.flankSide = -(e.flankSide || 1);
+      }
       const d = dist(e, player);
 
-      // Если устаревший враг оказался далеко вне поля зрения — уступаем слот свежему отряду текущего уровня угрозы
       if ((e.tier || 1) < threat && d > 1350) {
         enemies.splice(i, 1);
         continue;
@@ -2586,75 +2788,94 @@
       const isBoss = e.kind === 'boss';
       const isHeavy = e.kind === 'heavy';
       const eTier = e.tier || 1;
-      const aggroDist = e.aggro || (isAgent ? 780 : 480);
+      const aggroDist = e.aggro || (isAgent ? 820 : 540);
 
       if (d < aggroDist && !player.inDepot) {
-        // Преследование игрока с объездом зданий
-        const desiredAng = Math.atan2(player.y - e.y, player.x - e.x);
-        const diff = normAngle(desiredAng - e.ang);
-        const turnRate = isBoss ? 2.15 : (isHeavy ? 2.45 : 3.0);
-        e.ang = normAngle(e.ang + clamp(diff, -turnRate * dt, turnRate * dt));
-        const holdDist = isBoss ? 175 : 135;
-        const desiredSpeed = d > holdDist ? e.speed : e.speed * 0.35;
-        e.vx += (Math.cos(e.ang) * desiredSpeed - e.vx) * Math.min(1, 3.8 * dt);
-        e.vy += (Math.sin(e.ang) * desiredSpeed - e.vy) * Math.min(1, 3.8 * dt);
+        // Преследование с фланговым манёвром и 2-лучевым объездом углов зданий!
+        const directAng = Math.atan2(player.y - e.y, player.x - e.x);
+        const flankOffset = (d > 130 && d < 420 && !isHeavy) ? (e.flankSide || 1) * (isAgent ? 0.42 : 0.28) : 0;
+        let desiredAng = normAngle(directAng + flankOffset);
 
-        // Стрельба по игроку (эволюционирует с тиром врага eTier 1..5!)
+        // Проверка препятствия впереди (lookahead) — враг объезжает углы, а не буксует в стене
+        const probeD = 58;
+        const aheadBlocked = world.isBlocked(e.x + Math.cos(desiredAng) * probeD, e.y + Math.sin(desiredAng) * probeD);
+        if (aheadBlocked) {
+          const leftAng = normAngle(desiredAng - 0.85);
+          const rightAng = normAngle(desiredAng + 0.85);
+          const leftFree = !world.isBlocked(e.x + Math.cos(leftAng) * probeD, e.y + Math.sin(leftAng) * probeD);
+          const rightFree = !world.isBlocked(e.x + Math.cos(rightAng) * probeD, e.y + Math.sin(rightAng) * probeD);
+          if (leftFree && !rightFree) desiredAng = leftAng;
+          else if (rightFree && !leftFree) desiredAng = rightAng;
+          else desiredAng = normAngle(desiredAng + (e.flankSide || 1) * 1.1);
+        }
+
+        const diff = normAngle(desiredAng - e.ang);
+        const turnRate = isBoss ? 2.35 : (isHeavy ? 2.65 : (isAgent ? 3.65 : 3.25));
+        e.ang = normAngle(e.ang + clamp(diff, -turnRate * dt, turnRate * dt));
+        const holdDist = isBoss ? 185 : (isAgent ? 155 : 130);
+        const desiredSpeed = d > holdDist ? e.speed : e.speed * (isAgent ? 0.58 : 0.42);
+        e.vx += (Math.cos(e.ang) * desiredSpeed - e.vx) * Math.min(1, 4.2 * dt);
+        e.vy += (Math.sin(e.ang) * desiredSpeed - e.vy) * Math.min(1, 4.2 * dt);
+
+        // Стрельба по игроку с УПРЕЖДЕНИЕМ (lead-aiming для MK-II+, Агентов, Карателей и Хардкора!)
         e.shootCd -= dt;
-        const shootRange = e.range || (isAgent ? 390 : 300);
+        const shootRange = e.range || (isAgent ? 425 : 340);
         if (e.shootCd <= 0 && d < shootRange) {
-          e.shootCd = e.fireCd || (isAgent ? 0.95 : 1.45);
-          const spread = isAgent ? 0.08 : Math.max(0.09, 0.21 - (eTier - 1) * 0.025);
-          const aim = Math.atan2(player.y - e.y, player.x - e.x) + (Math.random() - 0.5) * spread;
+          e.shootCd = e.fireCd || (isAgent ? 0.88 : 1.32);
+          const baseBulletSpd = (isBoss ? 485 : isAgent ? 490 : isHeavy ? 430 : 410) * bSpdBoost;
+          const leadFactor = (isAgent || isBoss)
+            ? (hc ? 0.88 : 0.72)
+            : (eTier >= 2 || hc ? (hc ? 0.68 : 0.48) : 0.18);
+          const leadT = clamp(d / baseBulletSpd, 0, 0.72) * leadFactor;
+          const tx = player.x + player.vx * leadT;
+          const ty = player.y + player.vy * leadT;
+          const spreadBase = isAgent ? 0.055 : Math.max(0.065, 0.16 - (eTier - 1) * 0.022);
+          const spread = hc ? spreadBase * 0.7 : spreadBase;
+          const aim = Math.atan2(ty - e.y, tx - e.x) + (Math.random() - 0.5) * spread;
           const mx = e.x + Math.cos(aim) * (e.len * 0.52);
           const my = e.y + Math.sin(aim) * (e.len * 0.52);
           const px = -Math.sin(aim) * 4.2;
           const py = Math.cos(aim) * 4.2;
 
           if (isBoss) {
-            // Каратель Системы: 3-ствольный веерный залп!
-            fireBullet('enemy', mx, my, aim - 0.14, 465, e.dmg * 0.78, '#ff4d5a', 4.0);
-            fireBullet('enemy', mx, my, aim, 495, e.dmg, '#39ff88', 4.3);
-            fireBullet('enemy', mx, my, aim + 0.14, 465, e.dmg * 0.78, '#ff4d5a', 4.0);
+            fireBullet('enemy', mx, my, aim - 0.13, 470 * bSpdBoost, e.dmg * 0.8, '#ff4d5a', 4.1);
+            fireBullet('enemy', mx, my, aim, 505 * bSpdBoost, e.dmg, '#39ff88', 4.4);
+            fireBullet('enemy', mx, my, aim + 0.13, 470 * bSpdBoost, e.dmg * 0.8, '#ff4d5a', 4.1);
           } else if (isHeavy) {
-            if (eTier >= 4) {
-              // Броневик MK-IV/V: тяжёлый тройной залп
-              fireBullet('enemy', mx, my, aim - 0.11, 430, e.dmg * 0.65, '#ff8e47', 3.5);
-              fireBullet('enemy', mx, my, aim, 450, e.dmg * 0.78, '#ffb84d', 3.8);
-              fireBullet('enemy', mx, my, aim + 0.11, 430, e.dmg * 0.65, '#ff8e47', 3.5);
+            if (eTier >= 4 || hc) {
+              fireBullet('enemy', mx, my, aim - 0.10, 435 * bSpdBoost, e.dmg * 0.68, '#ff8e47', 3.6);
+              fireBullet('enemy', mx, my, aim, 458 * bSpdBoost, e.dmg * 0.8, '#ffb84d', 3.9);
+              fireBullet('enemy', mx, my, aim + 0.10, 435 * bSpdBoost, e.dmg * 0.68, '#ff8e47', 3.6);
             } else {
-              // Броневик MK-I..III: сдвоенный залп
-              fireBullet('enemy', mx + px, my + py, aim - 0.04, 415, e.dmg * 0.72, '#ff8e47', 3.5);
-              fireBullet('enemy', mx - px, my - py, aim + 0.04, 415, e.dmg * 0.72, '#ff8e47', 3.5);
+              fireBullet('enemy', mx + px, my + py, aim - 0.035, 425 * bSpdBoost, e.dmg * 0.74, '#ff8e47', 3.6);
+              fireBullet('enemy', mx - px, my - py, aim + 0.035, 425 * bSpdBoost, e.dmg * 0.74, '#ff8e47', 3.6);
             }
-          } else if (isAgent && eTier >= 3) {
-            // Агент Матрицы MK-III+: парная изумрудная плазма
-            fireBullet('enemy', mx + px * 0.8, my + py * 0.8, aim - 0.025, 495, e.dmg * 0.72, '#39ff88', 3.5);
-            fireBullet('enemy', mx - px * 0.8, my - py * 0.8, aim + 0.025, 495, e.dmg * 0.72, '#39ff88', 3.5);
+          } else if (isAgent && (eTier >= 2 || hc)) {
+            fireBullet('enemy', mx + px * 0.8, my + py * 0.8, aim - 0.022, 500 * bSpdBoost, e.dmg * 0.74, '#39ff88', 3.6);
+            fireBullet('enemy', mx - px * 0.8, my - py * 0.8, aim + 0.022, 500 * bSpdBoost, e.dmg * 0.74, '#39ff88', 3.6);
           } else if (!isAgent && eTier >= 3) {
-            // Боевой Рейдер MK-III+: сдвоенный пулемёт
-            fireBullet('enemy', mx + px * 0.7, my + py * 0.7, aim - 0.035, 420, e.dmg * 0.68, '#ff7d57', 3.3);
-            fireBullet('enemy', mx - px * 0.7, my - py * 0.7, aim + 0.035, 420, e.dmg * 0.68, '#ff7d57', 3.3);
+            fireBullet('enemy', mx + px * 0.7, my + py * 0.7, aim - 0.03, 430 * bSpdBoost, e.dmg * 0.70, '#ff7d57', 3.4);
+            fireBullet('enemy', mx - px * 0.7, my - py * 0.7, aim + 0.03, 430 * bSpdBoost, e.dmg * 0.70, '#ff7d57', 3.4);
           } else {
             fireBullet(
               'enemy',
               mx, my,
               aim,
-              isAgent ? 475 : 395,
-              e.dmg || (isAgent ? 13 : 9),
+              (isAgent ? 485 : 410) * bSpdBoost,
+              e.dmg || (isAgent ? 14 : 10),
               isAgent ? '#39ff88' : '#ff6b57',
-              3.4
+              3.5
             );
           }
         }
 
-        // Каратель MK-IV/V дополнительно запускает наводящуюся ракету Системы (от неё можно уходить в Матрице!)
-        if (isBoss && eTier >= 4 && d < 480 && d > 120) {
+        // Каратель MK-III+ (или любой в Хардкоре) запускает наводящуюся ракету Системы
+        if (isBoss && (eTier >= 3 || hc) && d < 500 && d > 110) {
           e.missileCd = (e.missileCd || 4) - dt;
           if (e.missileCd <= 0) {
-            e.missileCd = eTier >= 5 ? 3.8 : 4.8;
+            e.missileCd = (eTier >= 5 || hc) ? 3.2 : 4.2;
             const aim = Math.atan2(player.y - e.y, player.x - e.x);
-            fireHomingMissile(e.x + Math.cos(aim) * 24, e.y + Math.sin(aim) * 24, aim, Math.round(24 + eTier * 3), null, 'enemy');
+            fireHomingMissile(e.x + Math.cos(aim) * 24, e.y + Math.sin(aim) * 24, aim, Math.round((25 + eTier * 3) * (hc ? 1.2 : 1.0)), null, 'enemy');
             if (AudioFX.missile) AudioFX.missile(true);
           }
         }
@@ -2667,7 +2888,7 @@
         }
         const diff = normAngle(e.wanderAng - e.ang);
         e.ang = normAngle(e.ang + clamp(diff, -2.5 * dt, 2.5 * dt));
-        const sp = e.speed * 0.6;
+        const sp = e.speed * 0.62;
         e.vx += (Math.cos(e.ang) * sp - e.vx) * Math.min(1, 3.2 * dt);
         e.vy += (Math.sin(e.ang) * sp - e.vy) * Math.min(1, 3.2 * dt);
       }
@@ -2760,12 +2981,16 @@
     addLog(label, (isAgent || isBoss) ? 'matrix' : '');
     driverOnKill(isAgent || isBoss);
 
-    // Дроп лута на месте взрыва (Каратель всегда роняет ценный модуль + ядро!)
+    // Дроп лута на месте взрыва (аптечки реже — каждая реально важна!)
     if (isBoss) {
       spawnLoot({ x: e.x - 10, y: e.y }, 'module');
       spawnLoot({ x: e.x + 10, y: e.y }, 'focus');
-    } else if (Math.random() < (isHeavy ? 0.85 : 0.72)) {
-      spawnLoot({ x: e.x, y: e.y }, isAgent ? 'focus' : (Math.random() < 0.5 ? 'ammo' : 'medkit'));
+    } else if (Math.random() < (isHeavy ? 0.72 : 0.60)) {
+      const r = Math.random();
+      const dropType = isAgent
+        ? (r < 0.65 ? 'focus' : 'module')
+        : (r < 0.32 ? 'medkit' : (r < 0.70 ? 'ammo' : 'caps'));
+      spawnLoot({ x: e.x, y: e.y }, dropType);
     }
 
     if (mission && mission.type === 'hunt') {
@@ -2873,30 +3098,36 @@
       it.pulse += dt * 3.5;
       if (dist(player, it) < 34) {
         const def = LOOT_DEFS[it.type];
+        const mult = capsMultiplier();
         let capsChanged = false;
-        if (it.type === 'ammo') player.ammo += 30;
+        let popLabel = def.label;
+        if (it.type === 'ammo') player.ammo += 28;
         else if (it.type === 'medkit') {
-          player.hp = Math.min(player.maxHp, player.hp + 38);
+          player.hp = Math.min(player.maxHp, player.hp + 24);
           driverDrinkCanteen(pickQuote(DRIVER_QUOTES.canteen));
         } else if (it.type === 'caps') {
-          player.caps += 25;
+          const gain = Math.round(25 * mult);
+          player.caps += gain;
+          popLabel = `Крышки +${gain} ₵`;
           capsChanged = true;
         } else if (it.type === 'focus') {
-          player.focus = Math.min(player.maxFocus, player.focus + 55);
+          player.focus = Math.min(player.maxFocus, player.focus + 52);
           driverAwakenNeo(1.8, pickQuote(DRIVER_QUOTES.neo));
         } else if (it.type === 'radaway') {
           player.rad = Math.max(0, player.rad - 55);
           driverDrinkCanteen('Антирадин пошёл. Фляжка снова выручает.');
         } else if (it.type === 'module') {
-          player.caps += 35;
-          player.score += 60;
+          const gain = Math.round(35 * mult);
+          player.caps += gain;
+          player.score += Math.round(60 * mult);
+          popLabel = `Модуль +${gain} ₵`;
           capsChanged = true;
         }
 
         player.score += 25;
         AudioFX.pickup(it.type);
-        addFloatText(it.x, it.y - 12, def.label, def.color);
-        addLog(`Подобрано: ${def.label}`);
+        addFloatText(it.x, it.y - 12, popLabel, def.color);
+        addLog(`Подобрано: ${popLabel}`);
         loot.splice(i, 1);
 
         if (capsChanged) saveProgress();
@@ -2905,8 +3136,9 @@
           mission.progress++;
           if (mission.progress >= mission.goal) {
             mission.stage = 'return';
-            mission.desc = 'Все припасы собраны! Доставьте груз в центральный Бункер-Депо.';
+            mission.desc = 'Все припасы собраны! Прорвитесь с грузом к центральному Бункеру-Депо.';
             addLog('Груз собран! Возвращайтесь в Бункер-Депо.', 'warn');
+            spawnAmbushWave(2, 'Перехват груза на пути к Депо!');
           }
         }
         renderGarage();
@@ -2923,6 +3155,10 @@
     } else if (mission.type === 'hack' && mission.target) {
       if (dist(player, mission.target) <= mission.target.radius) {
         mission.progress = Math.min(mission.goal, mission.progress + dt);
+        if (!mission.ambushTriggered && mission.progress >= 0.45) {
+          mission.ambushTriggered = true;
+          spawnAmbushWave(2, 'Сигнал взлома перехвачен — отряды идут на терминал!');
+        }
         if (mission.progress >= mission.goal) completeMission();
       }
     } else if (mission.type === 'survive') {
@@ -3271,8 +3507,9 @@
     lightCtx.save();
     lightCtx.setTransform(1, 0, 0, 1, 0, 0);
     lightCtx.globalCompositeOperation = 'source-over';
-    // Глубокий ночной нуар-эмбиент (в режиме Матрицы — фосфорно-зелёный)
-    lightCtx.fillStyle = matrixActive ? '#224433' : '#26303d';
+    // Ночной эмбиент под текущий сектор-биом (в Фокусе — фосфорно-зелёный)
+    const secAmbient = (world && world.sector && world.sector.ambient) ? world.sector.ambient : '#26303d';
+    lightCtx.fillStyle = matrixActive ? '#224433' : secAmbient;
     lightCtx.fillRect(0, 0, lw, lh);
 
     lightCtx.translate((viewW / 2 + sx) * scale, (viewH / 2 + sy) * scale);
@@ -3746,14 +3983,26 @@
 
   function drawWeatherAndMatrixRain() {
     ctx.save();
-    // 1. Ночной косой дождь + тлеющие угли/пепел пустоши
-    ctx.lineWidth = 1.1;
+    const wMode = (world && world.sector && world.sector.weather) ? world.sector.weather : 'rain';
+    // 1. Осадки по биому: дождь / песчаная буря / промышленный смог / цифровой шторм
+    ctx.lineWidth = wMode === 'dust' ? 1.5 : 1.1;
     for (const d of weatherDrops) {
-      if (d.isEmber) {
-        ctx.fillStyle = `rgba(255, 168, 72, ${d.alpha})`;
-        ctx.fillRect(d.x, d.y, d.len, d.len);
+      if (d.isEmber || wMode === 'dust') {
+        if (wMode === 'dust') {
+          ctx.strokeStyle = `rgba(225, 162, 92, ${d.alpha * 0.85})`;
+          ctx.beginPath();
+          ctx.moveTo(d.x, d.y);
+          ctx.lineTo(d.x - d.len * 1.45, d.y + d.len * 0.42);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = `rgba(255, 168, 72, ${d.alpha})`;
+          ctx.fillRect(d.x, d.y, d.len, d.len);
+        }
+      } else if (wMode === 'smog') {
+        ctx.fillStyle = `rgba(155, 178, 192, ${d.alpha * 0.55})`;
+        ctx.fillRect(d.x, d.y, d.len * 0.55, 1.8);
       } else {
-        ctx.strokeStyle = matrixBreach > 0.4
+        ctx.strokeStyle = (matrixBreach > 0.4 || wMode === 'code')
           ? `rgba(110, 255, 175, ${d.alpha * (1 + matrixBreach * 0.5)})`
           : `rgba(170, 205, 225, ${d.alpha})`;
         ctx.beginPath();
@@ -3763,11 +4012,21 @@
       }
     }
 
-    // 2. «Скрытый код под ржавчиной»: цифровой дождь Матрицы прорывается в ключевых зонах и в Фокусе
-    if (matrixBreach > 0.04) {
+    // Тёплый пыльный фильтр в Ржавой Пустоши / холодный туман в Промзоне
+    if (wMode === 'dust' && !matrixActive) {
+      ctx.fillStyle = 'rgba(148, 86, 36, 0.09)';
+      ctx.fillRect(0, 0, viewW, viewH);
+    } else if (wMode === 'smog' && !matrixActive) {
+      ctx.fillStyle = 'rgba(38, 62, 78, 0.08)';
+      ctx.fillRect(0, 0, viewW, viewH);
+    }
+
+    // 2. Скрытый код Системы: в секторе 04 (Ядро Системы) слегка виден всегда!
+    const codeVisual = wMode === 'code' ? Math.max(matrixBreach, 0.34) : matrixBreach;
+    if (codeVisual > 0.04) {
       ctx.font = '12px monospace';
       ctx.textAlign = 'center';
-      const baseAlpha = clamp(matrixBreach * 0.30, 0, 0.30);
+      const baseAlpha = clamp(codeVisual * 0.30, 0, 0.30);
       for (const c of rainCols) {
         for (let k = 0; k < c.len; k++) {
           const y = c.y - k * 15;
@@ -4615,18 +4874,19 @@
 
     // Верхние плашки поверх поля
     const threatMk = ROMAN_TIERS[getThreatLevel() - 1] || 'I';
-    el.hudSector.textContent = `${world.sectorName(player.x, player.y)} · MK-${threatMk}`;
+    const hcTag = prefs.hardcore ? ' · ☠HC' : '';
+    el.hudSector.textContent = `${world.sectorName(player.x, player.y)} · MK-${threatMk}${hcTag}`;
     const stars = '★'.repeat(player.trace) + '☆'.repeat(5 - player.trace);
     el.hudTrace.textContent = `СЛЕД: ${stars}`;
 
     // Депо-статус
     el.uiDepotBanner.classList.toggle('in-zone', player.inDepot);
     el.btnTouchDepot.classList.toggle('hidden', !player.inDepot);
-    const emergencyFree = player.caps < 15 && player.hp < player.maxHp * 0.45;
-    el.btnDepotService.disabled = !player.inDepot || (!emergencyFree && player.caps < 15);
+    const emergencyFree = player.caps < DEPOT_SERVICE_COST && player.hp < player.maxHp * 0.55;
+    el.btnDepotService.disabled = !player.inDepot || (!emergencyFree && player.caps < DEPOT_SERVICE_COST);
     el.btnDepotService.textContent = emergencyFree
-      ? 'АВАРИЙНО (0 ₵)'
-      : 'СЕРВИС (15 ₵)';
+      ? 'ЛАТКА 55% (0 ₵)'
+      : `СЕРВИС (${DEPOT_SERVICE_COST} ₵)`;
     el.uiDepotHint.textContent = player.inDepot
       ? 'В зоне Депо! Нажмите [E] или кнопку выше для ремонта.'
       : 'Заедьте в Бункер-Депо для ремонта и снятия RAD.';
@@ -4660,6 +4920,7 @@
   function setOverlayState(state) {
     gameState = state;
     if (AudioFX.setGameState) AudioFX.setGameState(state === 'playing');
+    updateNextSectorButton();
     if (state === 'playing') {
       el.overlay.classList.add('hidden');
       el.btnPauseResume.textContent = '❚❚ ПАУЗА';
@@ -4667,11 +4928,15 @@
     }
 
     el.overlay.classList.remove('hidden');
+    if (el.modalRunConfig) {
+      el.modalRunConfig.classList.toggle('hidden', state === 'paused');
+    }
+    renderSectorPicker();
     if (state === 'menu') {
       if (el.modalLogoWrap) el.modalLogoWrap.classList.remove('hidden');
       el.modalTitle.classList.add('hidden');
       el.modalTitle.textContent = 'VAULT RUNNER';
-      el.modalSub.innerHTML = 'Постапокалиптический мегаполис под скрытым кодом Системы. Гоняй по руинам, собирай крышки и лут, улучшай машину в Бункере-Депо и замедляй время в режиме <strong>Цифрового Фокуса</strong>.';
+      el.modalSub.innerHTML = 'Постапокалиптический мегаполис под скрытым кодом Системы. Гоняй по 4 секторам-биомам, собирай крышки, улучшай машину в Бункере-Депо и замедляй время в режиме <strong>Цифрового Фокуса</strong>.';
       el.btnPlay.textContent = '▶ ВЪЕХАТЬ В ПУСТОШЬ';
       el.btnRestartModal.classList.add('hidden');
     } else if (state === 'paused') {
@@ -4791,6 +5056,11 @@
       else if (gameState === 'dead') { resetRun(); setOverlayState('playing'); }
     } else if (e.code === 'KeyE') {
       depotService();
+    } else if (e.code === 'KeyN') {
+      if (gameState === 'playing' && sectorReadyNext) {
+        AudioFX.unlock();
+        advanceToNextSector();
+      }
     } else if (e.code === 'KeyM') {
       AudioFX.unlock();
       prefs.music = !prefs.music;
@@ -5052,6 +5322,35 @@
     });
   }
 
+  if (el.mobileCabinWrap) {
+    el.mobileCabinWrap.addEventListener('click', () => {
+      AudioFX.unlock();
+      haptic(12);
+      driverInteractiveClick();
+    });
+  }
+
+  if (el.btnNextSector) {
+    el.btnNextSector.addEventListener('click', () => {
+      AudioFX.unlock();
+      advanceToNextSector();
+    });
+  }
+
+  function setHardcoreMode(on) {
+    prefs.hardcore = !!on;
+    applyPrefs();
+    savePrefs();
+    if (AudioFX.uiClick) AudioFX.uiClick();
+    if (player) {
+      addLog(`Режим сложности: ${prefs.hardcore ? '☠ ХАРДКОР (+35% ₵, злые враги)' : 'СТАНДАРТ'}`, prefs.hardcore ? 'danger' : 'matrix');
+      syncUI(true);
+    }
+  }
+
+  if (el.btnDiffStd) el.btnDiffStd.addEventListener('click', () => { AudioFX.unlock(); setHardcoreMode(false); });
+  if (el.btnDiffHard) el.btnDiffHard.addEventListener('click', () => { AudioFX.unlock(); setHardcoreMode(true); });
+
   el.btnMobileMenu.addEventListener('click', openMobileMenu);
   el.btnCloseMenu.addEventListener('click', closeMobileMenu);
   el.backdrop.addEventListener('click', closeMobileMenu);
@@ -5065,8 +5364,15 @@
     if (AudioFX.setMusicEnabled) AudioFX.setMusicEnabled(prefs.music);
     document.body.classList.toggle('crt-on', prefs.crt);
     el.app.classList.toggle('sidebar-left', prefs.sidebarLeft);
+    if (el.mobileCabinWrap) {
+      el.mobileCabinWrap.classList.toggle('hidden-cam', !prefs.mobileCam);
+    }
+    if (el.btnDiffStd) el.btnDiffStd.classList.toggle('active', !prefs.hardcore);
+    if (el.btnDiffHard) el.btnDiffHard.classList.toggle('active', prefs.hardcore);
     el.optSound.checked = prefs.sound;
     if (el.optMusic) el.optMusic.checked = prefs.music;
+    if (el.optHardcore) el.optHardcore.checked = prefs.hardcore;
+    if (el.optMobileCam) el.optMobileCam.checked = prefs.mobileCam;
     el.optCrt.checked = prefs.crt;
     el.optNoir.checked = prefs.noir;
     el.optRain.checked = prefs.rain;
@@ -5085,6 +5391,20 @@
     el.optMusic.addEventListener('change', () => {
       prefs.music = el.optMusic.checked;
       if (prefs.music) AudioFX.unlock();
+      applyPrefs();
+      savePrefs();
+      if (AudioFX.uiClick) AudioFX.uiClick();
+    });
+  }
+  if (el.optHardcore) {
+    el.optHardcore.addEventListener('change', () => {
+      AudioFX.unlock();
+      setHardcoreMode(el.optHardcore.checked);
+    });
+  }
+  if (el.optMobileCam) {
+    el.optMobileCam.addEventListener('change', () => {
+      prefs.mobileCam = el.optMobileCam.checked;
       applyPrefs();
       savePrefs();
       if (AudioFX.uiClick) AudioFX.uiClick();

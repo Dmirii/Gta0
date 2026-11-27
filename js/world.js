@@ -22,64 +22,289 @@ window.GTA0.World = (function () {
     return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
   }
 
-  // Текстурный шум асфальта (генерируется 1 раз как маленький бесшовный паттерн 128x128)
-  function makeAsphaltPattern(ctx) {
+  // 4 полноценных сектора-биома со своей планировкой, погодой, палитрой и экономикой
+  const SECTORS = [
+    {
+      index: 0,
+      id: 'downtown',
+      code: '01',
+      name: 'НОЧНОЙ ДАУНТАУН',
+      shortName: '01 ДАУНТАУН',
+      desc: 'Мокрый асфальт, неоновые кварталы, дождь',
+      weather: 'rain',
+      capsMult: 1.0,
+      threatBonus: 0,
+      asphalt: '#15181c',
+      wasteBase: '#201e1a',
+      wasteGlow: 'rgba(116, 88, 52, 0.28)',
+      sidewalk: '#2d3033',
+      curb: '#484d52',
+      roadLine: 'rgba(218, 165, 58, 0.56)',
+      ambient: '#242e3c',
+      lightA: '#ffab42',
+      lightB: '#38e8ff',
+      riftChance: 0.90,
+      puddleChance: 0.68,
+      signs: ['NEXUS', 'ZERO//0', 'VAULT', 'PULSE', '0xFF42', 'V-CODE', 'CYBER', 'HOTEL', 'SYS.ERR', 'RAD-7', 'APEX', 'ARCADE'],
+      layout: [
+        'RRRRRRRRRRRRRRRRRRRRRR',
+        'RBBWRBBRBBRBBRBBRBBRBR',
+        'RBBWRBBRBBRBBRBBRBBRBR',
+        'RRRRRRRRRRRRRRRRRRRRRR',
+        'RBRWBBRBBRWWWRBBRBBRBR',
+        'RBRRRRRRRRRRRRRRRRRRBR',
+        'RBRBBRBWRDDDRBBRBBRWBR',
+        'RRRRRRRRRDDDRRRRRRRRRR',
+        'RBRBBRBWRDDDRBBRWBRBBR',
+        'RBRRRRRRRRRRRRRRRRRRBR',
+        'RBRWWRBBRWWWRBBRBBRBBR',
+        'RBRWWRBBRBBRBBRBBRBBWR',
+        'RRRRRRRRRRRRRRRRRRRRRR',
+        'RBBBRBBRBBRBBRBBRWWBBR',
+        'RBBBRBBRWWRBBRBBRWWBBR',
+        'RRRRRRRRRRRRRRRRRRRRRR'
+      ],
+      radZones: [
+        { c: 3.5, r: 1.5, radius: 105 },
+        { c: 4.0, r: 11.0, radius: 118 },
+        { c: 18.0, r: 14.0, radius: 115 },
+        { c: 11.0, r: 4.5, radius: 96 }
+      ],
+      terminals: [
+        { id: 1, name: 'УЗЕЛ АЛЬФА', c: 8.5, r: 6.5 },
+        { id: 2, name: 'УЗЕЛ ZERO',  c: 16.5, r: 8.5 },
+        { id: 3, name: 'УЗЕЛ СИГМА', c: 10.5, r: 10.5 },
+        { id: 4, name: 'УЗЕЛ ОМЕГА', c: 9.0, r: 14.5 }
+      ]
+    },
+    {
+      index: 1,
+      id: 'wasteland',
+      code: '02',
+      name: 'РЖАВАЯ ПУСТОШЬ',
+      shortName: '02 ПУСТОШЬ',
+      desc: 'Широкие трассы, песчаная буря, рад-кратеры, +25% ₵',
+      weather: 'dust',
+      capsMult: 1.25,
+      threatBonus: 0,
+      asphalt: '#1e1913',
+      wasteBase: '#2a2117',
+      wasteGlow: 'rgba(176, 118, 52, 0.36)',
+      sidewalk: '#362b20',
+      curb: '#5c4935',
+      roadLine: 'rgba(235, 162, 66, 0.62)',
+      ambient: '#332419',
+      lightA: '#ff9838',
+      lightB: '#ffd068',
+      riftChance: 0.92,
+      puddleChance: 0.86,
+      signs: ['SCRAP', 'FUEL-9', 'RUST', 'RAD-ZONE', 'OUTPOST', 'DEPOT', 'CANYON', 'DUST//2', 'VAULT', 'RIG-77'],
+      layout: [
+        'RRRRRRRRRRRRRRRRRRRRRR',
+        'RWWBRWWWRBBRWWWRBBRWWR',
+        'RWWBRWWWRBBRWWWRBBRWWR',
+        'RRRRRRRRRRRRRRRRRRRRRR',
+        'RBBRWWRRRRRRRRRRWWRBBR',
+        'RWRRRRRRWWWWWWRRRRRRWR',
+        'RWRBWRBWRDDDRBWRBWRBWR',
+        'RRRRRRRRRDDDRRRRRRRRRR',
+        'RWRBWRWWRDDDRWWRBWRBWR',
+        'RWRRRRRRWWWWWWRRRRRRWR',
+        'RBBRWWRRRRRRRRRRWWRBBR',
+        'RWWBRWWRBBRBBRWWRBBWWR',
+        'RRRRRRRRRRRRRRRRRRRRRR',
+        'RWWBBRWWWRBBRWWWRWWBBR',
+        'RWWBBRWWWRBBRWWWRWWBBR',
+        'RRRRRRRRRRRRRRRRRRRRRR'
+      ],
+      radZones: [
+        { c: 2.5, r: 1.8, radius: 118 },
+        { c: 7.5, r: 1.8, radius: 108 },
+        { c: 15.0, r: 1.8, radius: 112 },
+        { c: 3.0, r: 13.8, radius: 120 },
+        { c: 14.5, r: 13.8, radius: 115 },
+        { c: 18.8, r: 8.5, radius: 106 }
+      ],
+      terminals: [
+        { id: 1, name: 'ВЫШКА-01', c: 5.5, r: 4.5 },
+        { id: 2, name: 'ВЫШКА-02', c: 16.5, r: 4.5 },
+        { id: 3, name: 'ВЫШКА-03', c: 5.5, r: 10.5 },
+        { id: 4, name: 'ВЫШКА-04', c: 16.5, r: 10.5 }
+      ]
+    },
+    {
+      index: 2,
+      id: 'industrial',
+      code: '03',
+      name: 'ПРОМЗОНА / ДОКИ',
+      shortName: '03 ПРОМЗОНА',
+      desc: 'Скоростные магистрали, огромные ангары, +50% ₵',
+      weather: 'smog',
+      capsMult: 1.5,
+      threatBonus: 1,
+      asphalt: '#13191e',
+      wasteBase: '#1b2228',
+      wasteGlow: 'rgba(72, 118, 148, 0.28)',
+      sidewalk: '#29323a',
+      curb: '#4b5b69',
+      roadLine: 'rgba(235, 185, 62, 0.52)',
+      ambient: '#1c2a35',
+      lightA: '#48c8ff',
+      lightB: '#ff9642',
+      riftChance: 0.87,
+      puddleChance: 0.62,
+      signs: ['DOCK-09', 'CARGO', 'SECTOR-3', 'REACTOR', 'STEEL', 'CRANE', 'PORT-X', 'HEAVY', 'FORGE', 'FUEL'],
+      layout: [
+        'RRRRRRRRRRRRRRRRRRRRRR',
+        'RBBBRBBBRRRRRRBBBRBBBR',
+        'RBBBRBBBRWWRWRBBBRBBBR',
+        'RRRRRRRRRRRRRRRRRRRRRR',
+        'RBBWRRRRRBBRBBRRRRRBBR',
+        'RBBWRBBBRRRRRRBBBRWBBR',
+        'RRRRRBBWRDDDRWBBBRRRRR',
+        'RRRRRRRRRDDDRRRRRRRRRR',
+        'RRRRRBBWRDDDRWBBBRRRRR',
+        'RBBWRBBBRRRRRRBBBRWBBR',
+        'RBBWRRRRRBBRBBRRRRRBBR',
+        'RRRRRRRRRRRRRRRRRRRRRR',
+        'RBBBRWWRRRRRRRRWWBBBBR',
+        'RBBBRBBBRWWRWRBBBRBBBR',
+        'RBBBRBBBRWWRWRBBBRBBBR',
+        'RRRRRRRRRRRRRRRRRRRRRR'
+      ],
+      radZones: [
+        { c: 10.5, r: 2.5, radius: 108 },
+        { c: 3.5, r: 8.0, radius: 112 },
+        { c: 18.5, r: 8.0, radius: 112 },
+        { c: 10.5, r: 13.8, radius: 118 },
+        { c: 16.5, r: 12.5, radius: 98 }
+      ],
+      terminals: [
+        { id: 1, name: 'ДОК-АЛЬФА', c: 10.5, r: 3.5 },
+        { id: 2, name: 'ДОК-БЕТА',  c: 17.5, r: 7.5 },
+        { id: 3, name: 'ДОК-ГАММА', c: 4.5, r: 7.5 },
+        { id: 4, name: 'ДОК-ДЕЛЬТА',c: 10.5, r: 11.5 }
+      ]
+    },
+    {
+      index: 3,
+      id: 'core',
+      code: '04',
+      name: 'ЯДРО СИСТЕМЫ',
+      shortName: '04 ЯДРО КОДА',
+      desc: 'Кибер-лабиринт, шторм кода, элита Системы, +80% ₵',
+      weather: 'code',
+      capsMult: 1.8,
+      threatBonus: 1,
+      asphalt: '#0b1410',
+      wasteBase: '#0e1d16',
+      wasteGlow: 'rgba(57, 255, 136, 0.24)',
+      sidewalk: '#15271f',
+      curb: '#2d634a',
+      roadLine: 'rgba(57, 255, 136, 0.45)',
+      ambient: '#163026',
+      lightA: '#39ff88',
+      lightB: '#38e8ff',
+      riftChance: 0.72,
+      puddleChance: 0.74,
+      signs: ['0x00FF', 'ROOT//0', 'V-CORE', 'KERNEL', 'DAEMON', 'SYNC-9', 'NODE-X', 'CIPHER', 'OVERDRIVE', 'SYS.OK'],
+      layout: [
+        'RRRRRRRRRRRRRRRRRRRRRR',
+        'RBRBBRBBRWWRBBRBBRBBRR',
+        'RBRBBRBBRWWRBBRBBRBBRR',
+        'RRRRRRRRRRRRRRRRRRRRRR',
+        'RBBWRBRBBRRRRBBBRBRBBR',
+        'RRRRRBRRRRRRRRRRRBRRRR',
+        'RBRBBRBWRDDDRWBRBBRBBR',
+        'RRRRRRRRRDDDRRRRRRRRRR',
+        'RBRBBRBWRDDDRWBRBBRBBR',
+        'RRRRRBRRRRRRRRRRRBRRRR',
+        'RBBWRBRBBRRRRBBBRBRBBR',
+        'RRRRRRRRRRRRRRRRRRRRRR',
+        'RBRBBRWWRBBRWWRBBRBBRR',
+        'RBRBBRBBRWWRBBRBBRBBRR',
+        'RBRRRRRRRRRRRRRRRRRRBR',
+        'RRRRRRRRRRRRRRRRRRRRRR'
+      ],
+      radZones: [
+        { c: 10.5, r: 1.8, radius: 105 },
+        { c: 3.5, r: 4.5, radius: 102 },
+        { c: 18.5, r: 10.5, radius: 108 },
+        { c: 10.5, r: 13.5, radius: 112 }
+      ],
+      terminals: [
+        { id: 1, name: 'ЯДРО-01', c: 5.5, r: 5.5 },
+        { id: 2, name: 'ЯДРО-02', c: 16.5, r: 5.5 },
+        { id: 3, name: 'ЯДРО-03', c: 5.5, r: 9.5 },
+        { id: 4, name: 'ЯДРО-04', c: 16.5, r: 9.5 }
+      ]
+    }
+  ];
+
+  // Текстурный шум асфальта под конкретный биом (бесшовный паттерн 128x128)
+  function makeAsphaltPattern(ctx, sector) {
     const p = document.createElement('canvas');
     p.width = 128;
     p.height = 128;
     const g = p.getContext('2d');
-    g.fillStyle = '#15181c';
+    g.fillStyle = sector.asphalt || '#15181c';
     g.fillRect(0, 0, 128, 128);
     for (let y = 0; y < 128; y += 2) {
       for (let x = 0; x < 128; x += 2) {
-        const v = hash(x * 7 + 3, y * 11 + 5);
+        const v = hash(x * 7 + 3 + sector.index * 19, y * 11 + 5);
         if (v > 0.72) {
-          g.fillStyle = 'rgba(255,255,255,0.038)';
+          g.fillStyle = sector.id === 'wasteland'
+            ? 'rgba(225,175,105,0.065)'
+            : sector.id === 'core'
+              ? 'rgba(57,255,136,0.05)'
+              : 'rgba(255,255,255,0.038)';
           g.fillRect(x, y, 2, 2);
         } else if (v < 0.24) {
-          g.fillStyle = 'rgba(0,0,0,0.14)';
+          g.fillStyle = 'rgba(0,0,0,0.16)';
           g.fillRect(x, y, 2, 2);
         }
       }
     }
-    // Лёгкие трещины и зерно мокрого асфальта
-    g.strokeStyle = 'rgba(0,0,0,0.32)';
-    g.lineWidth = 1;
-    g.beginPath();
-    g.moveTo(14, 22); g.lineTo(28, 30); g.lineTo(35, 25);
-    g.moveTo(86, 74); g.lineTo(96, 88); g.lineTo(112, 92);
-    g.stroke();
+    if (sector.id === 'core') {
+      // Тонкая цифровая сетка в Ядре Системы
+      g.strokeStyle = 'rgba(57, 255, 136, 0.09)';
+      g.lineWidth = 1;
+      g.strokeRect(0.5, 0.5, 63, 63);
+      g.strokeRect(64.5, 64.5, 63, 63);
+    } else {
+      g.strokeStyle = 'rgba(0,0,0,0.32)';
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(14, 22); g.lineTo(28, 30); g.lineTo(35, 25);
+      g.moveTo(86, 74); g.lineTo(96, 88); g.lineTo(112, 92);
+      g.stroke();
+    }
     return ctx.createPattern(p, 'repeat');
   }
 
-  function createWorld() {
-    // 1. Строим разнообразную нешаблонную планировку города (22 x 16)
-    // R = дорога, B = застройка, D = площадь Депо, W = пустырь/руины/двор
-    const layout = [
-      'RRRRRRRRRRRRRRRRRRRRRR', // 0  Северное кольцо
-      'RBBWRBBRBBRBBRBBRBBRBR', // 1
-      'RBBWRBBRBBRBBRBBRBBRBR', // 2
-      'RRRRRRRRRRRRRRRRRRRRRR', // 3  Северный проспект
-      'RBRWBBRBBRWWWRBBRBBRBR', // 4
-      'RBRRRRRRRRRRRRRRRRRRBR', // 5  Улица
-      'RBRBBRBWRDDDRBBRBBRWBR', // 6  Центральная зона
-      'RRRRRRRRRDDDRRRRRRRRRR', // 7  Главный бульвар (З-В)
-      'RBRBBRBWRDDDRBBRWBRBBR', // 8  Центральная зона
-      'RBRRRRRRRRRRRRRRRRRRBR', // 9  Улица
-      'RBRWWRBBRWWWRBBRBBRBBR', // 10
-      'RBRWWRBBRBBRBBRBBRBBWR', // 11
-      'RRRRRRRRRRRRRRRRRRRRRR', // 12 Южный проспект
-      'RBBBRBBRBBRBBRBBRWWBBR', // 13
-      'RBBBRBBRWWRBBRBBRWWBBR', // 14
-      'RRRRRRRRRRRRRRRRRRRRRR'  // 15 Южное кольцо
-    ];
+  function createWorld(sectorIndex, runSeed) {
+    const sIdx = ((sectorIndex || 0) % SECTORS.length + SECTORS.length) % SECTORS.length;
+    const sector = SECTORS[sIdx];
+    const seedSalt = ((runSeed || 1) * 97 + sIdx * 31) | 0;
 
+    // 1. Строим сетку выбранного биома (22 x 16) + лёгкая процедурная вариация кварталов от runSeed
+    const layout = sector.layout;
     const grid = [];
     for (let r = 0; r < ROWS; r++) {
       const row = new Uint8Array(COLS);
       for (let c = 0; c < COLS; c++) {
         const ch = layout[r][c];
-        row[c] = ch === 'R' ? T_ROAD : ch === 'D' ? T_DEPOT : ch === 'W' ? T_WASTE : T_BLDG;
+        let val = ch === 'R' ? T_ROAD : ch === 'D' ? T_DEPOT : ch === 'W' ? T_WASTE : T_BLDG;
+        // Процедурная вариация для уникальной планировки каждого заезда (не трогая Депо и внешнее кольцо)
+        if (runSeed && runSeed > 1 && r >= 1 && r <= ROWS - 2 && c >= 1 && c <= COLS - 2) {
+          const nearDepot = c >= 8 && c <= 12 && r >= 5 && r <= 9;
+          if (!nearDepot) {
+            const rv = hash(c * 41 + seedSalt, r * 53 + seedSalt);
+            if (val === T_BLDG && rv > 0.86) val = T_WASTE;
+            else if (val === T_WASTE && rv < 0.14 && sector.id !== 'wasteland') val = T_BLDG;
+          }
+        }
+        row[c] = val;
       }
       grid.push(row);
     }
@@ -91,41 +316,39 @@ window.GTA0.World = (function () {
       radius: 112
     };
 
-    // 4 радиационных кратера Fallout на пустырях
-    const radZones = [
-      { x: 3.5 * TILE,  y: 1.5 * TILE,  radius: 105 },
-      { x: 4.0 * TILE,  y: 11.0 * TILE, radius: 118 },
-      { x: 18.0 * TILE, y: 14.0 * TILE, radius: 115 },
-      { x: 11.0 * TILE, y: 4.5 * TILE,  radius: 96  }
-    ];
+    // Радиационные кратеры биома (с небольшим смещением на seed)
+    const radZones = sector.radZones.map((z, idx) => {
+      const jx = (hash(idx * 17 + seedSalt, 11) - 0.5) * 44;
+      const jy = (hash(idx * 23 + seedSalt, 29) - 0.5) * 44;
+      return {
+        x: Math.max(TILE, Math.min(WIDTH - TILE, z.c * TILE + jx)),
+        y: Math.max(TILE, Math.min(HEIGHT - TILE, z.r * TILE + jy)),
+        radius: z.radius
+      };
+    });
 
     // 4 цифровых терминала (узлы взлома)
-    const terminals = [
-      { id: 1, name: 'УЗЕЛ АЛЬФА', x: 8.5 * TILE,  y: 6.5 * TILE  },
-      { id: 2, name: 'УЗЕЛ ZERO',  x: 16.5 * TILE, y: 8.5 * TILE  },
-      { id: 3, name: 'УЗЕЛ СИГМА', x: 10.5 * TILE, y: 10.5 * TILE },
-      { id: 4, name: 'УЗЕЛ ОМЕГА', x: 9.0 * TILE,  y: 14.5 * TILE }
-    ];
+    const terminals = sector.terminals.map((t) => ({
+      id: t.id,
+      name: t.name,
+      x: t.c * TILE,
+      y: t.r * TILE
+    }));
 
-    // 2. Объединяем смежные 'B'-клетки в крупные составные 2.5D комплексы (2x2, 2x1, 1x2, 1x1)
+    // 2. Объединяем смежные 'B'-клетки в крупные составные 2.5D комплексы
     const visited = Array.from({ length: ROWS }, () => new Uint8Array(COLS));
     const buildings = [];
-    const bldgGrid = new Map(); // cellIdx -> building
-    const NEON_SIGNS = [
-      'NEXUS', 'ZERO//0', 'VAULT', 'PULSE', '0xFF42', 'V-CODE',
-      'CYBER', 'HOTEL', 'SYS.ERR', 'RAD-7', 'APEX', 'ARCADE'
-    ];
+    const bldgGrid = new Map();
+    const NEON_SIGNS = sector.signs;
 
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         if (grid[r][c] !== T_BLDG || visited[r][c]) continue;
 
-        // Пробуем собрать прямоугольник 2x2, 3x2, 2x1 или 1x2 для живого силуэта мегаполиса
         let bw = 1, bh = 1;
         while (c + bw < COLS && bw < 3 && grid[r][c + bw] === T_BLDG && !visited[r][c + bw]) {
           bw++;
         }
-        // Расширяем вниз только если вся полоса ширины bw свободна
         let canExtendH = (r + 1 < ROWS);
         if (canExtendH) {
           for (let x = c; x < c + bw; x++) {
@@ -138,30 +361,52 @@ window.GTA0.World = (function () {
           for (let xx = c; xx < c + bw; xx++) visited[yy][xx] = 1;
         }
 
-        const seed = hash(c * 17 + 5, r * 31 + 9);
-        const pad = 13; // широкий тротуар для фонарей, обломков и удобной езды
+        const seed = hash(c * 17 + 5 + seedSalt, r * 31 + 9 + seedSalt);
+        const pad = 13;
         const distCenter = Math.hypot((c + bw / 2) * TILE - depot.x, (r + bh / 2) * TILE - depot.y);
         const isEastCyber = (c + bw / 2) > COLS * 0.52;
         const isDowntown = distCenter < 760 || (bw * bh >= 2 && isEastCyber);
 
         let style = 'apt';
-        if (bw * bh >= 4 || (isDowntown && seed > 0.42)) style = 'tower';
-        else if (!isEastCyber && seed < 0.34) style = 'ruin';
-        else if (isEastCyber && seed > 0.55) style = 'cyber';
+        if (sector.id === 'wasteland') {
+          style = seed < 0.62 ? 'ruin' : (bw * bh >= 2 && seed > 0.78 ? 'tower' : 'apt');
+        } else if (sector.id === 'industrial') {
+          style = bw * bh >= 4 ? 'tower' : (seed < 0.25 ? 'ruin' : 'apt');
+        } else if (sector.id === 'core') {
+          style = seed > 0.35 ? 'cyber' : 'tower';
+        } else {
+          if (bw * bh >= 4 || (isDowntown && seed > 0.42)) style = 'tower';
+          else if (!isEastCyber && seed < 0.34) style = 'ruin';
+          else if (isEastCyber && seed > 0.55) style = 'cyber';
+        }
 
         const height =
           style === 'tower' ? 0.26 + seed * 0.12 :
-          style === 'cyber' ? 0.21 + seed * 0.10 :
+          style === 'cyber' ? 0.22 + seed * 0.11 :
           style === 'apt'   ? 0.15 + seed * 0.08 :
                               0.09 + seed * 0.05;
 
         const neonPalette =
-          style === 'cyber' ? ['#39ff88', '#38e8ff'] :
-          style === 'tower' ? ['#38e8ff', '#ffb84d', '#39ff88', '#ff5470'] :
-                              ['#ffb84d', '#ff6e40', '#39ff88'];
+          sector.id === 'core'       ? ['#39ff88', '#38e8ff'] :
+          sector.id === 'wasteland'  ? ['#ffb84d', '#ff6e40', '#ffd068'] :
+          sector.id === 'industrial' ? ['#38e8ff', '#ffb84d', '#ff6b4a'] :
+          style === 'cyber'          ? ['#39ff88', '#38e8ff'] :
+          style === 'tower'          ? ['#38e8ff', '#ffb84d', '#39ff88', '#ff5470'] :
+                                       ['#ffb84d', '#ff6e40', '#39ff88'];
         const neonColor = neonPalette[Math.floor(seed * 19) % neonPalette.length];
 
-        const hasSign = (style === 'tower' || style === 'cyber') && seed > 0.28;
+        const hasSign = (style === 'tower' || style === 'cyber' || sector.id === 'industrial') && seed > 0.28;
+        const roofTone =
+          style === 'ruin'           ? '#282018' :
+          style === 'cyber'          ? '#101d18' :
+          sector.id === 'industrial' ? '#1c242b' :
+          sector.id === 'wasteland'  ? '#2a2219' : '#171b20';
+        const wallBase =
+          style === 'ruin'           ? '#32261c' :
+          style === 'cyber'          ? '#11201a' :
+          sector.id === 'industrial' ? '#1f2931' :
+          sector.id === 'wasteland'  ? '#33281d' : '#1b2026';
+
         const b = {
           c, r, bw, bh,
           x: c * TILE + pad,
@@ -173,9 +418,9 @@ window.GTA0.World = (function () {
           seed,
           neonColor,
           signText: hasSign ? NEON_SIGNS[Math.floor(seed * 97) % NEON_SIGNS.length] : null,
-          beacon: style === 'tower' && height > 0.30,
-          roofTone: style === 'ruin' ? '#231e19' : style === 'cyber' ? '#121b18' : '#171b20',
-          wallBase: style === 'ruin' ? '#2a221c' : style === 'cyber' ? '#131d19' : '#1b2026'
+          beacon: (style === 'tower' || sector.id === 'core') && height > 0.28,
+          roofTone,
+          wallBase
         };
         buildings.push(b);
 
@@ -187,7 +432,7 @@ window.GTA0.World = (function () {
       }
     }
 
-    // 3. Собираем проходимые тайлы дорог, фонари, костры, светофоры, лужи, сгоревшие авто, разломы Матрицы
+    // 3. Собираем проходимые тайлы дорог, фонари, костры, светофоры, лужи, остовы, цифровые разломы
     const roadTiles = [];
     const streetlights = [];
     const fires = [];
@@ -201,8 +446,8 @@ window.GTA0.World = (function () {
         const t = grid[r][c];
         const cx = (c + 0.5) * TILE;
         const cy = (r + 0.5) * TILE;
-        const h1 = hash(c * 13 + 1, r * 23 + 7);
-        const h2 = hash(c * 29 + 3, r * 19 + 11);
+        const h1 = hash(c * 13 + 1 + seedSalt, r * 23 + 7);
+        const h2 = hash(c * 29 + 3, r * 19 + 11 + seedSalt);
 
         if (t === T_ROAD || t === T_WASTE) {
           roadTiles.push({ c, r, x: cx, y: cy, type: t });
@@ -215,19 +460,17 @@ window.GTA0.World = (function () {
           const roadE = c < COLS - 1 && grid[r][c + 1] === T_ROAD;
           const isIntersection = (roadN || roadS) && (roadW || roadE);
 
-          // Фонари на перекрёстках и вдоль проспектов
           if (isIntersection && (c + r) % 2 === 0) {
-            const isCyberZone = c > COLS * 0.55;
+            const useB = sector.id === 'core' ? h1 > 0.45 : (c > COLS * 0.55 && h1 > 0.45);
             streetlights.push({
               x: c * TILE + 12,
               y: r * TILE + 12,
-              color: isCyberZone && h1 > 0.45 ? '#38e8ff' : '#ffab42',
+              color: useB ? sector.lightB : sector.lightA,
               radius: 175,
               flicker: h2 > 0.72,
               phase: h1 * Math.PI * 2
             });
-            // Светофор на крупных перекрёстках
-            if (r === 3 || r === 7 || r === 12) {
+            if (sector.id !== 'wasteland' && (r === 3 || r === 7 || r === 12)) {
               trafficLights.push({
                 x: (c + 1) * TILE - 12,
                 y: (r + 1) * TILE - 12,
@@ -238,47 +481,46 @@ window.GTA0.World = (function () {
             streetlights.push({
               x: cx + (roadN || roadS ? -52 : 0),
               y: cy + (roadW || roadE ? -52 : 0),
-              color: h2 > 0.7 ? '#48e8ff' : '#ffa73b',
+              color: h2 > 0.65 ? sector.lightB : sector.lightA,
               radius: 145,
               flicker: h2 > 0.8,
               phase: h2 * 10
             });
           }
 
-          // Мокрые лужи с отражением неона на дорогах
-          if (h1 > 0.68) {
+          if (h1 > sector.puddleChance) {
             puddles.push({
               x: cx + (h2 - 0.5) * 46,
               y: cy + (h1 - 0.8) * 60,
               rx: 18 + h2 * 24,
               ry: 11 + h1 * 14,
               rot: h2 * Math.PI,
-              tint: c > COLS * 0.52 ? (h2 > 0.5 ? '#39ff88' : '#38e8ff') : '#ffb24a'
+              tint: sector.id === 'core' ? (h2 > 0.5 ? '#39ff88' : '#38e8ff') : (h2 > 0.5 ? sector.lightB : sector.lightA)
             });
           }
 
-          // Разломы кода Матрицы на дорогах восточной/центральной части
-          if (c > COLS * 0.4 && h2 > 0.90) {
+          if ((sector.id === 'core' || c > COLS * 0.35) && h2 > sector.riftChance) {
             rifts.push({
               x: cx + (h1 - 0.5) * 40,
               y: cy + (h2 - 0.5) * 40,
               ang: (h1 - 0.5) * 1.6,
-              len: 36 + h2 * 38,
+              len: 36 + h2 * 40,
               seed: h1
             });
           }
         }
 
-        // Костры в бочках и ржавые остовы машин на пустырях и у руин
         if (t === T_WASTE) {
-          if (h1 > 0.45) {
+          const fireThr = sector.id === 'wasteland' ? 0.32 : 0.48;
+          if (h1 > fireThr) {
             fires.push({
               x: cx + (h2 - 0.5) * 58,
               y: cy + (h1 - 0.7) * 54,
               phase: h1 * 12
             });
           }
-          if (h2 > 0.52) {
+          const wreckThr = sector.id === 'wasteland' ? 0.42 : 0.55;
+          if (h2 > wreckThr) {
             wrecks.push({
               x: cx + (h1 - 0.5) * 62,
               y: cy + (h2 - 0.5) * 62,
@@ -290,18 +532,18 @@ window.GTA0.World = (function () {
       }
     }
 
-    // Несколько горящих бочек на углах площади Бункера-Депо
     fires.push({ x: depot.x - 122, y: depot.y - 118, phase: 0.4 });
     fires.push({ x: depot.x + 122, y: depot.y - 118, phase: 2.1 });
     fires.push({ x: depot.x - 122, y: depot.y + 118, phase: 4.3 });
     fires.push({ x: depot.x + 122, y: depot.y + 118, phase: 5.7 });
 
-    const mapCanvas = bakeGroundCanvas(grid, buildings, depot, radZones, wrecks, streetlights);
-    const minimapBg = bakeMinimapBg(grid, buildings, depot, radZones);
+    const mapCanvas = bakeGroundCanvas(grid, buildings, depot, radZones, wrecks, streetlights, sector);
+    const minimapBg = bakeMinimapBg(grid, buildings, depot, radZones, sector);
 
     return {
       TILE, COLS, ROWS, WIDTH, HEIGHT,
       T_ROAD, T_BLDG, T_DEPOT, T_WASTE,
+      sector,
       grid, roadTiles, buildings, bldgGrid,
       depot, radZones, terminals,
       streetlights, fires, trafficLights, puddles, wrecks, rifts,
@@ -397,29 +639,23 @@ window.GTA0.World = (function () {
       },
 
       sectorName(x, y) {
-        if (Math.hypot(x - depot.x, y - depot.y) < 220) return 'СЕКТОР 00 · БУНКЕР-ДЕПО';
-        if (this.getRadIntensity(x, y) > 0.05) return 'ОПАСНОСТЬ · РАД-КРАТЕР';
-        const nx = x / WIDTH;
-        const ny = y / HEIGHT;
-        if (nx > 0.56 && ny < 0.52) return 'СЕКТОР 02 · НЕОНОВЫЙ ДАУНТАУН';
-        if (nx > 0.56 && ny >= 0.52) return 'СЕКТОР 04 · УЗЕЛ КОДА';
-        if (nx <= 0.44 && ny < 0.52) return 'СЕКТОР 01 · СТАРАЯ ПРОМЗОНА';
-        if (nx <= 0.44 && ny >= 0.52) return 'СЕКТОР 03 · РЖАВЫЕ РУИНЫ';
-        return 'СЕКТОР 05 · ГЛАВНЫЙ ПРОСПЕКТ';
+        if (Math.hypot(x - depot.x, y - depot.y) < 220) return `S-${sector.code} · БУНКЕР-ДЕПО`;
+        if (this.getRadIntensity(x, y) > 0.05) return `S-${sector.code} · РАД-КРАТЕР`;
+        return `СЕКТОР ${sector.code} · ${sector.name}`;
       }
     };
   }
 
   // ==================== ЗАПЕКАНИЕ ЗЕМЛИ, ДОРОГ И ТРОТУАРОВ ====================
-  function bakeGroundCanvas(grid, buildings, depot, radZones, wrecks, streetlights) {
+  function bakeGroundCanvas(grid, buildings, depot, radZones, wrecks, streetlights, sector) {
     const canvas = document.createElement('canvas');
     canvas.width = WIDTH;
     canvas.height = HEIGHT;
     const ctx = canvas.getContext('2d');
 
-    // 1. Текстурный мокрый ночной асфальт на всю карту
-    const asphaltPat = makeAsphaltPattern(ctx);
-    ctx.fillStyle = asphaltPat || '#15181c';
+    // 1. Текстурный асфальт под выбранный биом
+    const asphaltPat = makeAsphaltPattern(ctx, sector);
+    ctx.fillStyle = asphaltPat || sector.asphalt || '#15181c';
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
     // 2. Тайлы дорог, тротуаров, пустырей и площади Депо
@@ -438,7 +674,6 @@ window.GTA0.World = (function () {
           const isH = roadW || roadE;
           const isV = roadN || roadS;
 
-          // Тёмные колеи от шин на проезжей части
           ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
           if (isH && !isV) {
             ctx.fillRect(x, y + 26, TILE, 18);
@@ -448,54 +683,50 @@ window.GTA0.World = (function () {
             ctx.fillRect(x + TILE - 44, y, 18, TILE);
           }
 
-          // Разметка: двойная жёлтая на главных бульварах, пунктир на обычных улицах
           const isMainBlvd = (r === 3 || r === 7 || r === 12 || c === 0 || c === COLS - 1);
+          const lineColor = sector.roadLine || 'rgba(218, 165, 58, 0.56)';
           if (isH && !isV) {
             if (isMainBlvd) {
-              ctx.fillStyle = 'rgba(218, 165, 58, 0.58)';
+              ctx.fillStyle = lineColor;
               ctx.fillRect(x, y + TILE / 2 - 4, TILE, 2.5);
               ctx.fillRect(x, y + TILE / 2 + 2, TILE, 2.5);
             } else {
-              ctx.fillStyle = 'rgba(205, 168, 76, 0.45)';
+              ctx.fillStyle = lineColor;
               for (let dx = 10; dx < TILE - 10; dx += 30) {
                 ctx.fillRect(x + dx, y + TILE / 2 - 1.5, 16, 3);
               }
             }
-            // Белые краевые линии
-            ctx.fillStyle = 'rgba(200, 210, 215, 0.14)';
+            ctx.fillStyle = sector.id === 'core' ? 'rgba(56, 232, 255, 0.22)' : 'rgba(200, 210, 215, 0.14)';
             ctx.fillRect(x, y + 8, TILE, 2);
             ctx.fillRect(x, y + TILE - 10, TILE, 2);
           } else if (isV && !isH) {
-            ctx.fillStyle = 'rgba(205, 168, 76, 0.45)';
+            ctx.fillStyle = lineColor;
             for (let dy = 10; dy < TILE - 10; dy += 30) {
               ctx.fillRect(x + TILE / 2 - 1.5, y + dy, 3, 16);
             }
-            ctx.fillStyle = 'rgba(200, 210, 215, 0.14)';
+            ctx.fillStyle = sector.id === 'core' ? 'rgba(56, 232, 255, 0.22)' : 'rgba(200, 210, 215, 0.14)';
             ctx.fillRect(x + 8, y, 2, TILE);
             ctx.fillRect(x + TILE - 10, y, 2, TILE);
           } else if (isH && isV) {
-            // Перекрёсток: потёртая зебра и люк канализации
-            ctx.fillStyle = 'rgba(215, 215, 200, 0.17)';
+            ctx.fillStyle = sector.id === 'core' ? 'rgba(57, 255, 136, 0.2)' : 'rgba(215, 215, 200, 0.17)';
             for (let k = 20; k < TILE - 20; k += 16) {
               if (roadN) ctx.fillRect(x + k, y + 5, 8, 13);
               if (roadS) ctx.fillRect(x + k, y + TILE - 18, 8, 13);
               if (roadW) ctx.fillRect(x + 5, y + k, 13, 8);
               if (roadE) ctx.fillRect(x + TILE - 18, y + k, 13, 8);
             }
-            // Канализационный люк
             ctx.fillStyle = '#24292e';
             ctx.beginPath();
             ctx.arc(x + TILE / 2 + 12, y + TILE / 2 + 12, 8, 0, Math.PI * 2);
             ctx.fill();
-            ctx.strokeStyle = '#3b4248';
+            ctx.strokeStyle = sector.id === 'core' ? '#2c7856' : '#3b4248';
             ctx.lineWidth = 1.5;
             ctx.stroke();
           }
 
-          // Пыль пустоши Fallout и масляные пятна на окраинах
-          if (c < COLS * 0.45 && h1 > 0.55) {
-            const g = ctx.createRadialGradient(x + 64, y + 64, 6, x + 64, y + 64, 54);
-            g.addColorStop(0, 'rgba(122, 92, 54, 0.24)');
+          if ((sector.id === 'wasteland' && h1 > 0.32) || (c < COLS * 0.45 && h1 > 0.55)) {
+            const g = ctx.createRadialGradient(x + 64, y + 64, 6, x + 64, y + 64, 58);
+            g.addColorStop(0, sector.id === 'wasteland' ? 'rgba(176, 122, 60, 0.34)' : 'rgba(122, 92, 54, 0.24)');
             g.addColorStop(1, 'rgba(122, 92, 54, 0)');
             ctx.fillStyle = g;
             ctx.fillRect(x, y, TILE, TILE);
@@ -507,27 +738,26 @@ window.GTA0.World = (function () {
             ctx.fill();
           }
         } else if (t === T_WASTE) {
-          // Разбитый бетонный пустырь / двор с песком и обломками
-          ctx.fillStyle = '#201e1a';
+          ctx.fillStyle = sector.wasteBase || '#201e1a';
           ctx.fillRect(x, y, TILE, TILE);
           const dg = ctx.createRadialGradient(x + 64, y + 64, 10, x + 64, y + 64, 80);
-          dg.addColorStop(0, 'rgba(116, 88, 52, 0.28)');
+          dg.addColorStop(0, sector.wasteGlow || 'rgba(116, 88, 52, 0.28)');
           dg.addColorStop(1, 'rgba(20, 18, 16, 0.15)');
           ctx.fillStyle = dg;
           ctx.fillRect(x, y, TILE, TILE);
 
-          // Бетонные плиты с трещинами и битым кирпичом
-          ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+          ctx.strokeStyle = sector.id === 'core' ? 'rgba(57,255,136,0.22)' : 'rgba(0,0,0,0.45)';
           ctx.lineWidth = 1.5;
           ctx.strokeRect(x + 2, y + 2, TILE - 4, TILE - 4);
           for (let i = 0; i < 9; i++) {
             const rx = x + 10 + hash(c * 17 + i, r * 11) * (TILE - 22);
             const ry = y + 10 + hash(r * 23 + i, c * 19) * (TILE - 22);
-            ctx.fillStyle = i % 2 === 0 ? '#3a342c' : '#2b2824';
+            ctx.fillStyle = sector.id === 'core'
+              ? (i % 2 === 0 ? '#173828' : '#12281e')
+              : (i % 2 === 0 ? '#3a342c' : '#2b2824');
             ctx.fillRect(rx, ry, 5 + (i % 4) * 3, 4 + (i % 3) * 2);
           }
         } else if (t === T_DEPOT) {
-          // Укреплённая бетонная площадка Бункера-Депо
           ctx.fillStyle = '#212524';
           ctx.fillRect(x, y, TILE, TILE);
           ctx.strokeStyle = 'rgba(255, 184, 77, 0.22)';
@@ -536,10 +766,8 @@ window.GTA0.World = (function () {
           ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
           ctx.fillRect(x + 8, y + 8, TILE - 16, TILE - 16);
         } else if (t === T_BLDG) {
-          // Бетонный тротуар с бордюрами вокруг зданий
-          ctx.fillStyle = '#2d3033';
+          ctx.fillStyle = sector.sidewalk || '#2d3033';
           ctx.fillRect(x, y, TILE, TILE);
-          // Плитка тротуара
           ctx.strokeStyle = 'rgba(0, 0, 0, 0.28)';
           ctx.lineWidth = 1;
           for (let s = 32; s < TILE; s += 32) {
@@ -548,8 +776,7 @@ window.GTA0.World = (function () {
             ctx.moveTo(x, y + s); ctx.lineTo(x + TILE, y + s);
             ctx.stroke();
           }
-          // Светлая кромка бордюра у дороги
-          ctx.fillStyle = '#484d52';
+          ctx.fillStyle = sector.curb || '#484d52';
           if (r > 0 && grid[r - 1][c] !== T_BLDG) ctx.fillRect(x, y, TILE, 4);
           if (r < ROWS - 1 && grid[r + 1][c] !== T_BLDG) ctx.fillRect(x, y + TILE - 4, TILE, 4);
           if (c > 0 && grid[r][c - 1] !== T_BLDG) ctx.fillRect(x, y, 4, TILE);
@@ -711,7 +938,7 @@ window.GTA0.World = (function () {
     return canvas;
   }
 
-  function bakeMinimapBg(grid, buildings, depot, radZones) {
+  function bakeMinimapBg(grid, buildings, depot, radZones, sector) {
     const c = document.createElement('canvas');
     c.width = 280;
     c.height = 190;
@@ -719,8 +946,11 @@ window.GTA0.World = (function () {
     const sx = c.width / WIDTH;
     const sy = c.height / HEIGHT;
 
-    ctx.fillStyle = '#060c09';
+    ctx.fillStyle = sector.id === 'wasteland' ? '#0c0906' : sector.id === 'industrial' ? '#060a0e' : '#060c09';
     ctx.fillRect(0, 0, c.width, c.height);
+
+    const roadCol = sector.id === 'wasteland' ? '#2c2317' : sector.id === 'industrial' ? '#172530' : sector.id === 'core' ? '#103022' : '#182b20';
+    const wasteCol = sector.id === 'wasteland' ? '#362718' : sector.id === 'core' ? '#0e241b' : '#232419';
 
     for (let r = 0; r < ROWS; r++) {
       for (let col = 0; col < COLS; col++) {
@@ -730,13 +960,13 @@ window.GTA0.World = (function () {
         const w = TILE * sx;
         const h = TILE * sy;
         if (t === T_ROAD) {
-          ctx.fillStyle = '#182b20';
+          ctx.fillStyle = roadCol;
           ctx.fillRect(x, y, w + 0.5, h + 0.5);
         } else if (t === T_DEPOT) {
           ctx.fillStyle = '#333b22';
           ctx.fillRect(x, y, w + 0.5, h + 0.5);
         } else if (t === T_WASTE) {
-          ctx.fillStyle = '#232419';
+          ctx.fillStyle = wasteCol;
           ctx.fillRect(x, y, w + 0.5, h + 0.5);
         }
       }
@@ -764,5 +994,5 @@ window.GTA0.World = (function () {
     return c;
   }
 
-  return { createWorld };
+  return { createWorld, SECTORS };
 })();

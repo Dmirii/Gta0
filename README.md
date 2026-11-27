@@ -48,14 +48,7 @@
 - `android/` — автономная Android-оболочка (`ru.dimaa.vaultrunner`, `WebViewAssetLoader`), автоматически подтягивающая файлы игры из корня
 - `.github/workflows/android-apk.yml` — автосборка подписанного `.apk` / `.aab` (или тестового debug `.apk`) на GitHub Actions
 
-## Об авторах
+## О разработчике
 
-**VAULT RUNNER** создан в живом дуэте человека и AI-агента:
-
-- **Дмитрий Антонов (`@Dmirii`)** — автор идеи, геймдизайн, продюсирование и итеративное развитие проекта. Инженер-программист по образованию (ГУАП), вернулся к истокам — создаёт веб-игры и AI-проекты.
-  - Сайт: [dimaa.ru](https://dimaa.ru/)
-  - Telegram: [@Dimaa_ru](https://t.me/Dimaa_ru)
-  - GitHub: [github.com/Dmirii](https://github.com/Dmirii)
-  - Email: [dimaa@dimaa.ru](mailto:dimaa@dimaa.ru)
-  - ВКонтакте: [@dimaa_ru](https://vk.com/dimaa_ru)
-- **Arena.ai · Agent Mode** ([arena.ai](https://arena.ai)) — соавтор и AI-разработчик: архитектура HTML5 Canvas 2D, 2.5D-город, физика и баланс врагов, процедурный Keygen-чиптюн и синтез мотора, графика гаража, `CABIN CAM` и Android-оболочка для RuStore.
+- **Дмитрий Антонов** — разработчик и поддержка: [dimaa@dimaa.ru](mailto:dimaa@dimaa.ru)
+- **Arena.ai · Agent Mode** — AI-соавтор (код, графика, звук и сборка)

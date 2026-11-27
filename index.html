@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#060b07">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>VAULT RUNNER // Wasteland Code</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=14">
-  <link rel="apple-touch-icon" href="assets/icon-512.png?v=14">
-  <link rel="stylesheet" href="css/style.css?v=14">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=15">
+  <link rel="apple-touch-icon" href="assets/icon-512.png?v=15">
+  <link rel="stylesheet" href="css/style.css?v=15">
 </head>
 <body class="crt-on">
   <div id="app">
@@ -47,10 +47,21 @@
           <div class="hud-pill trace-pill" id="hud-trace" title="Уровень следа Системы">СЛЕД: ☆☆☆☆☆</div>
         </div>
 
-        <!-- Мобильный мини-радар поверх поля (переключаемый) -->
+        <!-- Мобильный мини-радар поверх поля (левый верхний угол, переключаемый) -->
         <div id="mobile-radar-float" class="hidden">
           <canvas id="mobile-minimap" width="124" height="94"></canvas>
         </div>
+
+        <!-- Лицо водителя CABIN CAM для телефона (правый верхний угол поля) -->
+        <button id="mobile-cabin-wrap" class="mobile-only" type="button" aria-label="Камера водителя">
+          <canvas id="mobile-driver-cam" width="128" height="128"></canvas>
+          <span class="mobile-cabin-dot" id="mobile-cabin-dot"></span>
+        </button>
+
+        <!-- Кнопка перехода в следующий сектор-биом (появляется после 2 контрактов) -->
+        <button id="btn-next-sector" class="next-sector-btn hidden" type="button">
+          ▶ СЛЕДУЮЩИЙ СЕКТОР
+        </button>
 
         <!-- Мобильное сенсорное управление -->
         <div id="touch-controls" aria-label="Сенсорное управление">
@@ -82,7 +93,7 @@
           <div class="terminal-modal">
             <div class="modal-tag">V-CORE SYSTEMS // VAULT-OS 2077 · CODE LINK</div>
             <div id="modal-logo-wrap" class="modal-logo-wrap">
-              <img id="modal-logo" src="assets/logo.png?v=14" alt="VAULT RUNNER">
+              <img id="modal-logo" src="assets/logo.png?v=15" alt="VAULT RUNNER">
             </div>
             <h1 id="modal-title" class="hidden">VAULT RUNNER</h1>
             <p id="modal-subtitle">
@@ -108,6 +119,21 @@
                   <li><strong>⚡ ФОКУС</strong> — замедление времени</li>
                   <li><strong>☰ МЕНЮ</strong> — гараж, карта и миссии</li>
                 </ul>
+              </div>
+            </div>
+
+            <!-- Выбор сектора-биома и режима сложности -->
+            <div id="modal-run-config" class="run-config">
+              <div class="run-config-row">
+                <span class="run-config-lbl">СЕКТОР:</span>
+                <div id="sector-picker" class="sector-picker"></div>
+              </div>
+              <div class="run-config-row">
+                <span class="run-config-lbl">РЕЖИМ:</span>
+                <div class="diff-picker">
+                  <button id="btn-diff-std" class="cfg-pill active" type="button">СТАНДАРТ</button>
+                  <button id="btn-diff-hard" class="cfg-pill danger" type="button">☠ ХАРДКОР (+35% ₵)</button>
+                </div>
               </div>
             </div>
 
@@ -279,7 +305,7 @@
 
           <div class="garage-car-card" id="garage-car-card">
             <div class="garage-car-media">
-              <img id="garage-car-img" src="assets/cars/car-0.jpg?v=14" alt="Машина в гараже">
+              <img id="garage-car-img" src="assets/cars/car-0.jpg?v=15" alt="Машина в гараже">
               <span class="garage-car-rank" id="garage-car-rank">КЛАСС I / V</span>
               <span class="garage-car-name" id="garage-car-name">SCOUT BUGGY</span>
             </div>
@@ -346,9 +372,19 @@
                 <input id="opt-music" type="checkbox" checked>
               </label>
             </div>
-            <label class="setting-row">
-              <span>CRT-строки и эффект глитча</span>
-              <input id="opt-crt" type="checkbox" checked>
+            <div class="setting-pair">
+              <label class="setting-row">
+                <span>Хардкор (+35% ₵)</span>
+                <input id="opt-hardcore" type="checkbox">
+              </label>
+              <label class="setting-row">
+                <span>CRT и глитч</span>
+                <input id="opt-crt" type="checkbox" checked>
+              </label>
+            </div>
+            <label class="setting-row mobile-only">
+              <span>Лицо водителя (экран)</span>
+              <input id="opt-mobile-cam" type="checkbox" checked>
             </label>
             <label class="setting-row">
               <span>Ночной свет и 2.5D-тени</span>
@@ -381,7 +417,7 @@
               <span><b>ЛКМ / Space</b> — стрельба</span>
               <span><b>Shift / ПКМ</b> — Фокус (слоу-мо)</span>
               <span><b>E</b> — сервис · <b>M</b> — музыка</span>
-              <span><b>1–4</b> — вкладки меню</span>
+              <span><b>N</b> — след. сектор · <b>1–4</b> — меню</span>
               <span><b>Esc / P</b> — пауза</span>
             </div>
           </div>
@@ -390,24 +426,18 @@
     </aside>
   </div>
 
-  <!-- МОДАЛЬНОЕ ОКНО: ОБ АВТОРАХ И КОНТАКТЫ -->
+  <!-- МОДАЛЬНОЕ ОКНО: О РАЗРАБОТЧИКЕ И ПОДДЕРЖКЕ (RuStore-минимум) -->
   <div id="credits-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="credits-title">
     <div class="terminal-modal credits-modal">
       <div class="credits-head">
         <div>
-          <div class="modal-tag">V-CORE DOSSIER // VAULT RUNNER CREDITS</div>
-          <h2 id="credits-title">ОБ АВТОРАХ ИГРЫ</h2>
+          <div class="modal-tag">VAULT RUNNER // DEVELOPER INFO</div>
+          <h2 id="credits-title">О РАЗРАБОТЧИКЕ</h2>
         </div>
         <button id="btn-credits-close-x" class="icon-btn" type="button" aria-label="Закрыть">✕</button>
       </div>
 
-      <p class="credits-intro">
-        <strong>VAULT RUNNER</strong> создан в живом дуэте человека и AI-агента — от идеи и геймдизайна
-        до 2.5D-движка, графики, физики и процедурного Keygen-саундтрека.
-      </p>
-
       <div class="credits-grid">
-        <!-- КАРТОЧКА 1: ДМИТРИЙ АНТОНОВ -->
         <article class="author-card author-human">
           <div class="author-top">
             <div class="author-avatar avatar-human" aria-hidden="true">
@@ -419,35 +449,24 @@
               </svg>
             </div>
             <div>
-              <div class="author-role-tag">АВТОР ИДЕИ · ГЕЙМДИЗАЙН · ПРОДЮСЕР</div>
+              <div class="author-role-tag">РАЗРАБОТЧИК И ПОДДЕРЖКА</div>
               <h3 class="author-name">Дмитрий Антонов</h3>
-              <div class="author-handle">@Dmirii · Санкт-Петербург / Россия</div>
+              <div class="author-handle">Независимый разработчик</div>
             </div>
           </div>
           <p class="author-bio">
-            Инженер-программист по образованию (ГУАП). Вернулся к истокам — придумывает и продюсирует
-            инди-игры, веб-проекты и эксперименты с AI.
+            По вопросам работы игры, предложениям и обратной связи пишите на электронную почту:
           </p>
           <div class="author-links">
-            <a class="contact-chip" href="https://dimaa.ru/" target="_blank" rel="noopener noreferrer">
-              <span class="chip-ico">🌐</span><span>dimaa.ru</span>
-            </a>
-            <a class="contact-chip" href="https://t.me/Dimaa_ru" target="_blank" rel="noopener noreferrer">
-              <span class="chip-ico">✈</span><span>@Dimaa_ru</span>
-            </a>
-            <a class="contact-chip" href="https://github.com/Dmirii" target="_blank" rel="noopener noreferrer">
-              <span class="chip-ico">⌘</span><span>GitHub / Dmirii</span>
-            </a>
             <a class="contact-chip" href="mailto:dimaa@dimaa.ru">
               <span class="chip-ico">✉</span><span>dimaa@dimaa.ru</span>
             </a>
-            <a class="contact-chip" href="https://vk.com/dimaa_ru" target="_blank" rel="noopener noreferrer">
-              <span class="chip-ico">💬</span><span>VK @dimaa_ru</span>
+            <a class="contact-chip ai" href="privacy.html">
+              <span class="chip-ico">🔒</span><span>Политика конфиденциальности</span>
             </a>
           </div>
         </article>
 
-        <!-- КАРТОЧКА 2: AI-АГЕНТ ARENA.AI -->
         <article class="author-card author-ai">
           <div class="author-top">
             <div class="author-avatar avatar-ai" aria-hidden="true">
@@ -461,38 +480,27 @@
               </svg>
             </div>
             <div>
-              <div class="author-role-tag ai">СОАВТОР · AI-РАЗРАБОТЧИК · КОД И ЗВУК</div>
+              <div class="author-role-tag ai">ТЕХНОЛОГИИ И РЕАЛИЗАЦИЯ</div>
               <h3 class="author-name">Arena.ai · Agent Mode</h3>
-              <div class="author-handle">AI Coding Agent // V-CORE</div>
+              <div class="author-handle">HTML5 Canvas 2D · Web Audio API</div>
             </div>
           </div>
           <p class="author-bio">
-            Полная реализация игрового движка на HTML5 Canvas 2D: 2.5D-город, физика и баланс врагов,
-            процедурный Keygen-чиптюн и синтез мотора, арт гаража и CABIN CAM.
+            Игра работает полностью автономно, не требует регистрации и не собирает персональные данные.
+            Прогресс хранится локально на вашем устройстве.
           </p>
-          <div class="author-links">
-            <a class="contact-chip ai" href="https://arena.ai" target="_blank" rel="noopener noreferrer">
-              <span class="chip-ico">⚡</span><span>arena.ai</span>
-            </a>
-            <a class="contact-chip ai" href="https://github.com/Dmirii/Gta0" target="_blank" rel="noopener noreferrer">
-              <span class="chip-ico">📦</span><span>Исходный код</span>
-            </a>
-            <a class="contact-chip ai" href="privacy.html">
-              <span class="chip-ico">🔒</span><span>Конфиденциальность</span>
-            </a>
-          </div>
         </article>
       </div>
 
       <div class="credits-footer">
-        <span class="credits-stamp">VAULT RUNNER v1.0 · HTML5 CANVAS 2D + WEB AUDIO · 2026</span>
+        <span class="credits-stamp">VAULT RUNNER v1.0 · 2026</span>
         <button id="btn-credits-close" class="btn-primary" type="button">✕ ЗАКРЫТЬ</button>
       </div>
     </div>
   </div>
 
-  <script defer src="js/audio.js?v=14"></script>
-  <script defer src="js/world.js?v=14"></script>
-  <script defer src="js/game.js?v=14"></script>
+  <script defer src="js/audio.js?v=15"></script>
+  <script defer src="js/world.js?v=15"></script>
+  <script defer src="js/game.js?v=15"></script>
 </body>
 </html>
