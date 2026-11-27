@@ -7,9 +7,9 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>VAULT RUNNER // Wasteland Code</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=16">
-  <link rel="apple-touch-icon" href="assets/icon-512.png?v=16">
-  <link rel="stylesheet" href="css/style.css?v=18">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=19">
+  <link rel="apple-touch-icon" href="assets/icon-512.png?v=19">
+  <link rel="stylesheet" href="css/style.css?v=19">
 </head>
 <body class="crt-on">
   <div id="app">
@@ -53,10 +53,11 @@
           <canvas id="mobile-minimap" width="124" height="94"></canvas>
         </div>
 
-        <!-- Лицо водителя CABIN CAM для телефона (правый верхний угол поля) -->
-        <button id="mobile-cabin-wrap" class="mobile-only" type="button" aria-label="Камера водителя">
+        <!-- Лицо водителя CABIN CAM для телефона (правый верхний угол поля; тап листает 3 Keygen-трека!) -->
+        <button id="mobile-cabin-wrap" class="mobile-only" type="button" aria-label="Камера водителя — переключить трек Keygen">
           <canvas id="mobile-driver-cam" width="128" height="128"></canvas>
           <span class="mobile-cabin-dot" id="mobile-cabin-dot"></span>
+          <span class="mobile-cabin-fm" id="mobile-cabin-fm">♪1</span>
         </button>
 
         <!-- Кнопка перехода в следующий сектор-биом (появляется после 2 контрактов) -->
@@ -500,8 +501,8 @@
     </div>
   </div>
 
-  <script defer src="js/audio.js?v=18"></script>
-  <script defer src="js/world.js?v=18"></script>
-  <script defer src="js/game.js?v=18"></script>
+  <script defer src="js/audio.js?v=19"></script>
+  <script defer src="js/world.js?v=19"></script>
+  <script defer src="js/game.js?v=19"></script>
 </body>
 </html>

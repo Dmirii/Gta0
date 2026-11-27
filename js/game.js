@@ -255,6 +255,7 @@
     mobileCabinWrap: document.getElementById('mobile-cabin-wrap'),
     mobileDriverCam: document.getElementById('mobile-driver-cam'),
     mobileCabinDot: document.getElementById('mobile-cabin-dot'),
+    mobileCabinFm: document.getElementById('mobile-cabin-fm'),
     btnNextSector: document.getElementById('btn-next-sector'),
     modalRunConfig: document.getElementById('modal-run-config'),
     sectorPicker: document.getElementById('sector-picker'),
@@ -362,6 +363,7 @@
       return {
         sound: saved.sound !== false,
         music: saved.music !== false,
+        musicTrack: clamp(Math.floor(Number(saved.musicTrack || 0)), 0, 2),
         hardcore: !!saved.hardcore,
         mobileCam: saved.mobileCam !== false,
         crt: saved.crt !== false,
@@ -371,7 +373,7 @@
         zoom: clamp(Number(saved.zoom || 1), 0.7, 1.4)
       };
     } catch {
-      return { sound: true, music: true, hardcore: false, mobileCam: true, crt: true, noir: true, rain: true, sidebarLeft: false, zoom: 1.0 };
+      return { sound: true, music: true, musicTrack: 0, hardcore: false, mobileCam: true, crt: true, noir: true, rain: true, sidebarLeft: false, zoom: 1.0 };
     }
   }
 
@@ -787,21 +789,42 @@
     if (customQuote) driverSetQuote(customQuote, 3.8);
   }
 
+  function syncTrackBadge() {
+    const info = AudioFX.getTrackInfo ? AudioFX.getTrackInfo() : { index: prefs.musicTrack || 0, code: 'FM-01', name: 'RAZOR NEON', bpm: 138 };
+    if (el.mobileCabinFm) {
+      el.mobileCabinFm.textContent = `♪${info.index + 1}`;
+    }
+    if (el.cabinScreenFrame) {
+      el.cabinScreenFrame.title = `Клик — сменить Keygen-трек (${info.code}: ${info.name}, ${info.bpm} BPM)`;
+    }
+  }
+
   function driverInteractiveClick() {
     if (gameState === 'dead') return;
-    driverCam.clickCycle = (driverCam.clickCycle + 1) % 3;
-    if (driverCam.clickCycle === 1) {
-      driverDrinkCanteen(pickQuote(DRIVER_QUOTES.canteen));
-    } else if (driverCam.clickCycle === 2) {
-      driverAwakenNeo(2.6, pickQuote(DRIVER_QUOTES.neo));
+    const info = AudioFX.nextTrack ? AudioFX.nextTrack() : { index: (driverCam.clickCycle + 1) % 3, code: 'FM-01', name: 'RAZOR NEON', bpm: 138 };
+    prefs.musicTrack = info.index;
+    savePrefs();
+    syncTrackBadge();
+
+    const trackLine = `♪ ${info.code} · ${info.name} (${info.bpm} BPM)`;
+    if (info.index === 1) {
+      driverAwakenNeo(2.4, trackLine);
+    } else if (info.index === 2) {
+      driverDrinkCanteen(trackLine);
     } else {
       driverCam.canteenTimer = 0;
       driverCam.neoTimer = 0;
       driverCam.grinDur = 2.0;
       driverCam.grinTimer = 2.0;
       driverCam.joltY -= 1.5;
-      driverSetQuote(pickQuote(DRIVER_QUOTES.kill), 3.4);
+      driverSetQuote(trackLine, 3.8);
     }
+
+    const mutedNote = prefs.music ? '' : ' [музыка выкл]';
+    if (player) {
+      addFloatText(player.x, player.y - 34, `♪ ${info.code} · ${info.name}`, info.index === 1 ? '#39ff88' : (info.index === 2 ? '#ffb84d' : '#38e8ff'));
+    }
+    addLog(`Радио кабины: ${trackLine}${mutedNote}`, 'matrix');
   }
 
   function sampleEcgWave(phase) {
@@ -5397,7 +5420,11 @@
   // Привязка настроек
   function applyPrefs() {
     AudioFX.setEnabled(prefs.sound);
+    if (AudioFX.setTrack && AudioFX.getTrackInfo && AudioFX.getTrackInfo().index !== (prefs.musicTrack || 0)) {
+      AudioFX.setTrack(prefs.musicTrack || 0, true);
+    }
     if (AudioFX.setMusicEnabled) AudioFX.setMusicEnabled(prefs.music);
+    syncTrackBadge();
     document.body.classList.toggle('crt-on', prefs.crt);
     el.app.classList.toggle('sidebar-left', prefs.sidebarLeft);
     if (el.mobileCabinWrap) {
