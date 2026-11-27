@@ -569,6 +569,10 @@ window.GTA0.World = (function () {
         return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
       },
 
+      isBlocked(x, y) {
+        return this.isPointInBuilding(x, y);
+      },
+
       resolveCircle(ent, radius) {
         let hit = false;
         const m = radius + 8;

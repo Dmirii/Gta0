@@ -2798,12 +2798,12 @@
 
         // Проверка препятствия впереди (lookahead) — враг объезжает углы, а не буксует в стене
         const probeD = 58;
-        const aheadBlocked = world.isBlocked(e.x + Math.cos(desiredAng) * probeD, e.y + Math.sin(desiredAng) * probeD);
+        const aheadBlocked = world.isPointInBuilding(e.x + Math.cos(desiredAng) * probeD, e.y + Math.sin(desiredAng) * probeD);
         if (aheadBlocked) {
           const leftAng = normAngle(desiredAng - 0.85);
           const rightAng = normAngle(desiredAng + 0.85);
-          const leftFree = !world.isBlocked(e.x + Math.cos(leftAng) * probeD, e.y + Math.sin(leftAng) * probeD);
-          const rightFree = !world.isBlocked(e.x + Math.cos(rightAng) * probeD, e.y + Math.sin(rightAng) * probeD);
+          const leftFree = !world.isPointInBuilding(e.x + Math.cos(leftAng) * probeD, e.y + Math.sin(leftAng) * probeD);
+          const rightFree = !world.isPointInBuilding(e.x + Math.cos(rightAng) * probeD, e.y + Math.sin(rightAng) * probeD);
           if (leftFree && !rightFree) desiredAng = leftAng;
           else if (rightFree && !leftFree) desiredAng = rightAng;
           else desiredAng = normAngle(desiredAng + (e.flankSide || 1) * 1.1);
