@@ -16,7 +16,13 @@ window.GTA0.Audio = (function () {
   let sfxBus = null;
   let musicBus = null;
   let musicFilter = null;
+  let musicBassBus = null;
+  let musicArpBus = null;
+  let musicLeadBus = null;
+  let musicSnareBus = null;
+  let musicHatBus = null;
   let engineBus = null;
+  let lastEngUpdate = 0;
 
   // Непрерывный синтезатор двигателя, дрифта и нитро
   let eng = null;
@@ -105,7 +111,12 @@ window.GTA0.Audio = (function () {
     if (ctx) return ctx;
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
-    ctx = new AC();
+    try {
+      // latencyHint: 'playback' предотвращает audio underrun и заикание Keygen на Android WebView
+      ctx = new AC({ latencyHint: 'playback' });
+    } catch {
+      ctx = new AC();
+    }
     noiseBuf = createNoiseBuffer(ctx);
 
     // Мастер-компрессор защищает от хрипа при одновременных взрывах, стрельбе, моторе и музыке
@@ -126,7 +137,7 @@ window.GTA0.Audio = (function () {
     sfxBus.gain.value = sfxEnabled ? 0.92 : 0;
     sfxBus.connect(masterComp);
 
-    // Шина музыки (через фильтр для сочного замедления в Матрице!)
+    // Шина музыки (через фильтр для сочного замедления в Цифровом Фокусе)
     musicFilter = ctx.createBiquadFilter();
     musicFilter.type = 'lowpass';
     musicFilter.frequency.value = 14000;
@@ -136,6 +147,33 @@ window.GTA0.Audio = (function () {
     musicBus.gain.value = musicEnabled ? 0.34 : 0;
     musicBus.connect(musicFilter);
     musicFilter.connect(masterComp);
+
+    // Предсозданные подшины Keygen-трекера (вместо создания BiquadFilter на каждой 16-й ноте!)
+    musicBassBus = ctx.createBiquadFilter();
+    musicBassBus.type = 'lowpass';
+    musicBassBus.frequency.value = 880;
+    musicBassBus.connect(musicBus);
+
+    musicArpBus = ctx.createBiquadFilter();
+    musicArpBus.type = 'lowpass';
+    musicArpBus.frequency.value = 2350;
+    musicArpBus.connect(musicBus);
+
+    musicLeadBus = ctx.createBiquadFilter();
+    musicLeadBus.type = 'lowpass';
+    musicLeadBus.frequency.value = 3400;
+    musicLeadBus.connect(musicBus);
+
+    musicSnareBus = ctx.createBiquadFilter();
+    musicSnareBus.type = 'bandpass';
+    musicSnareBus.frequency.value = 2100;
+    musicSnareBus.Q.value = 0.9;
+    musicSnareBus.connect(musicBus);
+
+    musicHatBus = ctx.createBiquadFilter();
+    musicHatBus.type = 'highpass';
+    musicHatBus.frequency.value = 7200;
+    musicHatBus.connect(musicBus);
 
     // Шина двигателя и шин
     engineBus = ctx.createGain();
@@ -259,12 +297,18 @@ window.GTA0.Audio = (function () {
     if (!ctx || !eng || ctx.state !== 'running') return;
     const now = ctx.currentTime;
     if (!sfxEnabled || !state || !state.active) {
-      eng.engGain.gain.setTargetAtTime(0, now, 0.08);
-      eng.chugDepth.gain.setTargetAtTime(0, now, 0.04);
-      eng.driftGain.gain.setTargetAtTime(0, now, 0.05);
-      eng.nitroGain.gain.setTargetAtTime(0, now, 0.06);
+      if (lastEngUpdate >= 0) {
+        lastEngUpdate = -1;
+        eng.engGain.gain.setTargetAtTime(0, now, 0.08);
+        eng.chugDepth.gain.setTargetAtTime(0, now, 0.04);
+        eng.driftGain.gain.setTargetAtTime(0, now, 0.05);
+        eng.nitroGain.gain.setTargetAtTime(0, now, 0.06);
+      }
       return;
     }
+    // ~24 Гц достаточно для абсолютно плавного звука мотора, снижает нагрузку на Android audio-thread в 3×
+    if (lastEngUpdate > 0 && now - lastEngUpdate < 0.042) return;
+    lastEngUpdate = now;
 
     const cls = Math.max(0, Math.min(4, state.carClass || 0));
     const prof = ENGINE_PROFILES[cls];
@@ -312,8 +356,8 @@ window.GTA0.Audio = (function () {
     eng.nitroGain.gain.setTargetAtTime(nitro * 0.055, now, 0.05);
   }
 
-  // ==================== ТРЕКЕР ФОНОВОЙ KEYGEN-МУЗЫКИ ====================
-  function playTrackerNote(midi, t, dur, type, vol, detuneCents, cutoff) {
+  // ==================== ТРЕКЕР ФОНОВОЙ KEYGEN-МУЗЫКИ (ОПТИМИЗИРОВАН ПОД ANDROID) ====================
+  function playTrackerNote(midi, t, dur, type, vol, detuneCents, targetBus) {
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
     osc.type = type;
@@ -325,23 +369,14 @@ window.GTA0.Audio = (function () {
     g.gain.exponentialRampToValueAtTime(Math.max(0.0004, vol * 0.35), t + dur * 0.75);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
 
-    if (cutoff) {
-      const f = ctx.createBiquadFilter();
-      f.type = 'lowpass';
-      f.frequency.setValueAtTime(cutoff, t);
-      f.frequency.exponentialRampToValueAtTime(Math.max(240, cutoff * 0.45), t + dur);
-      osc.connect(f);
-      f.connect(g);
-    } else {
-      osc.connect(g);
-    }
-    g.connect(musicBus);
+    osc.connect(g);
+    g.connect(targetBus || musicBassBus || musicBus);
     osc.start(t);
     osc.stop(t + dur + 0.015);
   }
 
   function playKeygenLead(midi, t, dur) {
-    // Жирный классический keygen lead: 2 слегка расстроенных импульса (square + sawtooth) + лёгкое вибрато
+    // Сочный keygen lead (2 детюнированных осциллятора в общую шину — в 3× меньше узлов без потери тембра!)
     const f = mtof(midi);
     const osc1 = ctx.createOscillator();
     const osc2 = ctx.createOscillator();
@@ -352,48 +387,24 @@ window.GTA0.Audio = (function () {
     osc1.detune.setValueAtTime(-7, t);
     osc2.detune.setValueAtTime(7, t);
 
-    // Вибрато на протяжных нотах (как на Amiga / C64 SID!)
-    if (dur > 0.16) {
-      const vib = ctx.createOscillator();
-      const vibG = ctx.createGain();
-      vib.frequency.setValueAtTime(6.2, t);
-      vibG.gain.setValueAtTime(0, t);
-      vibG.gain.linearRampToValueAtTime(9, t + 0.09);
-      vib.connect(vibG);
-      vibG.connect(osc1.detune);
-      vibG.connect(osc2.detune);
-      vib.start(t);
-      vib.stop(t + dur + 0.02);
-    }
-
-    const filt = ctx.createBiquadFilter();
-    filt.type = 'lowpass';
-    filt.frequency.setValueAtTime(3800, t);
-    filt.frequency.exponentialRampToValueAtTime(1600, t + dur);
-
-    const g1 = ctx.createGain();
-    const g2 = ctx.createGain();
-    g1.gain.value = 0.65;
-    g2.gain.value = 0.40;
-
     const env = ctx.createGain();
     env.gain.setValueAtTime(0.0001, t);
-    env.gain.linearRampToValueAtTime(0.16, t + 0.007);
-    env.gain.exponentialRampToValueAtTime(0.085, t + Math.min(0.09, dur * 0.5));
+    env.gain.linearRampToValueAtTime(0.115, t + 0.007);
+    env.gain.exponentialRampToValueAtTime(0.062, t + Math.min(0.09, dur * 0.5));
     env.gain.exponentialRampToValueAtTime(0.0008, t + dur);
 
-    osc1.connect(g1); osc2.connect(g2);
-    g1.connect(filt); g2.connect(filt);
-    filt.connect(env);
-    env.connect(musicBus);
+    osc1.connect(env);
+    osc2.connect(env);
+    env.connect(musicLeadBus || musicBus);
 
-    osc1.start(t); osc2.start(t);
+    osc1.start(t);
+    osc2.start(t);
     osc1.stop(t + dur + 0.015);
     osc2.stop(t + dur + 0.015);
   }
 
   function playKeygenArp(chord, t, stepDur) {
-    // Фирменный сверхбыстрый 3-нотный чиптюн-перебор аккорда за один 16-й шаг!
+    // Фирменный сверхбыстрый 3-нотный чиптюн-перебор аккорда за один 16-й шаг (через общую шину musicArpBus)
     const osc = ctx.createOscillator();
     osc.type = 'square';
     const subStep = stepDur / 3;
@@ -401,18 +412,13 @@ window.GTA0.Audio = (function () {
     osc.frequency.setValueAtTime(mtof(chord[1]), t + subStep);
     osc.frequency.setValueAtTime(mtof(chord[2]), t + subStep * 2);
 
-    const filt = ctx.createBiquadFilter();
-    filt.type = 'lowpass';
-    filt.frequency.value = 2400;
-
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
     g.gain.linearRampToValueAtTime(0.072, t + 0.005);
     g.gain.exponentialRampToValueAtTime(0.001, t + stepDur * 0.96);
 
-    osc.connect(filt);
-    filt.connect(g);
-    g.connect(musicBus);
+    osc.connect(g);
+    g.connect(musicArpBus || musicBus);
     osc.start(t);
     osc.stop(t + stepDur + 0.01);
   }
@@ -432,42 +438,43 @@ window.GTA0.Audio = (function () {
   }
 
   function playDrumSnare(t, accent) {
-    // Хрустящий 8-битный нойз-снейр + короткий тональный щелчок
+    // Хрустящий 8-битный нойз-снейр через общую шину musicSnareBus + короткий тональный щелчок
     const src = ctx.createBufferSource();
     src.buffer = noiseBuf;
-    const filt = ctx.createBiquadFilter();
-    filt.type = 'bandpass';
-    filt.frequency.value = 2100;
-    filt.Q.value = 0.9;
     const g = ctx.createGain();
     g.gain.setValueAtTime(accent ? 0.24 : 0.17, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
-    src.connect(filt); filt.connect(g); g.connect(musicBus);
-    src.start(t); src.stop(t + 0.12);
+    src.connect(g);
+    g.connect(musicSnareBus || musicBus);
+    src.start(t);
+    src.stop(t + 0.12);
 
-    const osc = ctx.createOscillator();
-    const og = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(215, t);
-    osc.frequency.exponentialRampToValueAtTime(105, t + 0.05);
-    og.gain.setValueAtTime(0.14, t);
-    og.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
-    osc.connect(og); og.connect(musicBus);
-    osc.start(t); osc.stop(t + 0.07);
+    if (accent) {
+      const osc = ctx.createOscillator();
+      const og = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(215, t);
+      osc.frequency.exponentialRampToValueAtTime(105, t + 0.05);
+      og.gain.setValueAtTime(0.14, t);
+      og.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+      osc.connect(og);
+      og.connect(musicBus);
+      osc.start(t);
+      osc.stop(t + 0.07);
+    }
   }
 
   function playDrumHat(t, open) {
     const src = ctx.createBufferSource();
     src.buffer = noiseBuf;
-    const filt = ctx.createBiquadFilter();
-    filt.type = 'highpass';
-    filt.frequency.value = 7200;
     const dur = open ? 0.085 : 0.028;
     const g = ctx.createGain();
     g.gain.setValueAtTime(open ? 0.085 : 0.055, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    src.connect(filt); filt.connect(g); g.connect(musicBus);
-    src.start(t); src.stop(t + dur + 0.01);
+    src.connect(g);
+    g.connect(musicHatBus || musicBus);
+    src.start(t);
+    src.stop(t + dur + 0.01);
   }
 
   function scheduleMusicStep(step, t, stepDur) {
@@ -479,10 +486,10 @@ window.GTA0.Audio = (function () {
     // 1) Качающий октавный чиптюн-бас
     const bassOff = BASS_PATTERN[beatStep];
     if (bassOff !== -99) {
-      playTrackerNote(chord[3] + bassOff, t, stepDur * 0.92, 'sawtooth', 0.19, 0, 920);
+      playTrackerNote(chord[3] + bassOff, t, stepDur * 0.92, 'sawtooth', 0.19, 0, musicBassBus);
     }
 
-    // 2) Фирменный Keygen 3-нотный быстрый арпеджиатор (на каждом чётном шаге + плотнее в секции B/D)
+    // 2) Фирменный Keygen 3-нотный быстрый арпеджиатор
     const denseArp = (bar >= 4 && bar < 8) || bar >= 12;
     if (beatStep % 2 === 0 || (denseArp && beatStep % 4 === 3)) {
       playKeygenArp(chord, t, stepDur * 1.05);
@@ -501,9 +508,8 @@ window.GTA0.Audio = (function () {
 
     // 4) 8-битные ударные + сбивки в конце каждых 4 тактов
     if (isFillBar && beatStep >= 12) {
-      // Эффектная барабанная сбивка (снейр-дробь + томы)
       if (beatStep === 12 || beatStep === 14) playDrumSnare(t, true);
-      else if (beatStep === 13) playTrackerNote(48, t, 0.09, 'triangle', 0.22, 0, 700);
+      else if (beatStep === 13) playTrackerNote(48, t, 0.09, 'triangle', 0.22, 0, musicBassBus);
       else if (beatStep === 15) { playDrumSnare(t, true); playDrumKick(t, true); }
     } else {
       if (beatStep === 0 || beatStep === 6 || beatStep === 8 || beatStep === 10) {
@@ -528,16 +534,20 @@ window.GTA0.Audio = (function () {
 
     const bpm = matrixSlow ? 82 : 138;
     const stepDur = 60 / bpm / 4;
-    const lookahead = 0.14;
+    // Большой буфер планирования (360 мс) гарантирует ровный ритм Keygen даже при пиковых нагрузках на Android!
+    const lookahead = 0.36;
 
-    if (nextStepTime < ctx.currentTime - 0.25) {
-      nextStepTime = ctx.currentTime + 0.02;
+    // Если поток проснулся после паузы/подвисания — не выплёвываем пачку старых нот, а плавно ресинкаем
+    if (nextStepTime < ctx.currentTime - 0.06) {
+      nextStepTime = ctx.currentTime + 0.04;
     }
 
-    while (nextStepTime < ctx.currentTime + lookahead) {
+    let safety = 0;
+    while (nextStepTime < ctx.currentTime + lookahead && safety < 8) {
       scheduleMusicStep(musicStep, nextStepTime, stepDur);
       nextStepTime += stepDur;
       musicStep = (musicStep + 1) % LEAD_SEQ.length;
+      safety++;
     }
   }
 
@@ -547,10 +557,11 @@ window.GTA0.Audio = (function () {
     if (!c) return;
     if (musicPlaying) return;
     musicPlaying = true;
-    nextStepTime = c.currentTime + 0.04;
+    nextStepTime = c.currentTime + 0.06;
     if (!musicTimer) {
-      musicTimer = setInterval(musicSchedulerTick, 25);
+      musicTimer = setInterval(musicSchedulerTick, 55);
     }
+    musicSchedulerTick();
     updateMusicBusLevel();
   }
 

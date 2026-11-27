@@ -3292,8 +3292,16 @@
     ctx.scale(z, z);
     ctx.translate(-cam.x, -cam.y);
 
-    // 1. Запечённый текстурный асфальт, тротуары, Депо, кратеры и остовы авто
-    ctx.drawImage(world.mapCanvas, 0, 0);
+    // 1. Запечённый текстурный асфальт — рисуем ТОЛЬКО видимую область карты (ускоряет Android GPU!)
+    const mapSx = Math.max(0, Math.floor(visMinX));
+    const mapSy = Math.max(0, Math.floor(visMinY));
+    const mapEx = Math.min(world.WIDTH, Math.ceil(visMaxX));
+    const mapEy = Math.min(world.HEIGHT, Math.ceil(visMaxY));
+    const mapSw = mapEx - mapSx;
+    const mapSh = mapEy - mapSy;
+    if (mapSw > 0 && mapSh > 0) {
+      ctx.drawImage(world.mapCanvas, mapSx, mapSy, mapSw, mapSh, mapSx, mapSy, mapSw, mapSh);
+    }
 
     // 2. Мокрые лужи с отражением неона и кругами дождя
     drawPuddles(visMinX, visMaxX, visMinY, visMaxY);
@@ -3460,24 +3468,50 @@
 
     ctx.restore();
 
-    // Тактический радар и камера в кабине (ПК)
-    renderMinimap(minimapCtx, minimapCanvas.width, minimapCanvas.height);
-    if (!el.mobileRadarFloat.classList.contains('hidden')) {
-      renderMinimap(mobileMinimapCtx, mobileMinimapCanvas.width, mobileMinimapCanvas.height);
+    // Тактический радар (~15 Гц, без перерисовки скрытого ПК-радара на телефоне) и камера в кабине (~20 Гц)
+    renderFrameCount++;
+    if (renderFrameCount % 4 === 0) {
+      if (minimapCanvas && minimapCanvas.offsetParent !== null) {
+        renderMinimap(minimapCtx, minimapCanvas.width, minimapCanvas.height);
+      }
+      if (!el.mobileRadarFloat.classList.contains('hidden')) {
+        renderMinimap(mobileMinimapCtx, mobileMinimapCanvas.width, mobileMinimapCanvas.height);
+      }
     }
-    renderDriverCam();
+    if (renderFrameCount % 3 === 0) {
+      renderDriverCam();
+    }
   }
 
-  // ==================== КАРТА ДИНАМИЧЕСКОГО СВЕТА (CYBER-NOIR) ====================
-  function addRadialLight(wx, wy, r, rCol, gCol, bCol, alpha) {
-    const g = lightCtx.createRadialGradient(wx, wy, 2, wx, wy, r);
-    g.addColorStop(0, `rgba(${rCol},${gCol},${bCol},${alpha})`);
-    g.addColorStop(0.45, `rgba(${rCol},${gCol},${bCol},${alpha * 0.42})`);
+  let renderFrameCount = 0;
+
+  // ==================== КАРТА ДИНАМИЧЕСКОГО СВЕТА (CYBER-NOIR, КЭШ СПРАЙТОВ ДЛЯ 60 FPS) ====================
+  const glowSpriteCache = Object.create(null);
+  function getGlowSprite(rCol, gCol, bCol) {
+    const key = `${rCol},${gCol},${bCol}`;
+    let spr = glowSpriteCache[key];
+    if (spr) return spr;
+    spr = document.createElement('canvas');
+    spr.width = 64;
+    spr.height = 64;
+    const gCtx = spr.getContext('2d');
+    const g = gCtx.createRadialGradient(32, 32, 1, 32, 32, 32);
+    g.addColorStop(0, `rgba(${rCol},${gCol},${bCol},1)`);
+    g.addColorStop(0.45, `rgba(${rCol},${gCol},${bCol},0.42)`);
     g.addColorStop(1, `rgba(${rCol},${gCol},${bCol},0)`);
-    lightCtx.fillStyle = g;
-    lightCtx.beginPath();
-    lightCtx.arc(wx, wy, r, 0, Math.PI * 2);
-    lightCtx.fill();
+    gCtx.fillStyle = g;
+    gCtx.fillRect(0, 0, 64, 64);
+    glowSpriteCache[key] = spr;
+    return spr;
+  }
+
+  function addRadialLight(wx, wy, r, rCol, gCol, bCol, alpha) {
+    if (alpha <= 0.01) return;
+    const spr = getGlowSprite(rCol, gCol, bCol);
+    const prevAlpha = lightCtx.globalAlpha;
+    lightCtx.globalAlpha = Math.min(1, alpha);
+    lightCtx.drawImage(spr, wx - r, wy - r, r * 2, r * 2);
+    lightCtx.globalAlpha = prevAlpha;
   }
 
   function addHeadlightCone(wx, wy, ang, len, spread, rgbStr, alpha) {
@@ -5018,14 +5052,16 @@
     const rect = stageScreen.getBoundingClientRect();
     const w = Math.max(1, Math.floor(rect.width));
     const h = Math.max(1, Math.floor(rect.height));
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const isMobileLike = w < 900 || h < 540 || (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches);
+    dpr = Math.min(window.devicePixelRatio || 1, isMobileLike ? 1.35 : 2);
     viewW = w;
     viewH = h;
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
-    // Полуразмерная карта освещения (мягкий свет + x4 меньше нагрузка на GPU)
-    lightCanvas.width = Math.max(1, Math.round(w * 0.5));
-    lightCanvas.height = Math.max(1, Math.round(h * 0.5));
+    // Облегчённая карта освещения (0.35× на телефоне, 0.5× на ПК — мягкий свет + огромный буст FPS!)
+    const lightScale = isMobileLike ? 0.35 : 0.5;
+    lightCanvas.width = Math.max(1, Math.round(w * lightScale));
+    lightCanvas.height = Math.max(1, Math.round(h * lightScale));
     initDigitalRain();
   }
 
