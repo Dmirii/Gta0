@@ -48,7 +48,7 @@
 - `android/` — автономная Android-оболочка (`ru.dimaa.vaultrunner`, `WebViewAssetLoader`), автоматически подтягивающая файлы игры из корня
 - `.github/workflows/android-apk.yml` — автосборка подписанного `.apk` / `.aab` (или тестового debug `.apk`) на GitHub Actions
 
-## О разработчике
+## О разработчиках
 
-- **Дмитрий Антонов** — разработчик и поддержка: [dimaa@dimaa.ru](mailto:dimaa@dimaa.ru)
-- **Arena.ai · Agent Mode** — AI-соавтор (код, графика, звук и сборка)
+- **Дмитрий Антонов** — автор идеи, геймдизайн и поддержка: [dimaa@dimaa.ru](mailto:dimaa@dimaa.ru)
+- **AICoder_Alfa** — программист (код, графика, звук и сборка)
